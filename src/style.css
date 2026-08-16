@@ -1,5 +1,8 @@
 :root {
-  --cell: clamp(16px, min(4.1vh, 4.4vw), 30px);
+  /* Das Feld nimmt so viel Platz, wie Höhe und Breite hergeben. Der Breitenanteil
+     ist das Großzügigere aus "Anteil der Breite" (schmale Fenster) und "Breite
+     abzüglich der beiden Spalten" (weite Fenster). */
+  --cell: clamp(16px, min(4.6vh, max(4.4vw, (100vw - 500px) / 10)), 60px);
   --mini: calc(var(--cell) * 0.7);
   --bg: #0d1017;
   --panel: #161b26;
@@ -34,8 +37,8 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(10px, 2vw, 26px);
-  padding: 14px;
+  gap: clamp(10px, 2vw, 32px);
+  padding: clamp(10px, 1.6vh, 22px);
 }
 
 /* --- Spielfeld --- */
@@ -111,15 +114,16 @@ html, body {
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: clamp(120px, 15vw, 176px);
+  gap: clamp(12px, calc(var(--cell) * 0.4), 20px);
+  /* Die Spalte wächst mit dem Feld mit, bleibt aber an die Fensterbreite gebunden. */
+  width: clamp(120px, min(15vw, calc(var(--cell) * 5.5)), 200px);
 }
 
 .box, .stats {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: clamp(10px, calc(var(--cell) * 0.32), 15px) clamp(12px, calc(var(--cell) * 0.4), 18px);
 }
 
 .box.row { display: flex; gap: 14px; }
@@ -127,7 +131,7 @@ html, body {
 
 h2 {
   margin: 0 0 4px;
-  font-size: 11px;
+  font-size: clamp(11px, calc(var(--cell) * 0.36), 14px);
   letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--dim);
@@ -136,7 +140,7 @@ h2 {
 
 .big {
   margin: 0;
-  font-size: clamp(16px, 2.4vh, 24px);
+  font-size: clamp(16px, calc(var(--cell) * 0.82), 34px);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
@@ -151,9 +155,12 @@ h2 {
 .preview .cell.empty { border-color: transparent; }
 
 .stats { display: flex; flex-direction: column; gap: 6px; }
-.stat { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.stat { display: flex; align-items: center; gap: 8px; font-size: clamp(13px, calc(var(--cell) * 0.44), 17px); }
 .chip {
-  width: 12px; height: 12px; border-radius: 3px;
+  flex: none;
+  width: clamp(12px, calc(var(--cell) * 0.4), 16px);
+  height: clamp(12px, calc(var(--cell) * 0.4), 16px);
+  border-radius: 3px;
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .2);
 }
 .stat-name { color: var(--dim); font-weight: 600; }
@@ -161,7 +168,7 @@ h2 {
 
 .keys p {
   margin: 5px 0;
-  font-size: 12px;
+  font-size: clamp(12px, calc(var(--cell) * 0.4), 15px);
   color: var(--dim);
 }
 kbd {
@@ -176,7 +183,7 @@ kbd {
   background: #1e2534;
   color: var(--ink);
   font: inherit;
-  font-size: 11px;
+  font-size: clamp(11px, calc(var(--cell) * 0.37), 14px);
 }
 
 /* --- Einblendungen --- */
@@ -197,31 +204,31 @@ kbd {
 
 .overlay h1 {
   margin: 0 0 2px;
-  font-size: clamp(20px, 3.4vh, 32px);
+  font-size: clamp(20px, calc(var(--cell) * 1.05), 44px);
   letter-spacing: .2em;
 }
 
-.lead { margin: 0 0 10px; font-size: 13px; color: var(--dim); line-height: 1.45; }
-.label { margin: 6px 0 2px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
-.hint { margin: 8px 0 0; font-size: 11px; color: var(--dim); }
+.lead { margin: 0 0 10px; font-size: clamp(13px, calc(var(--cell) * 0.44), 17px); color: var(--dim); line-height: 1.45; }
+.label { margin: 6px 0 2px; font-size: clamp(11px, calc(var(--cell) * 0.36), 14px); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.hint { margin: 8px 0 0; font-size: clamp(11px, calc(var(--cell) * 0.36), 14px); color: var(--dim); }
 
 .levels {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 5px;
   width: 100%;
-  max-width: 200px;
+  max-width: clamp(200px, calc(var(--cell) * 7), 330px);
   margin-bottom: 12px;
 }
 
 .lvl {
-  padding: 6px 0;
+  padding: clamp(6px, calc(var(--cell) * 0.2), 11px) 0;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #1a2130;
   color: var(--dim);
   font: inherit;
-  font-size: 13px;
+  font-size: clamp(13px, calc(var(--cell) * 0.44), 17px);
   cursor: pointer;
 }
 .lvl:hover { border-color: var(--accent); color: var(--ink); }
@@ -233,12 +240,13 @@ kbd {
 }
 
 .start {
-  padding: 9px 22px;
+  padding: clamp(9px, calc(var(--cell) * 0.3), 14px) clamp(22px, calc(var(--cell) * 0.75), 34px);
   border: none;
   border-radius: 8px;
   background: linear-gradient(180deg, #7db2ff, #4a86e8);
   color: #08101f;
   font: inherit;
+  font-size: clamp(14px, calc(var(--cell) * 0.46), 19px);
   font-weight: 700;
   cursor: pointer;
 }

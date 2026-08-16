@@ -50,5 +50,12 @@ ist Spielen an der Wand aber unnötig zäh. Dazu kommen ein Schattenriss der
 Landestelle und die Leertaste zum sofortigen Fallenlassen (ein Punkt je Feld);
 beides gibt es im Original ebenfalls nicht.
 
+**Das Feld füllt das Fenster.** Alle Maße hängen an einer einzigen Größe, der
+Kantenlänge eines Feldes (`--cell` in `src/style.css`); Seitenspalten, Schriften und
+Knöpfe rechnen daraus. Die Kantenlänge folgt dem knapperen der beiden Maße Höhe und
+Breite, wobei die Breite abzüglich der beiden Seitenspalten zählt, sobald das mehr
+hergibt als ein fester Anteil der Fensterbreite. Nach unten bleibt sie bei 16 Pixeln,
+nach oben bei 60 — ein größeres Fenster wird also genutzt, ein kleines bleibt spielbar.
+
 **Kein Speichern.** Das Spiel hält keinen Zustand über einen Neustart hinaus —
 keine Bestenliste, kein fortgesetztes Spiel.
