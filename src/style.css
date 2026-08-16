@@ -200,6 +200,7 @@ kbd {
   text-align: center;
   background: rgba(8, 11, 18, .88);
   border-radius: 6px;
+  overflow: auto;
 }
 
 .overlay h1 {
@@ -299,3 +300,117 @@ kbd {
   cursor: pointer;
 }
 .start:hover { filter: brightness(1.08); }
+
+.start.small {
+  padding: clamp(6px, calc(var(--cell) * 0.2), 10px) clamp(14px, calc(var(--cell) * 0.5), 24px);
+  font-size: clamp(12px, calc(var(--cell) * 0.38), 16px);
+}
+
+.start:disabled, .rb:disabled {
+  opacity: .38;
+  cursor: default;
+  filter: none;
+}
+.start:disabled:hover { filter: none; }
+.rb:disabled:hover { border-color: var(--line); }
+
+/* --- Wiedergabe --- */
+
+/* Unter dem Feld steht die Bedienleiste; das Feld gibt dafür etwas Höhe ab. */
+.app.replaying {
+  --cell: clamp(16px, min(3.2vh, max(4.4vw, (100vw - 520px) / 10)), 52px);
+  overflow-y: auto;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(6px, 1.2vh, 14px);
+  min-width: 0;
+}
+
+.replay-tag {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(8, 11, 18, .8);
+  border: 1px solid var(--line);
+  color: var(--dim);
+  font-size: clamp(10px, calc(var(--cell) * 0.32), 13px);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.replay-tag.end { color: var(--c-Z); border-color: var(--c-Z); }
+
+.replay-bar {
+  width: max(260px, calc(var(--cell) * 10));
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: clamp(8px, calc(var(--cell) * 0.28), 14px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.scrub {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.replay-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: clamp(10px, calc(var(--cell) * 0.32), 13px);
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+
+.replay-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.replay-label {
+  flex: none;
+  font-size: clamp(10px, calc(var(--cell) * 0.32), 13px);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.rb {
+  flex: 1;
+  min-width: 0;
+  padding: clamp(5px, calc(var(--cell) * 0.17), 9px) 2px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #1a2130;
+  color: var(--ink);
+  font: inherit;
+  font-size: clamp(11px, calc(var(--cell) * 0.34), 15px);
+  line-height: 1.25;
+  cursor: pointer;
+}
+.rb:hover { border-color: var(--accent); }
+.rb.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0b1220;
+  font-weight: 700;
+}
+
+.replay-row.wide { margin-top: 2px; }
+.replay-row.wide .start.small { flex: 1; }
+.replay-row.wide .rb.wideb { flex: none; padding-left: 14px; padding-right: 14px; }
+
+.hint.tight { margin: 0; }

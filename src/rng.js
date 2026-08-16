@@ -35,8 +35,28 @@ const NesRng = (function () {
       return prev;
     }
 
-    return { nextPiece, nextByte };
+    /* Der ganze innere Zustand als einfaches Objekt — damit eine Aufzeichnung
+       ihn festhalten und ein späterer Wiedereinstieg ihn zurücksetzen kann. */
+    function getState() {
+      return { reg: reg, spawnCount: spawnCount, prev: prev };
+    }
+
+    function setState(s) {
+      reg = (s.reg | 0) & 0xffff;
+      if (reg === 0) reg = 0x8988;
+      spawnCount = s.spawnCount | 0;
+      prev = s.prev === undefined ? null : s.prev;
+    }
+
+    return { nextPiece, nextByte, getState, setState };
   }
 
-  return { create, ORDER };
+  // Ein Register, das genau dort weitermacht, wo ein gesicherter Zustand aufhörte.
+  function restore(s) {
+    const r = create(s.reg);
+    r.setState(s);
+    return r;
+  }
+
+  return { create, restore, ORDER };
 })();

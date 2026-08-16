@@ -22,8 +22,12 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
 - `src/pieces.js` — die sieben Steine mit ihren vier Drehlagen, die Falltempo-Tabelle
   und die Punktetabelle.
 - `src/engine.js` — Spielfeld, Kollision, Einrasten, Reihenauflösung, Level.
-  Ein einfacher Zustandsobjekt-Baum, der von außen verändert wird.
-- `src/app.js` — Oberfläche in Preact, Tastensteuerung, Bildtakt.
+  Ein einfacher Zustandsobjekt-Baum, der von außen verändert wird; dazu die
+  Momentaufnahme (`snapshot`) und ihre Umkehrung (`fromSnapshot`).
+- `src/replay.js` — das Band der Aufzeichnung und der Abspielkopf.
+- `src/gameui.js` — die Ansichten des Spiels: Feld, Vorschau, Statistik, Startbild.
+- `src/replayui.js` — die Bedienleiste der Wiedergabe.
+- `src/app.js` — Zustand, Tastensteuerung, Bildtakt, Aufzeichnung.
 - `src/style.css` — Aussehen.
 
 Der Spielzustand liegt bewusst nicht in einem Preact-State, sondern in einer Ref:
@@ -67,5 +71,23 @@ Breite, wobei die Breite abzüglich der beiden Seitenspalten zählt, sobald das 
 hergibt als ein fester Anteil der Fensterbreite. Nach unten bleibt sie bei 16 Pixeln,
 nach oben bei 60 — ein größeres Fenster wird also genutzt, ein kleines bleibt spielbar.
 
-**Kein Speichern.** Das Spiel hält keinen Zustand über einen Neustart hinaus —
-keine Bestenliste, kein fortgesetztes Spiel.
+**Die Partie wird mitgeschrieben.** Jedes Bild, das sich vom vorherigen unterscheidet,
+kommt als vollständige Momentaufnahme aufs Band: Feld, Stein, Zahlen, Statistik — und
+der innere Zustand des Zufallsregisters. Nicht die Tastendrücke werden aufgezeichnet,
+sondern die Zustände selbst. Das kostet mehr Platz, ist dafür aber unabhängig davon,
+ob ein Nachspielen exakt dieselben Zeitschritte träfe, und erlaubt das Rückwärtsgehen
+ohne Neuberechnung. Unveränderte Felder teilen sich dieselbe Zeichenkette, und
+wiederholte gleiche Bilder kommen gar nicht erst aufs Band.
+
+**Wiedereinstieg statt bloßem Zusehen.** Weil die Momentaufnahme auch den Zufall
+enthält, ist jedes Bild der Wiedergabe ein vollwertiger Spielstand. "Hier
+weiterspielen" macht daraus wieder ein laufendes Spiel, schneidet das Band an dieser
+Stelle ab und zeichnet von dort den neuen Verlauf auf — ein Zurücknehmen beliebig
+vieler Züge. Die Zeitachse ist die gespielte Zeit, nicht die Zahl der Bilder; das
+Abspielen läuft dadurch im Tempo der Partie, wahlweise vorwärts oder rückwärts und
+mit einem Faktor von ¼ bis 4. Ein Bild, in dem das Spiel schon verloren ist, lässt
+sich nicht fortsetzen.
+
+**Kein Speichern.** Das Spiel hält keinen Zustand über einen Neustart hinaus — keine
+Bestenliste, keine Aufzeichnung als Datei. Das Band lebt nur so lange wie die Partie
+und wird mit jedem neuen Spiel verworfen.

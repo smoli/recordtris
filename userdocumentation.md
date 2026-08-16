@@ -35,10 +35,46 @@ Wenn die Tasten nicht reagieren, einmal ins Spielfeld klicken.
 | ↓ | einen Schritt tiefer, gibt einen Punkt |
 | Leertaste | sofort ganz nach unten fallen lassen |
 | P | Pause und weiter |
+| R | in der Pause oder nach dem Spielende: Aufzeichnung ansehen |
 | Esc | Spiel beenden, zurück zum Startbildschirm |
 | Enter | nach dem Spielende noch einmal dieselbe Steinfolge |
 
 Der blasse Umriss unten im Feld zeigt, wo der Stein landen wird.
+
+## Aufzeichnung und Wiedergabe
+
+Jede Partie wird von der ersten Sekunde an mitgeschrieben. In der **Pause** und nach
+dem **Spielende** führt der Knopf *Aufzeichnung ansehen* (oder die Taste **R**) zur
+Wiedergabe. Das Feld zeigt dann nicht das Spiel, sondern die Aufnahme — Punkte,
+Level, Statistik und Vorschau laufen mit.
+
+Unter dem Feld liegt die Bedienleiste:
+
+- Der **Schieberegler** springt an jede beliebige Stelle.
+- **⏮ ⏭** an den Anfang oder ans Ende, **◀| |▶** ein einzelnes Bild zurück oder vor.
+- **▶** spielt vorwärts ab, **◀◀** rückwärts. Ein zweiter Klick hält an.
+- **Tempo** von ¼× bis 4× — die Aufnahme läuft sonst im Tempo der Partie.
+
+| Taste | Wirkung in der Wiedergabe |
+| --- | --- |
+| ← → | ein Bild zurück oder vor (gedrückt halten spult) |
+| Leertaste | abspielen und anhalten |
+| B | rückwärts abspielen |
+| 1 … 5 | Tempo ¼×, ½×, 1×, 2×, 4× |
+| Enter | hier weiterspielen |
+| Esc | zurück zum Spiel |
+
+### Hier weiterspielen
+
+Der wichtigste Knopf: **Hier weiterspielen** macht aus der gezeigten Stelle wieder
+ein laufendes Spiel — mit demselben Feld, denselben Punkten und derselben Steinfolge,
+die von dort an gekommen wäre. Damit lässt sich ein misslungener Zug beliebig weit
+zurücknehmen und anders versuchen. Das Spiel läuft sofort weiter, halte dich also
+bereit. Was danach passiert, wird von dieser Stelle an neu aufgezeichnet; der alte
+Verlauf ab dort ist damit weg.
+
+Ein Bild, in dem das Spiel schon verloren ist, lässt sich nicht fortsetzen — spule
+ein Stück zurück, dann geht es wieder.
 
 ## Anzeigen
 
@@ -60,5 +96,7 @@ Unterschied schnell — und sollte flacher stapeln.
 
 ## Grenzen
 
-Punktestände werden nicht gespeichert. Ein beendetes Spiel lässt sich nicht
-fortsetzen.
+Punktestände werden nicht gespeichert. Die Aufzeichnung gehört zur laufenden Partie:
+Ein neues Spiel oder Esc zum Startbildschirm verwirft sie, und sie lässt sich nicht
+als Datei ablegen oder weitergeben. Weitergeben lässt sich aber das Merkwort — damit
+spielt jemand anderes dieselbe Steinfolge.

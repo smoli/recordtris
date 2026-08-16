@@ -217,6 +217,7 @@ kbd {
   text-align: center;
   background: rgba(8, 11, 18, .88);
   border-radius: 6px;
+  overflow: auto;
 }
 
 .overlay h1 {
@@ -316,6 +317,120 @@ kbd {
   cursor: pointer;
 }
 .start:hover { filter: brightness(1.08); }
+
+.start.small {
+  padding: clamp(6px, calc(var(--cell) * 0.2), 10px) clamp(14px, calc(var(--cell) * 0.5), 24px);
+  font-size: clamp(12px, calc(var(--cell) * 0.38), 16px);
+}
+
+.start:disabled, .rb:disabled {
+  opacity: .38;
+  cursor: default;
+  filter: none;
+}
+.start:disabled:hover { filter: none; }
+.rb:disabled:hover { border-color: var(--line); }
+
+/* --- Wiedergabe --- */
+
+/* Unter dem Feld steht die Bedienleiste; das Feld gibt dafür etwas Höhe ab. */
+.app.replaying {
+  --cell: clamp(16px, min(3.2vh, max(4.4vw, (100vw - 520px) / 10)), 52px);
+  overflow-y: auto;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(6px, 1.2vh, 14px);
+  min-width: 0;
+}
+
+.replay-tag {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(8, 11, 18, .8);
+  border: 1px solid var(--line);
+  color: var(--dim);
+  font-size: clamp(10px, calc(var(--cell) * 0.32), 13px);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.replay-tag.end { color: var(--c-Z); border-color: var(--c-Z); }
+
+.replay-bar {
+  width: max(260px, calc(var(--cell) * 10));
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: clamp(8px, calc(var(--cell) * 0.28), 14px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.scrub {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.replay-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: clamp(10px, calc(var(--cell) * 0.32), 13px);
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+
+.replay-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.replay-label {
+  flex: none;
+  font-size: clamp(10px, calc(var(--cell) * 0.32), 13px);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.rb {
+  flex: 1;
+  min-width: 0;
+  padding: clamp(5px, calc(var(--cell) * 0.17), 9px) 2px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #1a2130;
+  color: var(--ink);
+  font: inherit;
+  font-size: clamp(11px, calc(var(--cell) * 0.34), 15px);
+  line-height: 1.25;
+  cursor: pointer;
+}
+.rb:hover { border-color: var(--accent); }
+.rb.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0b1220;
+  font-weight: 700;
+}
+
+.replay-row.wide { margin-top: 2px; }
+.replay-row.wide .start.small { flex: 1; }
+.replay-row.wide .rb.wideb { flex: none; padding-left: 14px; padding-right: 14px; }
+
+.hint.tight { margin: 0; }
 </style>
 </head>
 <body data-morphos-src="src/index.html:10:1">
@@ -357,10 +472,30 @@ const NesRng = (function () {
       return prev;
     }
 
-    return { nextPiece, nextByte };
+    /* Der ganze innere Zustand als einfaches Objekt — damit eine Aufzeichnung
+       ihn festhalten und ein späterer Wiedereinstieg ihn zurücksetzen kann. */
+    function getState() {
+      return { reg: reg, spawnCount: spawnCount, prev: prev };
+    }
+
+    function setState(s) {
+      reg = (s.reg | 0) & 0xffff;
+      if (reg === 0) reg = 0x8988;
+      spawnCount = s.spawnCount | 0;
+      prev = s.prev === undefined ? null : s.prev;
+    }
+
+    return { nextPiece, nextByte, getState, setState };
   }
 
-  return { create, ORDER };
+  // Ein Register, das genau dort weitermacht, wo ein gesicherter Zustand aufhörte.
+  function restore(s) {
+    const r = create(s.reg);
+    r.setState(s);
+    return r;
+  }
+
+  return { create, restore, ORDER };
 })();
 </script>
 <script>/* Das Merkwort, aus dem die Steinfolge entsteht.
@@ -504,6 +639,26 @@ const TetrisEngine = (function () {
     return Array.from({ length: ROWS }, () => new Array(COLS).fill(null));
   }
 
+  // Das Feld als eine Zeichenkette — kurz genug, um es für jedes Bild zu sichern.
+  function boardToText(board) {
+    let s = "";
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) s += board[r][c] || ".";
+    }
+    return s;
+  }
+
+  function boardFromText(text) {
+    const board = emptyBoard();
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const ch = text.charAt(r * COLS + c);
+        if (ch !== ".") board[r][c] = ch;
+      }
+    }
+    return board;
+  }
+
   function collides(board, type, rot, x, y) {
     const cells = TetrisPieces.SHAPES[type][rot];
     for (let i = 0; i < cells.length; i++) {
@@ -537,6 +692,7 @@ const TetrisEngine = (function () {
       dropTimer: 0,
       clearRows: null,
       clearTimer: 0,
+      elapsed: 0,
       version: 0
     };
     state.nextType = state.rng.nextPiece();
@@ -667,6 +823,7 @@ const TetrisEngine = (function () {
 
   function update(state, dt) {
     if (state.over || state.paused) return;
+    state.elapsed += dt; // die gespielte Zeit; sie ist die Zeitachse der Aufzeichnung
     if (state.clearRows) {
       state.clearTimer -= dt;
       if (state.clearTimer <= 0) finishClear(state);
@@ -717,23 +874,64 @@ const TetrisEngine = (function () {
     return out;
   }
 
+  /* Eine vollständige Momentaufnahme: alles, was das Bild ausmacht, und dazu der
+     Zustand des Zufalls. Aus ihr lässt sich das Bild zeigen UND weiterspielen. */
+  function snapshot(state) {
+    return {
+      t: state.elapsed,
+      board: boardToText(state.board),
+      piece: state.piece
+        ? { type: state.piece.type, rot: state.piece.rot, x: state.piece.x, y: state.piece.y }
+        : null,
+      nextType: state.nextType,
+      score: state.score,
+      lines: state.lines,
+      level: state.level,
+      startLevel: state.startLevel,
+      seedWord: state.seedWord,
+      stats: Object.assign({}, state.stats),
+      over: state.over,
+      clearRows: state.clearRows ? state.clearRows.slice() : null,
+      clearTimer: state.clearTimer,
+      dropTimer: state.dropTimer,
+      rng: state.rng.getState()
+    };
+  }
+
+  // Aus einer Momentaufnahme wieder ein lebendiges Spiel — laufbereit, nicht pausiert.
+  function fromSnapshot(snap) {
+    return {
+      seedWord: snap.seedWord,
+      rng: NesRng.restore(snap.rng),
+      board: boardFromText(snap.board),
+      piece: snap.piece ? Object.assign({}, snap.piece) : null,
+      nextType: snap.nextType,
+      score: snap.score,
+      lines: snap.lines,
+      level: snap.level,
+      startLevel: snap.startLevel,
+      stats: Object.assign({}, snap.stats),
+      over: snap.over,
+      paused: false,
+      dropTimer: snap.dropTimer,
+      clearRows: snap.clearRows ? snap.clearRows.slice() : null,
+      clearTimer: snap.clearTimer,
+      elapsed: snap.t,
+      version: 0
+    };
+  }
+
   return {
     COLS: COLS, ROWS: ROWS,
     create: create, update: update,
     move: move, rotate: rotate, softDrop: softDrop, hardDrop: hardDrop,
-    togglePause: togglePause, renderCells: renderCells
+    togglePause: togglePause, renderCells: renderCells,
+    snapshot: snapshot, fromSnapshot: fromSnapshot
   };
 })();
 </script>
-<script>/* Oberfläche und Steuerung. Der Spielzustand liegt in einer Ref und wird vom
-   Bildtakt fortgeschrieben; neu gezeichnet wird nur, wenn sich etwas geändert hat. */
-const { render } = preact;
-const { useState, useRef, useEffect, useCallback } = preactHooks;
-
-const DAS_START = 170; // Wartezeit bis zur Wiederholung beim Halten
-const DAS_RATE = 50;   // Abstand der Wiederholungen
-const DROP_RATE = 45;  // Wiederholung beim Halten von Pfeil runter
-
+<script>/* Die Ansichten des Spiels: Feld, Vorschau, Statistik und der Startbildschirm.
+   Sie zeigen nur an, was man ihnen gibt — gesteuert wird in app.js. */
 function Cell({ cell }) {
   const cls = cell.type
     ? "cell c-" + cell.type + (cell.kind === "ghost" ? " ghost" : "") +
@@ -793,16 +991,191 @@ function StartScreen({ level, onLevel, seed, onSeed, onStart }) {
     <p class="hint">Enter drücken geht auch</p>
   </div>`;
 }
+</script>
+<script>/* Die Aufzeichnung einer Partie und ihr Abspielkopf.
+   Aufgezeichnet wird jedes Bild, das sich vom vorherigen unterscheidet — samt
+   Zustand des Zufalls, damit von jeder Stelle aus weitergespielt werden kann.
+   Die Zeitachse ist die gespielte Zeit (state.elapsed), nicht die Zahl der Bilder. */
+const TetrisReplay = (function () {
+  const SPEEDS = [0.25, 0.5, 1, 2, 4];
+  const SPEED_LABELS = ["¼×", "½×", "1×", "2×", "4×"];
+
+  // Zeigt das Bild dasselbe wie das vorherige, muss es nicht aufs Band.
+  function sameFrame(a, b) {
+    if (a.board !== b.board || a.score !== b.score || a.lines !== b.lines) return false;
+    if (a.nextType !== b.nextType || a.over !== b.over) return false;
+    if ((a.clearRows === null) !== (b.clearRows === null)) return false;
+    if ((a.piece === null) !== (b.piece === null)) return false;
+    if (!a.piece) return true;
+    return a.piece.type === b.piece.type && a.piece.rot === b.piece.rot &&
+           a.piece.x === b.piece.x && a.piece.y === b.piece.y;
+  }
+
+  function record(frames, state) {
+    const snap = TetrisEngine.snapshot(state);
+    const last = frames.length ? frames[frames.length - 1] : null;
+    if (last) {
+      // Unverändertes Feld: dieselbe Zeichenkette weiterverwenden statt sie zu kopieren.
+      if (last.board === snap.board) snap.board = last.board;
+      if (sameFrame(last, snap)) return false;
+    }
+    frames.push(snap);
+    return true;
+  }
+
+  function cursor(frames, index) {
+    const i = Math.max(0, Math.min(frames.length - 1, index));
+    return { index: i, playing: false, dir: 1, speed: 1, time: frames[i].t };
+  }
+
+  function seek(cur, frames, index) {
+    const i = Math.max(0, Math.min(frames.length - 1, index));
+    cur.time = frames[i].t;
+    if (i === cur.index) return false;
+    cur.index = i;
+    return true;
+  }
+
+  // Ein Bild weiter oder zurück — das hält das Abspielen an.
+  function step(cur, frames, delta) {
+    cur.playing = false;
+    return seek(cur, frames, cur.index + delta) || true;
+  }
+
+  /* Abspielen in eine Richtung. Steht der Kopf schon am Ende dieser Richtung,
+     beginnt er am anderen Ende von vorn. */
+  function play(cur, frames, dir) {
+    cur.dir = dir;
+    cur.playing = true;
+    if (dir > 0 && cur.index >= frames.length - 1) seek(cur, frames, 0);
+    else if (dir < 0 && cur.index <= 0) seek(cur, frames, frames.length - 1);
+    else cur.time = frames[cur.index].t;
+    return true;
+  }
+
+  function pause(cur, frames) {
+    cur.playing = false;
+    cur.time = frames[cur.index].t;
+    return true;
+  }
+
+  // Ein Bildtakt des Abspielens; liefert, ob sich sichtbar etwas geändert hat.
+  function advance(cur, frames, dt) {
+    if (!cur.playing) return false;
+    const before = cur.index;
+    cur.time += dt * cur.speed * cur.dir;
+    let i = cur.index;
+    if (cur.dir > 0) {
+      while (i + 1 < frames.length && frames[i + 1].t <= cur.time) i++;
+      if (i >= frames.length - 1) { i = frames.length - 1; cur.playing = false; cur.time = frames[i].t; }
+    } else {
+      while (i > 0 && frames[i - 1].t >= cur.time) i--;
+      if (i <= 0) { i = 0; cur.playing = false; cur.time = frames[0].t; }
+    }
+    cur.index = i;
+    return i !== before || !cur.playing;
+  }
+
+  // "1:23,4" — Minuten, Sekunden, Zehntel der gespielten Zeit.
+  function formatTime(ms) {
+    const tenths = Math.max(0, Math.round(ms / 100));
+    const secs = Math.floor(tenths / 10);
+    const mm = Math.floor(secs / 60);
+    const ss = secs % 60;
+    return mm + ":" + (ss < 10 ? "0" + ss : ss) + "," + (tenths % 10);
+  }
+
+  return {
+    SPEEDS: SPEEDS,
+    SPEED_LABELS: SPEED_LABELS,
+    record: record,
+    cursor: cursor,
+    seek: seek,
+    step: step,
+    play: play,
+    pause: pause,
+    advance: advance,
+    formatTime: formatTime
+  };
+})();
+</script>
+<script>/* Die Bedienleiste der Wiedergabe: Schieberegler, Transport, Tempo und der
+   Wiedereinstieg. Sie kennt nur den Abspielkopf und meldet Wünsche nach oben. */
+function ReplayBar({ frames, cur, canResume, onSeek, onStep, onPlay, onPause, onSpeed, onResume, onClose }) {
+  const last = frames.length - 1;
+  const frame = frames[cur.index];
+  const forward = cur.playing && cur.dir > 0;
+  const backward = cur.playing && cur.dir < 0;
+
+  return html`<div class="replay-bar">
+    <input class="scrub" type="range" min="0" max=${last} step="1" value=${cur.index}
+      onInput=${(e) => onSeek(Number(e.target.value))} />
+    <div class="replay-meta">
+      <span>${TetrisReplay.formatTime(frame.t)} / ${TetrisReplay.formatTime(frames[last].t)}</span>
+      <span>Bild ${cur.index + 1} von ${frames.length}</span>
+    </div>
+
+    <div class="replay-row">
+      <button class="rb" title="An den Anfang" onClick=${() => onSeek(0)}>⏮</button>
+      <button class="rb" title="Ein Bild zurück" onClick=${() => onStep(-1)}>◀|</button>
+      <button class=${"rb" + (backward ? " on" : "")} title="Rückwärts abspielen"
+        onClick=${() => (backward ? onPause() : onPlay(-1))}>◀◀</button>
+      <button class=${"rb" + (forward ? " on" : "")} title="Vorwärts abspielen"
+        onClick=${() => (forward ? onPause() : onPlay(1))}>${forward ? "⏸" : "▶"}</button>
+      <button class="rb" title="Ein Bild vor" onClick=${() => onStep(1)}>|▶</button>
+      <button class="rb" title="Ans Ende" onClick=${() => onSeek(last)}>⏭</button>
+    </div>
+
+    <div class="replay-row">
+      <span class="replay-label">Tempo</span>
+      ${TetrisReplay.SPEEDS.map((s, i) => html`
+        <button key=${s} class=${"rb" + (cur.speed === s ? " on" : "")}
+          onClick=${() => onSpeed(s)}>${TetrisReplay.SPEED_LABELS[i]}</button>`)}
+    </div>
+
+    <div class="replay-row wide">
+      <button class="start small" disabled=${!canResume} onClick=${onResume}>Hier weiterspielen</button>
+      <button class="rb wideb" onClick=${onClose}>Zurück</button>
+    </div>
+    ${!canResume && html`<p class="hint tight">Zum Weiterspielen ein Stück zurückspulen.</p>`}
+  </div>`;
+}
+
+// Die Tastenhilfe der Wiedergabe — sie ersetzt in der Seitenspalte die des Spiels.
+function ReplayKeys() {
+  return html`<div class="box keys">
+    <h2>Wiedergabe</h2>
+    <p><kbd>←</kbd><kbd>→</kbd> ein Bild</p>
+    <p><kbd>Leer</kbd> abspielen · <kbd>B</kbd> rückwärts</p>
+    <p><kbd>1</kbd>…<kbd>5</kbd> Tempo</p>
+    <p><kbd>Enter</kbd> hier weiterspielen</p>
+    <p><kbd>Esc</kbd> zurück</p>
+  </div>`;
+}
+</script>
+<script>/* Zustand und Steuerung. Der Spielzustand liegt in einer Ref und wird vom Bildtakt
+   fortgeschrieben; neu gezeichnet wird nur, wenn sich etwas geändert hat. Derselbe
+   Takt schreibt jedes veränderte Bild aufs Band — und spielt es auf Wunsch wieder ab. */
+const { render } = preact;
+const { useState, useRef, useEffect, useCallback } = preactHooks;
+
+const DAS_START = 170; // Wartezeit bis zur Wiederholung beim Halten
+const DAS_RATE = 50;   // Abstand der Wiederholungen
+const DROP_RATE = 45;  // Wiederholung beim Halten von Pfeil runter
 
 function App() {
   const gameRef = useRef(null);
   const heldRef = useRef({});
+  const tapeRef = useRef([]);   // die Aufzeichnung der laufenden Partie
+  const replayRef = useRef(null); // der Abspielkopf, solange die Wiedergabe läuft
   const [startLevel, setStartLevel] = useState(0);
   const [seedWord, setSeedWord] = useState(() => TetrisSeed.randomWord());
   const [, bump] = useState(0);
 
   const startGame = useCallback((lvl, word) => {
     heldRef.current = {};
+    tapeRef.current = [];
+    replayRef.current = null;
     gameRef.current = TetrisEngine.create(lvl, word);
     setSeedWord(gameRef.current.seedWord); // ein gewürfeltes Wort bleibt sichtbar
     bump((v) => v + 1);
@@ -811,10 +1184,12 @@ function App() {
   const quit = useCallback(() => {
     gameRef.current = null;
     heldRef.current = {};
+    tapeRef.current = [];
+    replayRef.current = null;
     bump((v) => v + 1);
   }, []);
 
-  // Bildtakt: Schwerkraft, Tastenwiederholung, und nur bei Änderung neu zeichnen.
+  // Bildtakt: Schwerkraft, Tastenwiederholung, Aufzeichnung — oder die Wiedergabe.
   useEffect(() => {
     let raf = 0;
     let last = null;
@@ -823,10 +1198,17 @@ function App() {
       const dt = last === null ? 0 : Math.min(t - last, 200);
       last = t;
       const g = gameRef.current;
-      if (g) {
+      const rp = replayRef.current;
+      if (rp) {
+        if (TetrisReplay.advance(rp, tapeRef.current, dt)) bump((v) => v + 1);
+      } else if (g) {
         repeatKeys(g, dt);
         TetrisEngine.update(g, dt);
-        if (g.version !== seen) { seen = g.version; bump((v) => v + 1); }
+        if (g.version !== seen) {
+          seen = g.version;
+          if (!g.paused) TetrisReplay.record(tapeRef.current, g);
+          bump((v) => v + 1);
+        }
       }
       raf = requestAnimationFrame(step);
     };
@@ -852,6 +1234,72 @@ function App() {
     }
   }
 
+  // --- Wiedergabe ---
+
+  const openReplay = useCallback(() => {
+    const frames = tapeRef.current;
+    if (!frames.length) return;
+    heldRef.current = {};
+    replayRef.current = TetrisReplay.cursor(frames, frames.length - 1);
+    bump((v) => v + 1);
+  }, []);
+
+  const closeReplay = useCallback(() => {
+    replayRef.current = null;
+    bump((v) => v + 1);
+  }, []);
+
+  const seekTo = useCallback((i) => {
+    const rp = replayRef.current;
+    if (!rp) return;
+    rp.playing = false;
+    TetrisReplay.seek(rp, tapeRef.current, i);
+    bump((v) => v + 1);
+  }, []);
+
+  const stepBy = useCallback((d) => {
+    const rp = replayRef.current;
+    if (!rp) return;
+    TetrisReplay.step(rp, tapeRef.current, d);
+    bump((v) => v + 1);
+  }, []);
+
+  const playFrom = useCallback((dir) => {
+    const rp = replayRef.current;
+    if (!rp) return;
+    TetrisReplay.play(rp, tapeRef.current, dir);
+    bump((v) => v + 1);
+  }, []);
+
+  const pausePlayback = useCallback(() => {
+    const rp = replayRef.current;
+    if (!rp) return;
+    TetrisReplay.pause(rp, tapeRef.current);
+    bump((v) => v + 1);
+  }, []);
+
+  const setSpeed = useCallback((s) => {
+    const rp = replayRef.current;
+    if (!rp) return;
+    rp.speed = s;
+    bump((v) => v + 1);
+  }, []);
+
+  /* Wiedereinstieg: Aus dem gezeigten Bild wird wieder ein laufendes Spiel. Das Band
+     endet an dieser Stelle und zeichnet von hier an den neuen Verlauf auf. */
+  const resumeHere = useCallback(() => {
+    const rp = replayRef.current;
+    if (!rp) return;
+    const frames = tapeRef.current;
+    const frame = frames[rp.index];
+    if (!frame || frame.over) return;
+    tapeRef.current = frames.slice(0, rp.index + 1);
+    gameRef.current = TetrisEngine.fromSnapshot(frame);
+    replayRef.current = null;
+    heldRef.current = {};
+    bump((v) => v + 1);
+  }, []);
+
   useEffect(() => {
     function press(key) { heldRef.current[key] = { timer: 0, fired: false }; }
 
@@ -860,6 +1308,24 @@ function App() {
       // Im Eingabefeld gehören die Tasten dem Anwender, nicht dem Spiel.
       const inField = e.target && e.target.tagName === "INPUT";
       if (!inField && (k === " " || k.indexOf("Arrow") === 0)) e.preventDefault();
+
+      // In der Wiedergabe gehören die Tasten dem Abspielkopf.
+      const rp = replayRef.current;
+      if (rp) {
+        if (k === "Escape") { closeReplay(); return; }
+        if (k === "Enter") { resumeHere(); return; }
+        if (inField) return; // der Schieberegler bedient sich sonst selbst
+        if (k === "ArrowRight") stepBy(1);
+        else if (k === "ArrowLeft") stepBy(-1);
+        else if (e.repeat) return;
+        else if (k === " ") { if (rp.playing && rp.dir > 0) pausePlayback(); else playFrom(1); }
+        else if (k === "b" || k === "B") { if (rp.playing && rp.dir < 0) pausePlayback(); else playFrom(-1); }
+        else if (k === "Home") seekTo(0);
+        else if (k === "End") seekTo(tapeRef.current.length - 1);
+        else if (k.length === 1 && k >= "1" && k <= "5") setSpeed(TetrisReplay.SPEEDS[Number(k) - 1]);
+        return;
+      }
+
       if (e.repeat) return;
       const g = gameRef.current;
 
@@ -869,12 +1335,16 @@ function App() {
       }
       if (g.over) {
         if (k === "Enter") startGame(g.startLevel, g.seedWord);
+        else if (k === "r" || k === "R") openReplay();
         else if (k === "Escape") quit();
         return;
       }
       if (k === "p" || k === "P") { TetrisEngine.togglePause(g); return; }
       if (k === "Escape") { quit(); return; }
-      if (g.paused) return;
+      if (g.paused) {
+        if (k === "r" || k === "R") openReplay();
+        return;
+      }
 
       if (k === "ArrowLeft") { TetrisEngine.move(g, -1); press("left"); }
       else if (k === "ArrowRight") { TetrisEngine.move(g, 1); press("right"); }
@@ -901,9 +1371,51 @@ function App() {
       window.removeEventListener("keyup", onUp);
       window.removeEventListener("blur", onBlur);
     };
-  }, [startLevel, seedWord, startGame, quit]);
+  }, [startLevel, seedWord, startGame, quit, openReplay, closeReplay,
+      seekTo, stepBy, playFrom, pausePlayback, setSpeed, resumeHere]);
 
   const g = gameRef.current;
+  const rp = replayRef.current;
+
+  // Die Wiedergabe zeigt statt des Spiels das aufgezeichnete Bild — samt Zahlen.
+  if (rp && tapeRef.current.length) {
+    const frames = tapeRef.current;
+    const frame = frames[rp.index];
+    const view = TetrisEngine.fromSnapshot(frame);
+    return html`<div class="app replaying">
+      <aside class="panel left">
+        <h2>Statistik</h2>
+        <${Stats} stats=${view.stats} />
+      </aside>
+
+      <div class="center">
+        <div class="stage">
+          <${Board} game=${view} />
+          <div class=${"replay-tag" + (frame.over ? " end" : "")}>
+            ${frame.over ? "Game Over" : "Wiedergabe"}
+          </div>
+        </div>
+        <${ReplayBar} frames=${frames} cur=${rp} canResume=${!frame.over}
+          onSeek=${seekTo} onStep=${stepBy} onPlay=${playFrom} onPause=${pausePlayback}
+          onSpeed=${setSpeed} onResume=${resumeHere} onClose=${closeReplay} />
+      </div>
+
+      <aside class="panel right">
+        <div class="box">
+          <h2>Punkte</h2><p class="big">${view.score}</p>
+        </div>
+        <div class="box row">
+          <div><h2>Level</h2><p class="big">${view.level}</p></div>
+          <div><h2>Reihen</h2><p class="big">${view.lines}</p></div>
+        </div>
+        <div class="box">
+          <h2>Nächster</h2>
+          <${Preview} type=${view.nextType} />
+        </div>
+        <${ReplayKeys} />
+      </aside>
+    </div>`;
+  }
 
   if (!g) {
     return html`<div class="app">
@@ -924,13 +1436,19 @@ function App() {
     <div class="stage">
       <${Board} game=${g} />
       ${g.paused && html`<div class="overlay small">
-        <h1>Pause</h1><p class="hint">P zum Weiterspielen</p></div>`}
+        <h1>Pause</h1>
+        <p class="hint">P zum Weiterspielen</p>
+        <button class="start small" disabled=${!tapeRef.current.length}
+          onClick=${openReplay}>Aufzeichnung ansehen</button>
+        <p class="hint">Taste R</p></div>`}
       ${g.over && html`<div class="overlay small">
         <h1>Game Over</h1>
         <p class="lead">${g.score} Punkte, ${g.lines} Reihen</p>
         <p class="hint seed-hint">Merkwort <b class="seed-word">${g.seedWord}</b></p>
         <button class="start" onClick=${() => startGame(g.startLevel, g.seedWord)}>Noch einmal</button>
-        <p class="hint">Enter spielt dieselbe Folge, Esc zurück zum Start</p></div>`}
+        <button class="start small" disabled=${!tapeRef.current.length}
+          onClick=${openReplay}>Aufzeichnung ansehen</button>
+        <p class="hint">Enter spielt dieselbe Folge, R zeigt die Aufzeichnung, Esc zurück</p></div>`}
     </div>
 
     <aside class="panel right">
@@ -956,6 +1474,7 @@ function App() {
         <p><kbd>↓</kbd> ein Feld tiefer</p>
         <p><kbd>Leer</kbd> fallen lassen</p>
         <p><kbd>P</kbd> Pause · <kbd>Esc</kbd> Ende</p>
+        <p><kbd>R</kbd> Aufzeichnung (in Pause)</p>
       </div>
     </aside>
   </div>`;

@@ -10,6 +10,26 @@ const TetrisEngine = (function () {
     return Array.from({ length: ROWS }, () => new Array(COLS).fill(null));
   }
 
+  // Das Feld als eine Zeichenkette — kurz genug, um es für jedes Bild zu sichern.
+  function boardToText(board) {
+    let s = "";
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) s += board[r][c] || ".";
+    }
+    return s;
+  }
+
+  function boardFromText(text) {
+    const board = emptyBoard();
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const ch = text.charAt(r * COLS + c);
+        if (ch !== ".") board[r][c] = ch;
+      }
+    }
+    return board;
+  }
+
   function collides(board, type, rot, x, y) {
     const cells = TetrisPieces.SHAPES[type][rot];
     for (let i = 0; i < cells.length; i++) {
@@ -43,6 +63,7 @@ const TetrisEngine = (function () {
       dropTimer: 0,
       clearRows: null,
       clearTimer: 0,
+      elapsed: 0,
       version: 0
     };
     state.nextType = state.rng.nextPiece();
@@ -173,6 +194,7 @@ const TetrisEngine = (function () {
 
   function update(state, dt) {
     if (state.over || state.paused) return;
+    state.elapsed += dt; // die gespielte Zeit; sie ist die Zeitachse der Aufzeichnung
     if (state.clearRows) {
       state.clearTimer -= dt;
       if (state.clearTimer <= 0) finishClear(state);
@@ -223,10 +245,58 @@ const TetrisEngine = (function () {
     return out;
   }
 
+  /* Eine vollständige Momentaufnahme: alles, was das Bild ausmacht, und dazu der
+     Zustand des Zufalls. Aus ihr lässt sich das Bild zeigen UND weiterspielen. */
+  function snapshot(state) {
+    return {
+      t: state.elapsed,
+      board: boardToText(state.board),
+      piece: state.piece
+        ? { type: state.piece.type, rot: state.piece.rot, x: state.piece.x, y: state.piece.y }
+        : null,
+      nextType: state.nextType,
+      score: state.score,
+      lines: state.lines,
+      level: state.level,
+      startLevel: state.startLevel,
+      seedWord: state.seedWord,
+      stats: Object.assign({}, state.stats),
+      over: state.over,
+      clearRows: state.clearRows ? state.clearRows.slice() : null,
+      clearTimer: state.clearTimer,
+      dropTimer: state.dropTimer,
+      rng: state.rng.getState()
+    };
+  }
+
+  // Aus einer Momentaufnahme wieder ein lebendiges Spiel — laufbereit, nicht pausiert.
+  function fromSnapshot(snap) {
+    return {
+      seedWord: snap.seedWord,
+      rng: NesRng.restore(snap.rng),
+      board: boardFromText(snap.board),
+      piece: snap.piece ? Object.assign({}, snap.piece) : null,
+      nextType: snap.nextType,
+      score: snap.score,
+      lines: snap.lines,
+      level: snap.level,
+      startLevel: snap.startLevel,
+      stats: Object.assign({}, snap.stats),
+      over: snap.over,
+      paused: false,
+      dropTimer: snap.dropTimer,
+      clearRows: snap.clearRows ? snap.clearRows.slice() : null,
+      clearTimer: snap.clearTimer,
+      elapsed: snap.t,
+      version: 0
+    };
+  }
+
   return {
     COLS: COLS, ROWS: ROWS,
     create: create, update: update,
     move: move, rotate: rotate, softDrop: softDrop, hardDrop: hardDrop,
-    togglePause: togglePause, renderCells: renderCells
+    togglePause: togglePause, renderCells: renderCells,
+    snapshot: snapshot, fromSnapshot: fromSnapshot
   };
 })();
