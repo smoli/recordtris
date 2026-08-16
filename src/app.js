@@ -41,7 +41,7 @@ function Stats({ stats }) {
   </div>`;
 }
 
-function StartScreen({ level, onLevel, onStart }) {
+function StartScreen({ level, onLevel, seed, onSeed, onStart }) {
   const levels = [];
   for (let i = 0; i <= 9; i++) levels.push(i);
   return html`<div class="overlay">
@@ -53,6 +53,15 @@ function StartScreen({ level, onLevel, onStart }) {
         <button key=${i} class=${"lvl" + (i === level ? " on" : "")}
           onClick=${() => onLevel(i)}>${i}</button>`)}
     </div>
+    <p class="label">Merkwort</p>
+    <div class="seed-row">
+      <input class="seed-input" type="text" value=${seed} spellcheck="false"
+        maxLength=${TetrisSeed.MAX_LEN} placeholder="Wort eingeben"
+        onInput=${(e) => onSeed(TetrisSeed.sanitizeInput(e.target.value))} />
+      <button class="dice" title="Neues Wort würfeln"
+        onClick=${() => onSeed(TetrisSeed.randomWord())}>🎲</button>
+    </div>
+    <p class="hint seed-hint">Dasselbe Wort spielt dieselbe Steinfolge.</p>
     <button class="start" onClick=${onStart}>Spiel starten</button>
     <p class="hint">Enter drücken geht auch</p>
   </div>`;
@@ -62,11 +71,13 @@ function App() {
   const gameRef = useRef(null);
   const heldRef = useRef({});
   const [startLevel, setStartLevel] = useState(0);
+  const [seedWord, setSeedWord] = useState(() => TetrisSeed.randomWord());
   const [, bump] = useState(0);
 
-  const startGame = useCallback((lvl) => {
+  const startGame = useCallback((lvl, word) => {
     heldRef.current = {};
-    gameRef.current = TetrisEngine.create(lvl);
+    gameRef.current = TetrisEngine.create(lvl, word);
+    setSeedWord(gameRef.current.seedWord); // ein gewürfeltes Wort bleibt sichtbar
     bump((v) => v + 1);
   }, []);
 
@@ -119,16 +130,18 @@ function App() {
 
     function onDown(e) {
       const k = e.key;
-      if (k === " " || k.indexOf("Arrow") === 0) e.preventDefault();
+      // Im Eingabefeld gehören die Tasten dem Anwender, nicht dem Spiel.
+      const inField = e.target && e.target.tagName === "INPUT";
+      if (!inField && (k === " " || k.indexOf("Arrow") === 0)) e.preventDefault();
       if (e.repeat) return;
       const g = gameRef.current;
 
       if (!g) {
-        if (k === "Enter" || k === " ") startGame(startLevel);
+        if (k === "Enter" || (k === " " && !inField)) startGame(startLevel, seedWord);
         return;
       }
       if (g.over) {
-        if (k === "Enter") startGame(g.startLevel);
+        if (k === "Enter") startGame(g.startLevel, g.seedWord);
         else if (k === "Escape") quit();
         return;
       }
@@ -161,7 +174,7 @@ function App() {
       window.removeEventListener("keyup", onUp);
       window.removeEventListener("blur", onBlur);
     };
-  }, [startLevel, startGame, quit]);
+  }, [startLevel, seedWord, startGame, quit]);
 
   const g = gameRef.current;
 
@@ -169,7 +182,8 @@ function App() {
     return html`<div class="app">
       <div class="stage intro">
         <${StartScreen} level=${startLevel} onLevel=${setStartLevel}
-          onStart=${() => startGame(startLevel)} />
+          seed=${seedWord} onSeed=${setSeedWord}
+          onStart=${() => startGame(startLevel, seedWord)} />
       </div>
     </div>`;
   }
@@ -187,8 +201,9 @@ function App() {
       ${g.over && html`<div class="overlay small">
         <h1>Game Over</h1>
         <p class="lead">${g.score} Punkte, ${g.lines} Reihen</p>
-        <button class="start" onClick=${() => startGame(g.startLevel)}>Noch einmal</button>
-        <p class="hint">Enter für neu, Esc zurück zum Start</p></div>`}
+        <p class="hint seed-hint">Merkwort <b class="seed-word">${g.seedWord}</b></p>
+        <button class="start" onClick=${() => startGame(g.startLevel, g.seedWord)}>Noch einmal</button>
+        <p class="hint">Enter spielt dieselbe Folge, Esc zurück zum Start</p></div>`}
     </div>
 
     <aside class="panel right">
@@ -202,6 +217,10 @@ function App() {
       <div class="box">
         <h2>Nächster</h2>
         <${Preview} type=${g.nextType} />
+      </div>
+      <div class="box">
+        <h2>Merkwort</h2>
+        <p class="seed-word">${g.seedWord}</p>
       </div>
       <div class="box keys">
         <h2>Tasten</h2>

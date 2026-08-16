@@ -21,11 +21,15 @@ const TetrisEngine = (function () {
     return false;
   }
 
-  function create(startLevel) {
+  /* Das Merkwort bestimmt den Startwert des Schieberegisters: dasselbe Wort
+     spielt dieselbe Steinfolge. Fehlt es, entsteht eines zufällig. */
+  function create(startLevel, seedWord) {
     const stats = {};
     TetrisPieces.TYPES.forEach((t) => { stats[t] = 0; });
+    const word = TetrisSeed.normalize(seedWord) ? TetrisSeed.sanitizeInput(seedWord) : TetrisSeed.randomWord();
     const state = {
-      rng: NesRng.create(1 + Math.floor(Math.random() * 0xfffe)),
+      seedWord: word,
+      rng: NesRng.create(TetrisSeed.toRegister(word)),
       board: emptyBoard(),
       piece: null,
       nextType: null,

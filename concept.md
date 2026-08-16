@@ -17,6 +17,8 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
 - `src/index.html` — Einstieg, lädt Preact (`morphos:lib`) und die vier Bausteine.
 - `src/rng.js` — der Zufall des Originals: das 16-Bit-Schieberegister und das
   Auswahlverfahren.
+- `src/seed.js` — das Merkwort: Wort zu Startwert des Registers, und das Würfeln
+  eines aussprechbaren Wortes.
 - `src/pieces.js` — die sieben Steine mit ihren vier Drehlagen, die Falltempo-Tabelle
   und die Punktetabelle.
 - `src/engine.js` — Spielfeld, Kollision, Einrasten, Reihenauflösung, Level.
@@ -36,8 +38,16 @@ verwendet wird das obere Byte. Die Steinwahl addiert dazu einen Zähler aller bi
 gezogenen Steine und schneidet auf 0–7. Trifft es die leere achte Stelle oder
 denselben Stein wie zuletzt, gibt es genau einen zweiten Wurf, verschoben gegen den
 letzten Stein. Wiederholungen werden dadurch seltener — aber nicht unmöglich.
-Der Startwert des Registers ist zufällig (die Konsole erreicht dasselbe, indem sie
-das Register im Titelbild weiterlaufen lässt).
+
+**Ein Wort als Startwert.** Den Startwert des Registers bestimmt ein Merkwort: Die
+Zeichen des Wortes laufen durch eine FNV-1a-Streuung, das Ergebnis wird auf 16 Bit
+gefaltet. Damit spielt dasselbe Wort immer dieselbe Steinfolge — dieselbe Partie
+lässt sich wiederholen oder mit anderen vergleichen. Ein Wort statt einer Zahl,
+weil man es sich merken und weitersagen kann. Vor dem Vergleich wird
+kleingeschrieben, Umlaute werden ausgeschrieben und alles außer Buchstaben und
+Ziffern entfällt; "Grün!" und "gruen" sind also dieselbe Partie. Wer keines eingibt,
+bekommt ein gewürfeltes aus Silben (Anlaut plus Kern, zwei oder drei Silben) — es
+steht danach im Feld und in der Seitenspalte, kann also nachträglich notiert werden.
 
 **Startlagen und Falltempo wie im Original.** Die Steine erscheinen mit der flachen
 Seite nach oben, mittig. Die Tabelle der Bilder pro Feld (48 bei Level 0 bis 1 ab

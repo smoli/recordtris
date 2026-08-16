@@ -239,6 +239,54 @@ kbd {
   font-weight: 700;
 }
 
+/* --- Merkwort --- */
+
+.seed-row {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  max-width: clamp(200px, calc(var(--cell) * 7), 330px);
+}
+
+.seed-input {
+  flex: 1;
+  min-width: 0;
+  padding: clamp(6px, calc(var(--cell) * 0.2), 11px) 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #1a2130;
+  color: var(--ink);
+  font: inherit;
+  font-size: clamp(13px, calc(var(--cell) * 0.44), 17px);
+  letter-spacing: .06em;
+  text-align: center;
+}
+.seed-input:focus { outline: none; border-color: var(--accent); }
+.seed-input::placeholder { color: var(--dim); letter-spacing: normal; }
+
+.dice {
+  flex: none;
+  width: clamp(34px, calc(var(--cell) * 1.1), 46px);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #1a2130;
+  font-size: clamp(14px, calc(var(--cell) * 0.46), 19px);
+  line-height: 1;
+  cursor: pointer;
+}
+.dice:hover { border-color: var(--accent); }
+
+.seed-hint { margin-bottom: 10px; }
+
+.seed-word {
+  margin: 0;
+  font-size: clamp(13px, calc(var(--cell) * 0.5), 20px);
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
 .start {
   padding: clamp(9px, calc(var(--cell) * 0.3), 14px) clamp(22px, calc(var(--cell) * 0.75), 34px);
   border: none;

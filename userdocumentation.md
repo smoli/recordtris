@@ -12,6 +12,17 @@ Beim Start wählst du das **Startlevel** (0 bis 9). Je höher, desto schneller f
 die Steine von Anfang an — und desto mehr Punkte bringt jede Reihe. Dann auf
 **Spiel starten** klicken oder Enter drücken.
 
+Darunter steht das **Merkwort**. Es bestimmt, welche Steine kommen: Mit demselben
+Wort fällt jedes Mal dieselbe Folge — gut, um eine Partie zu wiederholen, bis sie
+sitzt, oder um mit jemand anderem dieselbe Partie zu spielen und die Punkte zu
+vergleichen. Beim Öffnen steht dort ein gewürfeltes Wort; du kannst es überschreiben
+oder mit dem Würfel 🎲 ein neues holen. Erlaubt sind Buchstaben und Ziffern, bis zu
+sechzehn Zeichen. Groß- und Kleinschreibung macht keinen Unterschied.
+
+Während des Spiels steht das Wort rechts in der Spalte, nach dem Spielende auch in
+der Einblendung — du kannst es dir also noch notieren, wenn die Partie gut lief.
+**Noch einmal** und Enter starten dieselbe Folge erneut.
+
 Wenn die Tasten nicht reagieren, einmal ins Spielfeld klicken.
 
 ## Tasten
@@ -25,7 +36,7 @@ Wenn die Tasten nicht reagieren, einmal ins Spielfeld klicken.
 | Leertaste | sofort ganz nach unten fallen lassen |
 | P | Pause und weiter |
 | Esc | Spiel beenden, zurück zum Startbildschirm |
-| Enter | nach dem Spielende ein neues Spiel |
+| Enter | nach dem Spielende noch einmal dieselbe Steinfolge |
 
 Der blasse Umriss unten im Feld zeigt, wo der Stein landen wird.
 
