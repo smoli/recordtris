@@ -58,6 +58,8 @@ const TetrisEngine = (function () {
       level: startLevel,
       startLevel: startLevel,
       stats: stats,
+      clears: [0, 0, 0, 0, 0], // wie oft 1, 2, 3, 4 Reihen auf einmal fielen
+      resumed: false,          // wurde in dieser Partie aus der Aufzeichnung wiedereingestiegen?
       over: false,
       paused: false,
       dropTimer: 0,
@@ -183,6 +185,7 @@ const TetrisEngine = (function () {
     while (kept.length < ROWS) kept.unshift(new Array(COLS).fill(null));
     state.board = kept;
     state.lines += rows.length;
+    state.clears[rows.length]++;
     state.score += TetrisPieces.LINE_SCORE[rows.length] * (state.level + 1);
     state.level = state.startLevel + Math.floor(state.lines / 10);
     spawn(state);
@@ -261,6 +264,8 @@ const TetrisEngine = (function () {
       startLevel: state.startLevel,
       seedWord: state.seedWord,
       stats: Object.assign({}, state.stats),
+      clears: state.clears.slice(),
+      resumed: state.resumed,
       over: state.over,
       clearRows: state.clearRows ? state.clearRows.slice() : null,
       clearTimer: state.clearTimer,
@@ -282,6 +287,8 @@ const TetrisEngine = (function () {
       level: snap.level,
       startLevel: snap.startLevel,
       stats: Object.assign({}, snap.stats),
+      clears: snap.clears ? snap.clears.slice() : [0, 0, 0, 0, 0],
+      resumed: !!snap.resumed,
       over: snap.over,
       paused: false,
       dropTimer: snap.dropTimer,

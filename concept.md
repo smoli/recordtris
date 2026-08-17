@@ -25,9 +25,12 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
   Ein einfacher Zustandsobjekt-Baum, der von außen verändert wird; dazu die
   Momentaufnahme (`snapshot`) und ihre Umkehrung (`fromSnapshot`).
 - `src/replay.js` — das Band der Aufzeichnung und der Abspielkopf.
+- `src/highscores.js` — die Bestenliste: Lesen und Schreiben der Datei, das Bilden
+  der Einträge und ihre Gruppierung nach dem Merkwort.
 - `src/gameui.js` — die Ansichten des Spiels: Feld, Vorschau, Statistik, Startbild.
 - `src/replayui.js` — die Bedienleiste der Wiedergabe.
-- `src/app.js` — Zustand, Tastensteuerung, Bildtakt, Aufzeichnung.
+- `src/scoresui.js` — die Ansicht der Bestenliste.
+- `src/app.js` — Zustand, Tastensteuerung, Bildtakt, Aufzeichnung, Eintrag ins Ergebnis.
 - `src/style.css` — Aussehen.
 
 Der Spielzustand liegt bewusst nicht in einem Preact-State, sondern in einer Ref:
@@ -88,6 +91,23 @@ Abspielen läuft dadurch im Tempo der Partie, wahlweise vorwärts oder rückwär
 mit einem Faktor von ¼ bis 4. Ein Bild, in dem das Spiel schon verloren ist, lässt
 sich nicht fortsetzen.
 
-**Kein Speichern.** Das Spiel hält keinen Zustand über einen Neustart hinaus — keine
-Bestenliste, keine Aufzeichnung als Datei. Das Band lebt nur so lange wie die Partie
-und wird mit jedem neuen Spiel verworfen.
+**Die Bestenliste gehört dem Merkwort.** Jede Partie, die mit "Game Over" endet, wird
+als ein Eintrag in `tetris-highscores.json` im Datenordner festgehalten: Zeitpunkt,
+Punkte, Reihen, Level und Startlevel, Spieldauer, wie oft eine, zwei, drei oder vier
+Reihen auf einmal fielen, und wie oft jede Steinsorte kam. Die Datei ist eine flache
+Liste aller Partien — nicht ein vorgerechnetes Ergebnis —, damit sich jede Sicht
+daraus ableiten lässt und nichts verloren geht.
+
+Zusammengefasst wird beim Anzeigen: gruppiert nach dem normalisierten Merkwort, denn
+es bestimmt die Steinfolge, also die Aufgabe. Voreingestellt zeigt jede Zeile den
+besten Wert dieses Wortes und die Zahl der Partien; die einzelnen Partien mit allen
+Zahlen stehen daneben. Wer dieselbe Aufgabe zehnmal spielt, sieht daran seinen
+Fortschritt. Die Liste wird beim Öffnen der App gelesen und nach jeder beendeten
+Partie geschrieben; fehlt der Datenordner, lebt sie nur in dieser Sitzung weiter und
+sagt das auch. Eine Partie, die aus der Aufzeichnung heraus fortgesetzt wurde, trägt
+den Vermerk des Wiedereinstiegs — ihr Ergebnis ist mit einem durchgespielten nicht
+vergleichbar.
+
+**Sonst kein Speichern.** Außer der Bestenliste hält das Spiel keinen Zustand über
+einen Neustart hinaus. Das Band der Aufzeichnung lebt nur so lange wie die Partie und
+wird mit jedem neuen Spiel verworfen.

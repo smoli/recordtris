@@ -34,7 +34,7 @@ function Stats({ stats }) {
   </div>`;
 }
 
-function StartScreen({ level, onLevel, seed, onSeed, onStart }) {
+function StartScreen({ level, onLevel, seed, onSeed, summary, onScores, onStart }) {
   const levels = [];
   for (let i = 0; i <= 9; i++) levels.push(i);
   return html`<div class="overlay">
@@ -54,8 +54,12 @@ function StartScreen({ level, onLevel, seed, onSeed, onStart }) {
       <button class="dice" title="Neues Wort würfeln"
         onClick=${() => onSeed(TetrisSeed.randomWord())}>🎲</button>
     </div>
-    <p class="hint seed-hint">Dasselbe Wort spielt dieselbe Steinfolge.</p>
+    ${summary
+      ? html`<p class="hint seed-hint">Bestwert <b>${summary.best.score}</b> aus
+          ${summary.plays === 1 ? "1 Partie" : summary.plays + " Partien"}</p>`
+      : html`<p class="hint seed-hint">Dasselbe Wort spielt dieselbe Steinfolge.</p>`}
     <button class="start" onClick=${onStart}>Spiel starten</button>
-    <p class="hint">Enter drücken geht auch</p>
+    <button class="start small" onClick=${onScores}>Bestenliste</button>
+    <p class="hint">Enter startet · H zeigt die Bestenliste</p>
   </div>`;
 }

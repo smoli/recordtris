@@ -36,6 +36,7 @@ Wenn die Tasten nicht reagieren, einmal ins Spielfeld klicken.
 | Leertaste | sofort ganz nach unten fallen lassen |
 | P | Pause und weiter |
 | R | in der Pause oder nach dem Spielende: Aufzeichnung ansehen |
+| H | Bestenliste öffnen (auf dem Startbildschirm, in der Pause, nach dem Spielende) |
 | Esc | Spiel beenden, zurück zum Startbildschirm |
 | Enter | nach dem Spielende noch einmal dieselbe Steinfolge |
 
@@ -76,6 +77,35 @@ Verlauf ab dort ist damit weg.
 Ein Bild, in dem das Spiel schon verloren ist, lässt sich nicht fortsetzen — spule
 ein Stück zurück, dann geht es wieder.
 
+## Bestenliste
+
+Jede Partie, die mit *Game Over* endet, wird von selbst festgehalten — du musst nichts
+tun. Der Knopf **Bestenliste** (oder die Taste **H**) zeigt sie: auf dem
+Startbildschirm, in der Pause und nach dem Spielende.
+
+Links steht jedes Merkwort, das du je gespielt hast, mit seinem **besten Punktestand**
+und der Zahl der Partien; die stärksten Wörter stehen oben. Ein Klick auf ein Wort
+zeigt rechts alle Partien dazu, die beste zuerst, und zu jeder:
+
+- **Datum und Uhrzeit** der Partie und die erreichten **Punkte**
+- **Reihen**, **Level** (samt Startlevel) und die **Dauer**
+- wie oft du **Einfach**, **Doppel**, **Dreifach** und **Tetris** geräumt hast
+- wie oft jede **Steinsorte** kam
+
+Weil dasselbe Merkwort immer dieselbe Steinfolge bringt, sind die Partien eines Wortes
+direkt vergleichbar: Spiel dieselbe Aufgabe mehrmals und sieh zu, wie der Bestwert
+steigt. Auf dem Startbildschirm steht unter dem Wortfeld gleich, was dein Bestwert für
+dieses Wort ist und wie oft du es gespielt hast; nach dem Spielende siehst du deinen
+Platz — oder die Meldung, dass es ein neuer Bestwert war.
+
+Eine Partie, die du über *Hier weiterspielen* aus der Aufzeichnung fortgesetzt hast,
+wird ebenfalls eingetragen, aber mit dem Vermerk **↻ mit Wiedereinstieg gespielt** —
+sie ist mit einer durchgespielten Partie nicht ganz vergleichbar.
+
+Die Liste liegt als Datei `tetris-highscores.json` im Datenordner und bleibt damit
+über das Schließen der App hinaus erhalten. Ist kein Datenordner eingerichtet, sagt
+die Liste das oben an — sie gilt dann nur für die laufende Sitzung.
+
 ## Anzeigen
 
 - **Punkte** — eine Reihe zählt 40, zwei 100, drei 300, vier auf einmal 1200 —
@@ -96,7 +126,10 @@ Unterschied schnell — und sollte flacher stapeln.
 
 ## Grenzen
 
-Punktestände werden nicht gespeichert. Die Aufzeichnung gehört zur laufenden Partie:
-Ein neues Spiel oder Esc zum Startbildschirm verwirft sie, und sie lässt sich nicht
-als Datei ablegen oder weitergeben. Weitergeben lässt sich aber das Merkwort — damit
-spielt jemand anderes dieselbe Steinfolge.
+Gespeichert werden nur die Ergebnisse der Partien, nicht die Partien selbst: Die
+Aufzeichnung gehört zur laufenden Partie und lässt sich nicht ablegen. Aus der
+Bestenliste lässt sich nichts löschen. Ein Ergebnis wird nur eingetragen, wenn die
+Partie mit *Game Over* endet — brichst du mit Esc ab, zählt sie nicht.
+
+Ein neues Spiel oder Esc zum Startbildschirm verwirft die Aufzeichnung. Weitergeben
+lässt sich aber das Merkwort — damit spielt jemand anderes dieselbe Steinfolge.
