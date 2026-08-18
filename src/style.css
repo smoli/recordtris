@@ -1,8 +1,9 @@
 :root {
   /* Das Feld nimmt so viel Platz, wie Höhe und Breite hergeben. Der Breitenanteil
      ist das Großzügigere aus "Anteil der Breite" (schmale Fenster) und "Breite
-     abzüglich der beiden Spalten" (weite Fenster). */
-  --cell: clamp(16px, min(4.6vh, max(4.4vw, (100vw - 500px) / 10)), 60px);
+     abzüglich der beiden Spalten" (weite Fenster). Gerechnet wird mit zwölf
+     Feldern Breite: der Schacht zeigt links und rechts seine Wände mit. */
+  --cell: clamp(16px, min(4.6vh, max(3.8vw, (100vw - 500px) / 12)), 60px);
   --mini: calc(var(--cell) * 0.7);
   --bg: #0d1017;
   --panel: #161b26;
@@ -45,13 +46,21 @@ html, body {
 
 .stage {
   position: relative;
-  width: calc(var(--cell) * 10);
+  width: calc(var(--cell) * 12);
   height: calc(var(--cell) * 20);
   border: 2px solid var(--line);
   border-radius: 8px;
   background: #0a0d14;
   box-shadow: 0 20px 60px rgba(0, 0, 0, .55), inset 0 0 60px rgba(0, 0, 0, .6);
+  overflow: hidden;
   flex: none;
+}
+
+/* Die 3D-Szene füllt das Feld vollständig; ihre Größe steuert sie selbst. */
+.board3d {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* Der Startbildschirm braucht mehr Platz als ein schmales Feld hergibt. */
@@ -153,6 +162,13 @@ h2 {
 }
 .preview .cell { width: var(--mini); height: var(--mini); }
 .preview .cell.empty { border-color: transparent; }
+
+.preview3d {
+  display: block;
+  width: 100%;
+  height: calc(var(--mini) * 3.4);
+  margin-top: 2px;
+}
 
 .stats { display: flex; flex-direction: column; gap: 6px; }
 .stat { display: flex; align-items: center; gap: 8px; font-size: clamp(13px, calc(var(--cell) * 0.44), 17px); }
@@ -318,7 +334,7 @@ kbd {
 
 /* Unter dem Feld steht die Bedienleiste; das Feld gibt dafür etwas Höhe ab. */
 .app.replaying {
-  --cell: clamp(16px, min(3.2vh, max(4.4vw, (100vw - 520px) / 10)), 52px);
+  --cell: clamp(16px, min(3.2vh, max(3.8vw, (100vw - 520px) / 12)), 52px);
   overflow-y: auto;
 }
 
@@ -348,7 +364,7 @@ kbd {
 .replay-tag.end { color: var(--c-Z); border-color: var(--c-Z); }
 
 .replay-bar {
-  width: max(260px, calc(var(--cell) * 10));
+  width: max(260px, calc(var(--cell) * 12));
   display: flex;
   flex-direction: column;
   gap: 7px;
