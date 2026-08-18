@@ -8,33 +8,12 @@ function Cell({ cell }) {
   return html`<div class=${cls}></div>`;
 }
 
-function BoardFlat({ game }) {
+function Board({ game }) {
   const cells = TetrisEngine.renderCells(game);
   return html`<div class="board">${cells.map((c, i) => html`<${Cell} key=${i} cell=${c} />`)}</div>`;
 }
 
-/* Das Feld in drei Dimensionen. Der Zustand liegt in einer Ref, damit der eigene
-   Bildtakt der Szene ihn immer aktuell vorfindet — auch zwischen zwei Preact-
-   Durchläufen. Fehlt WebGL, tritt die flache Darstellung an seine Stelle: gespielt
-   werden kann in jedem Fall. */
-function Board({ game }) {
-  const canvas = preactHooks.useRef(null);
-  const live = preactHooks.useRef(game);
-  const [flat, setFlat] = preactHooks.useState(!TetrisGfx.available());
-  live.current = game;
-
-  preactHooks.useEffect(() => {
-    if (flat) return undefined;
-    const view = TetrisBoard3D.create(canvas.current, () => live.current);
-    if (!view) { setFlat(true); return undefined; }
-    return () => view.dispose();
-  }, [flat]);
-
-  if (flat) return html`<${BoardFlat} game=${game} />`;
-  return html`<canvas class="board3d" ref=${canvas}></canvas>`;
-}
-
-function PreviewFlat({ type }) {
+function Preview({ type }) {
   const n = TetrisPieces.SIZE[type];
   const cells = TetrisPieces.SHAPES[type][0];
   const filled = new Set(cells.map((p) => p[1] * n + p[0]));
@@ -43,29 +22,6 @@ function PreviewFlat({ type }) {
     grid.push(html`<div key=${i} class=${filled.has(i) ? "cell c-" + type : "cell empty"}></div>`);
   }
   return html`<div class="preview" style=${"grid-template-columns: repeat(" + n + ", var(--mini))"}>${grid}</div>`;
-}
-
-// Derselbe Stein wie im Feld, nur klein und langsam drehend.
-function Preview({ type }) {
-  const canvas = preactHooks.useRef(null);
-  const view = preactHooks.useRef(null);
-  const [flat, setFlat] = preactHooks.useState(!TetrisGfx.available());
-
-  preactHooks.useEffect(() => {
-    if (flat) return undefined;
-    const v = TetrisPreview3D.create(canvas.current);
-    if (!v) { setFlat(true); return undefined; }
-    view.current = v;
-    v.set(type);
-    return () => { view.current = null; v.dispose(); };
-  }, [flat]);
-
-  preactHooks.useEffect(() => {
-    if (view.current) view.current.set(type);
-  }, [type]);
-
-  if (flat) return html`<${PreviewFlat} type=${type} />`;
-  return html`<canvas class="preview3d" ref=${canvas}></canvas>`;
 }
 
 function Stats({ stats }) {

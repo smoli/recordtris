@@ -27,15 +27,6 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
 - `src/replay.js` — das Band der Aufzeichnung und der Abspielkopf.
 - `src/highscores.js` — die Bestenliste: Lesen und Schreiben der Datei, das Bilden
   der Einträge und ihre Gruppierung nach dem Merkwort.
-- `src/gfx.js` — die Bausteine der 3D-Darstellung: die Prüfung auf WebGL, die selbst
-  gezeichneten Texturen, die Werkstoffe der Steine und ihre Geometrien.
-- `src/gfx-arena.js` — der Schacht: Rückwand, Seitenwände, Boden, der leuchtende
-  Rahmen, das Sternenfeld und das Licht samt Farbstimmung je Level.
-- `src/gfx-fx.js` — was bei Ereignissen passiert: Splitter, Druckwellen, Fallspuren,
-  Blitz und das Wackeln der Kamera. Alles aus festen Vorräten.
-- `src/gfx-board.js` — die Szene des Spielfelds: sie gleicht ihre Steine an den
-  Spielzustand an, erkennt daraus die Ereignisse und führt die Kamera.
-- `src/gfx-preview.js` — die kleine Szene des nächsten Steins.
 - `src/gameui.js` — die Ansichten des Spiels: Feld, Vorschau, Statistik, Startbild.
 - `src/replayui.js` — die Bedienleiste der Wiedergabe.
 - `src/scoresui.js` — die Ansicht der Bestenliste.
@@ -82,39 +73,6 @@ Knöpfe rechnen daraus. Die Kantenlänge folgt dem knapperen der beiden Maße H�
 Breite, wobei die Breite abzüglich der beiden Seitenspalten zählt, sobald das mehr
 hergibt als ein fester Anteil der Fensterbreite. Nach unten bleibt sie bei 16 Pixeln,
 nach oben bei 60 — ein größeres Fenster wird also genutzt, ein kleines bleibt spielbar.
-Gerechnet wird mit zwölf Feldern Breite statt zehn: Der Schacht zeigt links und rechts
-seine Wände mit, dafür braucht die Bühne etwas mehr Platz als das Feld selbst.
-
-## Die Darstellung
-
-**Gespielt wird in einem Schacht, nicht auf einer Fläche.** Das Feld ist eine
-WebGL-Szene (three.js, als `morphos:lib` eingebettet): zehn mal zwanzig Einheiten
-groß, mit Rückwand, zwei Seitenwänden und Boden, dahinter ein Sternenfeld, davor ein
-leuchtender Rahmen. Ein Stein besteht aus zwei Körpern — einer dunklen, metallischen
-Fassung und einem selbst leuchtenden Kern darin; zusammen ergeben sie die
-abgeschrägte Kachel. Der fallende Stein trägt ein Licht seiner Farbe mit sich, das
-den Stapel unter ihm einfärbt, und wirft einen echten Schatten auf die Rückwand. Die
-Grundfarbe des Schachts wechselt mit jedem Level, im Spielende schlägt sie ins Rote um.
-
-**Die Szene liest den Spielzustand, sie verändert ihn nicht.** Sie hält ein eigenes
-Gitter aus Körpern und gleicht es bei jedem Bild an das Brett an. Auch die Ereignisse
-— ein Stein setzt auf, einer wurde fallen gelassen, Reihen verschwinden, das Level
-steigt — erkennt sie allein am Vergleich zweier aufeinanderfolgender Zustände; die
-Spiellogik weiß von der Darstellung nichts. Das ist der Grund, warum in der Wiedergabe
-dasselbe geschieht wie im Spiel, ohne dass es dafür einen zweiten Weg gäbe. Läuft die
-Zeit beim Spulen rückwärts oder springt sie weit, wird nur gestellt statt gespielt:
-kein Splitter, kein Wackeln.
-
-**Für Nachbearbeitung ist kein Platz.** Ein Nachleuchten (Bloom) gäbe es nur mit einer
-zweiten Zeichenstufe; stattdessen leuchten die Kerne aus sich selbst, und hinter dem
-fallenden Stein sowie über und unter dem Feld liegen additive Lichtflecken. Alles, was
-bei Ereignissen fliegt, blitzt und wackelt, kommt aus festen Vorräten, die beim Aufbau
-einmal entstehen — im Spiel wird kein Körper mehr erzeugt. Splitter verblassen nicht,
-sie schrumpfen: So genügt ein Werkstoff für alle statt einer je Splitter.
-
-**Die flache Darstellung bleibt als Rückfall.** Fehlt WebGL oder scheitert der Aufbau
-der Szene, treten die alten Gitter aus HTML-Feldern an ihre Stelle — Feld wie Vorschau.
-Gespielt werden kann in jedem Fall; verloren geht nur das Aussehen.
 
 **Die Partie wird mitgeschrieben.** Jedes Bild, das sich vom vorherigen unterscheidet,
 kommt als vollständige Momentaufnahme aufs Band: Feld, Stein, Zahlen, Statistik — und
