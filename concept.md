@@ -96,7 +96,11 @@ als ein Eintrag in `tetris-highscores.json` im Datenordner festgehalten: Zeitpun
 Punkte, Reihen, Level und Startlevel, Spieldauer, wie oft eine, zwei, drei oder vier
 Reihen auf einmal fielen, und wie oft jede Steinsorte kam. Die Datei ist eine flache
 Liste aller Partien — nicht ein vorgerechnetes Ergebnis —, damit sich jede Sicht
-daraus ableiten lässt und nichts verloren geht.
+daraus ableiten lässt und nichts verloren geht. Aus der Liste heraus lässt sich das
+gewählte Wort sofort wieder spielen — die Bestenliste ist damit nicht nur Rückblick,
+sondern der kürzeste Weg zur nächsten Runde derselben Aufgabe. Das Startlevel bleibt
+dabei das auf dem Startbildschirm gewählte; die Enter-Abkürzung gilt nur, wenn keine
+laufende Partie daran hängt.
 
 Zusammengefasst wird beim Anzeigen: gruppiert nach dem normalisierten Merkwort, denn
 es bestimmt die Steinfolge, also die Aufgabe. Voreingestellt zeigt jede Zeile den

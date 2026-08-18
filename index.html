@@ -527,6 +527,7 @@ kbd {
 }
 
 .detail-head {
+  justify-content: space-between;
   display: flex;
   align-items: baseline;
   gap: 12px;
@@ -540,6 +541,17 @@ kbd {
   padding: 10px 13px;
 }
 .play.top { border-color: var(--accent); }
+
+/* Rechts in der Kopfzeile der Knopf, der dieses Wort noch einmal spielt. */
+.dh-word { min-width: 0; }
+.dh-play {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+.dh-play .hint { font-size: 12px; text-align: right; }
+.dh-play .start.small { white-space: nowrap; }
 
 .play-head {
   display: flex;
@@ -1370,11 +1382,23 @@ function PlayCard({ entry, rank }) {
   </div>`;
 }
 
-function ScoresScreen({ store, seed, onClose }) {
-  const { useState } = preactHooks;
+function ScoresScreen({ store, seed, startLevel, running, onPlay, onClose }) {
+  const { useState, useEffect } = preactHooks;
   const groups = TetrisScores.bySeed(store);
   const [sel, setSel] = useState(TetrisSeed.normalize(seed));
   const active = groups.filter((g) => g.key === sel)[0] || groups[0] || null;
+  const word = active ? active.seed : "";
+
+  /* Enter spielt das gewählte Wort noch einmal — aber nur, wenn dabei keine laufende
+     Partie verloren geht; die will man nicht versehentlich wegwerfen. */
+  useEffect(() => {
+    if (!word || running) return;
+    function onKey(e) {
+      if (e.key === "Enter" && !e.repeat) onPlay(word);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [word, running, onPlay]);
 
   return html`<div class="scores">
     <div class="scores-head">
@@ -1401,11 +1425,23 @@ function ScoresScreen({ store, seed, onClose }) {
 
       <div class="detail-col">
         <div class="detail-head">
-          <p class="seed-word">${active.seed}</p>
-          <p class="hint tight">
-            ${active.plays} ${active.plays === 1 ? "Partie" : "Partien"}
-            · Bestwert ${active.best.score} Punkte
-          </p>
+          <div class="dh-word">
+            <p class="seed-word">${active.seed}</p>
+            <p class="hint tight">
+              ${active.plays} ${active.plays === 1 ? "Partie" : "Partien"}
+              · Bestwert ${active.best.score} Punkte
+            </p>
+          </div>
+          <div class="dh-play">
+            <button class="start small" onClick=${() => onPlay(active.seed)}>
+              ▶ Dieses Wort spielen
+            </button>
+            <p class=${"hint tight" + (running ? " warn" : "")}>
+              ${running
+                ? "Startlevel " + startLevel + " · verwirft die laufende Partie"
+                : "Startlevel " + startLevel + " · Taste Enter"}
+            </p>
+          </div>
         </div>
         ${active.entries.map((e, i) => html`
           <${PlayCard} key=${e.date + ":" + i} entry=${e} rank=${i + 1} />`)}
@@ -1665,6 +1701,17 @@ function App() {
   const openScores = useCallback(() => setShowScores(true), []);
   const closeScores = useCallback(() => setShowScores(false), []);
 
+  /* Aus der Bestenliste heraus dieselbe Steinfolge noch einmal: Das Wort wird
+     übernommen, die Liste schließt, und ein neues Spiel beginnt damit — eine
+     laufende Partie ist danach verworfen. Das Startlevel bleibt das gewählte. */
+  const playSeed = useCallback((word) => {
+    const clean = TetrisSeed.sanitizeInput(word);
+    if (!clean) return;
+    setSeedWord(clean);
+    setShowScores(false);
+    startGame(startLevel, clean);
+  }, [startLevel, startGame]);
+
   // Bildtakt: Schwerkraft, Tastenwiederholung, Aufzeichnung — oder die Wiedergabe.
   useEffect(() => {
     let raf = 0;
@@ -1871,7 +1918,9 @@ function App() {
   // Die Bestenliste tritt an die Stelle von allem anderen, solange sie offen ist.
   if (showScores) {
     return html`<div class="app scores-view">
-      <${ScoresScreen} store=${store} seed=${g ? g.seedWord : seedWord} onClose=${closeScores} />
+      <${ScoresScreen} store=${store} seed=${g ? g.seedWord : seedWord}
+        startLevel=${startLevel} running=${!!(g && !g.over)}
+        onPlay=${playSeed} onClose=${closeScores} />
     </div>`;
   }
 

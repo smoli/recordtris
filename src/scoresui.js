@@ -27,11 +27,23 @@ function PlayCard({ entry, rank }) {
   </div>`;
 }
 
-function ScoresScreen({ store, seed, onClose }) {
-  const { useState } = preactHooks;
+function ScoresScreen({ store, seed, startLevel, running, onPlay, onClose }) {
+  const { useState, useEffect } = preactHooks;
   const groups = TetrisScores.bySeed(store);
   const [sel, setSel] = useState(TetrisSeed.normalize(seed));
   const active = groups.filter((g) => g.key === sel)[0] || groups[0] || null;
+  const word = active ? active.seed : "";
+
+  /* Enter spielt das gewählte Wort noch einmal — aber nur, wenn dabei keine laufende
+     Partie verloren geht; die will man nicht versehentlich wegwerfen. */
+  useEffect(() => {
+    if (!word || running) return;
+    function onKey(e) {
+      if (e.key === "Enter" && !e.repeat) onPlay(word);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [word, running, onPlay]);
 
   return html`<div class="scores">
     <div class="scores-head">
@@ -58,11 +70,23 @@ function ScoresScreen({ store, seed, onClose }) {
 
       <div class="detail-col">
         <div class="detail-head">
-          <p class="seed-word">${active.seed}</p>
-          <p class="hint tight">
-            ${active.plays} ${active.plays === 1 ? "Partie" : "Partien"}
-            · Bestwert ${active.best.score} Punkte
-          </p>
+          <div class="dh-word">
+            <p class="seed-word">${active.seed}</p>
+            <p class="hint tight">
+              ${active.plays} ${active.plays === 1 ? "Partie" : "Partien"}
+              · Bestwert ${active.best.score} Punkte
+            </p>
+          </div>
+          <div class="dh-play">
+            <button class="start small" onClick=${() => onPlay(active.seed)}>
+              ▶ Dieses Wort spielen
+            </button>
+            <p class=${"hint tight" + (running ? " warn" : "")}>
+              ${running
+                ? "Startlevel " + startLevel + " · verwirft die laufende Partie"
+                : "Startlevel " + startLevel + " · Taste Enter"}
+            </p>
+          </div>
         </div>
         ${active.entries.map((e, i) => html`
           <${PlayCard} key=${e.date + ":" + i} entry=${e} rank=${i + 1} />`)}

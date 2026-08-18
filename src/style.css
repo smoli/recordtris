@@ -510,6 +510,7 @@ kbd {
 }
 
 .detail-head {
+  justify-content: space-between;
   display: flex;
   align-items: baseline;
   gap: 12px;
@@ -523,6 +524,17 @@ kbd {
   padding: 10px 13px;
 }
 .play.top { border-color: var(--accent); }
+
+/* Rechts in der Kopfzeile der Knopf, der dieses Wort noch einmal spielt. */
+.dh-word { min-width: 0; }
+.dh-play {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+.dh-play .hint { font-size: 12px; text-align: right; }
+.dh-play .start.small { white-space: nowrap; }
 
 .play-head {
   display: flex;

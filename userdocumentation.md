@@ -38,7 +38,7 @@ Wenn die Tasten nicht reagieren, einmal ins Spielfeld klicken.
 | R | in der Pause oder nach dem Spielende: Aufzeichnung ansehen |
 | H | Bestenliste öffnen (auf dem Startbildschirm, in der Pause, nach dem Spielende) |
 | Esc | Spiel beenden, zurück zum Startbildschirm |
-| Enter | nach dem Spielende noch einmal dieselbe Steinfolge |
+| Enter | nach dem Spielende noch einmal dieselbe Steinfolge; in der Bestenliste das gewählte Wort spielen |
 
 Der blasse Umriss unten im Feld zeigt, wo der Stein landen wird.
 
@@ -97,6 +97,14 @@ direkt vergleichbar: Spiel dieselbe Aufgabe mehrmals und sieh zu, wie der Bestwe
 steigt. Auf dem Startbildschirm steht unter dem Wortfeld gleich, was dein Bestwert für
 dieses Wort ist und wie oft du es gespielt hast; nach dem Spielende siehst du deinen
 Platz — oder die Meldung, dass es ein neuer Bestwert war.
+
+Rechts über den Partien steht der Knopf **▶ Dieses Wort spielen**: Er startet auf der
+Stelle ein neues Spiel mit genau diesem Merkwort — also mit derselben Steinfolge.
+Kommst du vom Startbildschirm oder vom Spielende, genügt auch **Enter**. Darunter
+steht, mit welchem Startlevel gestartet wird; das ist das, was du auf dem
+Startbildschirm gewählt hast. Öffnest du die Liste aus der **Pause** heraus, weist der
+Hinweis darauf hin, dass die laufende Partie dabei verworfen wird — dort gibt es
+absichtlich keine Enter-Abkürzung.
 
 Eine Partie, die du über *Hier weiterspielen* aus der Aufzeichnung fortgesetzt hast,
 wird ebenfalls eingetragen, aber mit dem Vermerk **↻ mit Wiedereinstieg gespielt** —

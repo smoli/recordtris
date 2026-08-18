@@ -80,6 +80,17 @@ function App() {
   const openScores = useCallback(() => setShowScores(true), []);
   const closeScores = useCallback(() => setShowScores(false), []);
 
+  /* Aus der Bestenliste heraus dieselbe Steinfolge noch einmal: Das Wort wird
+     übernommen, die Liste schließt, und ein neues Spiel beginnt damit — eine
+     laufende Partie ist danach verworfen. Das Startlevel bleibt das gewählte. */
+  const playSeed = useCallback((word) => {
+    const clean = TetrisSeed.sanitizeInput(word);
+    if (!clean) return;
+    setSeedWord(clean);
+    setShowScores(false);
+    startGame(startLevel, clean);
+  }, [startLevel, startGame]);
+
   // Bildtakt: Schwerkraft, Tastenwiederholung, Aufzeichnung — oder die Wiedergabe.
   useEffect(() => {
     let raf = 0;
@@ -286,7 +297,9 @@ function App() {
   // Die Bestenliste tritt an die Stelle von allem anderen, solange sie offen ist.
   if (showScores) {
     return html`<div class="app scores-view">
-      <${ScoresScreen} store=${store} seed=${g ? g.seedWord : seedWord} onClose=${closeScores} />
+      <${ScoresScreen} store=${store} seed=${g ? g.seedWord : seedWord}
+        startLevel=${startLevel} running=${!!(g && !g.over)}
+        onPlay=${playSeed} onClose=${closeScores} />
     </div>`;
   }
 
