@@ -178,11 +178,12 @@ body::after {
               inset 0 -3px 7px rgba(0, 0, 0, .45);
 }
 
-/* Die Vorschau zeigt einen Stein, kein Raster: Die Felder stoßen ohne Fuge und
-   ohne eigene Ecken aneinander, damit sie zu einer Form zusammenwachsen. */
+/* Die Kacheln der Vorschau sehen aus wie die auf dem Feld: heller Grat innen,
+   dunkler Fuß, eine schmale Fuge zum Nachbarfeld. */
 .preview .cell:not(.empty) {
-  border-radius: 0;
-  box-shadow: 0 0 12px currentColor;
+  box-shadow: 0 0 12px currentColor,
+              inset 0 0 0 2px rgba(255, 255, 255, .3),
+              inset 0 -3px 7px rgba(0, 0, 0, .45);
 }
 
 /* --- Seitenspalten --- */
@@ -240,7 +241,7 @@ h2 {
 .preview {
   display: grid;
   justify-content: center;
-  gap: 0;
+  gap: 2px;
   padding: 9px 0 5px;
 }
 .preview .cell { width: var(--mini); height: var(--mini); }
@@ -1511,99 +1512,64 @@ const TetrisPaint = (function () {
     c.closePath();
   }
 
-  /* Damit vier Felder ein Stein werden statt vier Kästchen: Eine Maske sagt für
-     jede Zelle, an welchen Seiten ein Nachbar desselben Steins liegt. Dort reicht
-     die Kachel bis an den Rand der Zelle, die Ecke bleibt spitz und der Lichtgrat
-     läuft durch — die Felder wachsen zu einer Form zusammen. */
-  const MASK = { UP: 1, RIGHT: 2, DOWN: 4, LEFT: 8 };
-  const BLEED = 0.5; // Überlappung gegen Haarrisse an den zusammengewachsenen Kanten
+  /* Ein Kästchen je Feld — das ursprüngliche Aussehen des Stapels: flache Farbe,
+     eine schmale Fuge zum Nachbarn, ein heller Grat rundum, ein dunkler Fuß. Ein
+     Tetromino bleibt dadurch als vier Kästchen erkennbar. */
+  const PAD = 0.035; // Fuge zum Nachbarfeld, Anteil der Kantenlänge
+  const RAD = 0.085; // Eckenrundung, Anteil der Kantenlänge
 
-  function tileBox(x, y, s, pad, mask) {
-    const m = mask || 0;
-    return [
-      x + ((m & MASK.LEFT) ? -BLEED : pad),
-      y + ((m & MASK.UP) ? -BLEED : pad),
-      x + s - ((m & MASK.RIGHT) ? -BLEED : pad),
-      y + s - ((m & MASK.DOWN) ? -BLEED : pad)
-    ];
+  function tileBox(x, y, s, pad) {
+    return [x + pad, y + pad, x + s - pad, y + s - pad];
   }
 
-  function tileRadii(r, mask) {
-    const m = mask || 0;
-    return [
-      (m & (MASK.UP | MASK.LEFT)) ? 0 : r,
-      (m & (MASK.UP | MASK.RIGHT)) ? 0 : r,
-      (m & (MASK.DOWN | MASK.RIGHT)) ? 0 : r,
-      (m & (MASK.DOWN | MASK.LEFT)) ? 0 : r
-    ];
-  }
-
-  /* Eine Kachel: Verlauf von der hellen Kante zum dunklen Fuß und ein Grat aus
-     Licht, der nur an den AUSSEN liegenden Kanten sichtbar ist. glow > 0 legt
-     einen Schein darum; frame ist der Rahmen, über den der Verlauf laufen soll
-     (das ganze Tetromino statt der einzelnen Zelle) — fehlt er, gilt die Zelle. */
-  function block(c, x, y, s, hex, alpha, glow, mask, frame) {
-    const m = mask || 0;
-    const b = tileBox(x, y, s, s * 0.05, m);
+  /* Eine Kachel: flache Farbe, ein heller Grat entlang der Kante und ein dunkler
+     Hauch am Fuß. glow > 0 legt zusätzlich einen Schein darum. */
+  function block(c, x, y, s, hex, alpha, glow) {
+    const b = tileBox(x, y, s, s * PAD);
     const w = b[2] - b[0], h = b[3] - b[1];
     if (w <= 0 || h <= 0) return;
-    const rad = tileRadii(s * 0.26, m);
-    const f = frame || [x, y, s, s];
+    const r = s * RAD;
     c.save();
     c.globalAlpha = alpha;
     if (glow > 0) { c.shadowColor = col(hex, 0.85); c.shadowBlur = s * glow; }
-    const g = c.createLinearGradient(f[0], f[1], f[0] + f[2] * 0.4, f[1] + f[3]);
-    g.addColorStop(0, shade(hex, 1.5));
-    g.addColorStop(0.45, shade(hex, 1.02));
-    g.addColorStop(1, shade(hex, 0.5));
-    c.fillStyle = g;
-    roundRect(c, b[0], b[1], w, h, rad);
+    c.fillStyle = shade(hex, 1);
+    roundRect(c, b[0], b[1], w, h, r);
     c.fill();
     c.shadowBlur = 0;
 
-    /* Der Grat wird über die geteilten Kanten hinaus gezogen und dann auf die
-       Zelle beschnitten: So verschwindet er dort ganz, statt eine Naht zu setzen. */
-    const lw = Math.max(1, s * 0.06);
-    c.beginPath();
-    c.rect(b[0], b[1], w, h);
+    /* Fuß und Grat liegen INNEN: auf die Kachel beschnitten bleibt vom doppelt
+       breiten Strich nur die innere Hälfte stehen — wie ein innerer Schatten. */
+    roundRect(c, b[0], b[1], w, h, r);
     c.clip();
-    const sx0 = (m & MASK.LEFT) ? b[0] - lw : b[0] + lw / 2;
-    const sy0 = (m & MASK.UP) ? b[1] - lw : b[1] + lw / 2;
-    const sx1 = (m & MASK.RIGHT) ? b[2] + lw : b[2] - lw / 2;
-    const sy1 = (m & MASK.DOWN) ? b[3] + lw : b[3] - lw / 2;
-    c.lineWidth = lw;
-    c.strokeStyle = shade(hex, 1.9, 0.5);
-    roundRect(c, sx0, sy0, sx1 - sx0, sy1 - sy0, rad.map((v) => v - lw / 2));
+    const g = c.createLinearGradient(0, b[3] - h * 0.45, 0, b[3]);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(0,0,0,.45)");
+    c.fillStyle = g;
+    c.fillRect(b[0], b[1], w, h);
+    const lw = Math.max(1.2, s * 0.05);
+    c.lineWidth = lw * 2;
+    c.strokeStyle = "rgba(255,255,255,.3)";
+    roundRect(c, b[0], b[1], w, h, r);
     c.stroke();
     c.restore();
   }
 
-  // Der Schattenriss der Landestelle: gestrichelter Umriss um das ganze Tetromino.
-  function ghost(c, x, y, s, hex, alpha, mask) {
-    const m = mask || 0;
-    const b = tileBox(x, y, s, s * 0.12, m);
+  // Der Schattenriss der Landestelle: je Feld ein leerer Umriss.
+  function ghost(c, x, y, s, hex, alpha) {
+    const b = tileBox(x, y, s, s * PAD);
     const w = b[2] - b[0], h = b[3] - b[1];
     if (w <= 0 || h <= 0) return;
-    const rad = tileRadii(s * 0.16, m);
+    const r = s * RAD;
+    const lw = Math.max(1, s * 0.045);
     c.save();
     c.globalAlpha = alpha;
-    c.fillStyle = col(hex, 0.09);
-    roundRect(c, b[0], b[1], w, h, rad);
+    c.fillStyle = col(hex, 0.08);
+    roundRect(c, b[0], b[1], w, h, r);
     c.fill();
-    const lw = Math.max(1, s * 0.07);
-    c.beginPath();
-    c.rect(b[0], b[1], w, h);
-    c.clip();
-    const sx0 = (m & MASK.LEFT) ? b[0] - lw : b[0] + lw / 2;
-    const sy0 = (m & MASK.UP) ? b[1] - lw : b[1] + lw / 2;
-    const sx1 = (m & MASK.RIGHT) ? b[2] + lw : b[2] - lw / 2;
-    const sy1 = (m & MASK.DOWN) ? b[3] + lw : b[3] - lw / 2;
     c.lineWidth = lw;
-    c.strokeStyle = col(hex, 0.95);
-    c.setLineDash([s * 0.22, s * 0.16]);
-    roundRect(c, sx0, sy0, sx1 - sx0, sy1 - sy0, rad.map((v) => v - lw / 2));
+    c.strokeStyle = col(hex, 0.85);
+    roundRect(c, b[0] + lw / 2, b[1] + lw / 2, w - lw, h - lw, Math.max(0, r - lw / 2));
     c.stroke();
-    c.setLineDash([]);
     c.restore();
   }
 
@@ -1694,9 +1660,9 @@ const TetrisPaint = (function () {
   }
 
   return {
-    MASK: MASK,
+    PAD: PAD, RAD: RAD,
     col: col, shade: shade, typeColor: typeColor, levelColor: levelColor,
-    roundRect: roundRect, tileBox: tileBox, tileRadii: tileRadii,
+    roundRect: roundRect, tileBox: tileBox,
     block: block, ghost: ghost, dot: dot,
     backdrop: backdrop, vignette: vignette
   };
@@ -1715,34 +1681,6 @@ const TetrisFx = (function () {
   const MAX_PARTS = 520;
   const TAU = Math.PI * 2;
   const P = TetrisPaint;
-  const MASK = P.MASK;
-
-  /* An welchen Seiten dieser Zelle liegt ein Nachbar desselben Steins? Nur so
-     weiß der Pinsel, welche Kante nach außen zeigt und welche zuwachsen darf. */
-  function cellsMask(cells, i) {
-    const cx = cells[i][0], cy = cells[i][1];
-    let m = 0;
-    for (let j = 0; j < cells.length; j++) {
-      if (j === i) continue;
-      const dx = cells[j][0] - cx, dy = cells[j][1] - cy;
-      if (dx === 0 && dy === -1) m |= MASK.UP;
-      else if (dx === 1 && dy === 0) m |= MASK.RIGHT;
-      else if (dx === 0 && dy === 1) m |= MASK.DOWN;
-      else if (dx === -1 && dy === 0) m |= MASK.LEFT;
-    }
-    return m;
-  }
-
-  // Im Stapel wachsen nur gleiche Steinsorten zusammen — Grenzen bleiben sichtbar.
-  function boardMask(board, r, c) {
-    const type = board[r][c];
-    let m = 0;
-    if (r > 0 && board[r - 1][c] === type) m |= MASK.UP;
-    if (c < COLS - 1 && board[r][c + 1] === type) m |= MASK.RIGHT;
-    if (r < ROWS - 1 && board[r + 1][c] === type) m |= MASK.DOWN;
-    if (c > 0 && board[r][c - 1] === type) m |= MASK.LEFT;
-    return m;
-  }
 
   function create(canvas) {
     const ctx = canvas.getContext("2d");
@@ -1823,19 +1761,6 @@ const TetrisFx = (function () {
       const iv = TetrisPieces.gravityMs(g.level);
       if (!(iv > 0)) return 0;
       return Math.max(0, Math.min(1, g.dropTimer / iv));
-    }
-
-    // Der Rahmen des ganzen Steins in Bildpunkten — über ihn läuft der Farbverlauf.
-    function cellsFrame(cells, px, py) {
-      let x0 = cells[0][0], x1 = x0, y0 = cells[0][1], y1 = y0;
-      for (let i = 1; i < cells.length; i++) {
-        if (cells[i][0] < x0) x0 = cells[i][0];
-        if (cells[i][0] > x1) x1 = cells[i][0];
-        if (cells[i][1] < y0) y0 = cells[i][1];
-        if (cells[i][1] > y1) y1 = cells[i][1];
-      }
-      return [(px + x0) * cell, (py + y0) * cell,
-              (x1 - x0 + 1) * cell, (y1 - y0 + 1) * cell];
     }
 
     /* Die Meldungen der Regel: Drehung, Fallenlassen, Einrasten. */
@@ -2043,7 +1968,7 @@ const TetrisFx = (function () {
           if (!type) continue;
           const hex = hot ? "#ffffff" : P.typeColor(type);
           const x = cc * cell, y = r * cell;
-          if (hi) P.block(c, x, y, cell, hex, dim, hot ? 0.8 : 0, boardMask(g.board, r, cc));
+          if (hi) P.block(c, x, y, cell, hex, dim, hot ? 0.8 : 0);
           else {
             c.fillStyle = P.col(hex, hot ? 0.95 : 0.4 * dim);
             c.fillRect(x, y, cell, cell);
@@ -2064,7 +1989,7 @@ const TetrisFx = (function () {
         const y = p.y + cells[i][1] + d;
         if (y < 0) continue;
         const x = (p.x + cells[i][0]) * cell;
-        if (hi) P.ghost(c, x, y * cell, cell, hex, a, cellsMask(cells, i));
+        if (hi) P.ghost(c, x, y * cell, cell, hex, a);
         else { c.fillStyle = P.col(hex, 0.1); c.fillRect(x, y * cell, cell, cell); }
       }
     }
@@ -2078,13 +2003,12 @@ const TetrisFx = (function () {
       const cells = TetrisPieces.SHAPES[p.type][p.rot];
       const hex = P.typeColor(p.type);
       const py = vy === null ? p.y : vy;
-      const frame = cellsFrame(cells, p.x, py);
       const glow = 0.5 + 0.25 * Math.sin(t / 190);
       for (let i = 0; i < cells.length; i++) {
         const y = py + cells[i][1];
         if (y < -1) continue;
         const x = (p.x + cells[i][0]) * cell;
-        if (hi) P.block(c, x, y * cell, cell, hex, 1, glow, cellsMask(cells, i), frame);
+        if (hi) P.block(c, x, y * cell, cell, hex, 1, glow);
         else { c.fillStyle = P.col(hex, 0.8); c.fillRect(x, y * cell, cell, cell); }
       }
     }
@@ -2100,10 +2024,9 @@ const TetrisFx = (function () {
         const cells = TetrisPieces.SHAPES[q.type][q.rot];
         c.fillStyle = P.col(P.typeColor(q.type), a);
         for (let j = 0; j < cells.length; j++) {
-          const m = cellsMask(cells, j);
           const b = P.tileBox((q.x + cells[j][0]) * cell, (q.y + cells[j][1]) * cell,
-                              cell, cell * 0.05, m);
-          P.roundRect(c, b[0], b[1], b[2] - b[0], b[3] - b[1], P.tileRadii(cell * 0.26, m));
+                              cell, cell * P.PAD);
+          P.roundRect(c, b[0], b[1], b[2] - b[0], b[3] - b[1], cell * P.RAD);
           c.fill();
         }
       }

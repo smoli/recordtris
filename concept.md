@@ -98,14 +98,14 @@ der Kantenlänge. Diese wird weich gezeichnet und additiv darübergelegt. Das ko
 kaum etwas und lässt alles Helle nach außen strahlen — Kacheln, Funken, Balken und
 Schrift zugleich, ohne dass jede Form ihren eigenen Schein braucht.
 
-**Vier Felder, ein Stein.** Beim Zeichnen weiß jede Zelle, an welchen Seiten ein
-Nachbar desselben Steins liegt. Dort reicht ihre Kachel bis an den Rand der Zelle,
-die Ecke bleibt spitz, und der Grat aus Licht wird an dieser Kante weggeschnitten,
-statt eine Naht zu setzen — die vier Felder wachsen zu einer Form zusammen. Der
-Farbverlauf läuft dabei über den ganzen Stein, nicht über jede Zelle einzeln. Im
-Stapel wachsen nur gleiche Steinsorten zusammen: Wo zwei verschiedene Steine
-aneinanderstoßen, bleibt die Grenze sichtbar. Die Vorschau in der Seitenspalte
-folgt derselben Regel, dort mit Mitteln von CSS.
+**Ein Kästchen je Feld.** Ein Tetromino soll als vier Kästchen zu erkennen sein,
+nicht als eine verschmolzene Form. Jedes Feld bekommt eine flache Fläche in der
+Farbe seines Steins, eine schmale Fuge zum Nachbarn, leicht gerundete Ecken, innen
+einen hellen Grat entlang der Kante und einen dunklen Hauch am Fuß. Das ist das
+ursprüngliche Aussehen des Spiels; es wurde dem Zusammenwachsen der Felder
+bewusst vorgezogen — die Effekte ringsherum (Schein, Funken, Erschütterung, Spur)
+bleiben davon unberührt. Der Schattenriss der Landestelle folgt derselben Form:
+ein leerer Umriss je Feld. Die Vorschau in der Seitenspalte bildet sie in CSS nach.
 
 **Die gezeichnete Höhe zieht der Regel nach.** Der Stein gleitet nicht nur zwischen
 zwei Feldern mit — die gezeichnete Höhe folgt der des Spielstands zusätzlich weich

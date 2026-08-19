@@ -11,34 +11,6 @@ const TetrisFx = (function () {
   const MAX_PARTS = 520;
   const TAU = Math.PI * 2;
   const P = TetrisPaint;
-  const MASK = P.MASK;
-
-  /* An welchen Seiten dieser Zelle liegt ein Nachbar desselben Steins? Nur so
-     weiß der Pinsel, welche Kante nach außen zeigt und welche zuwachsen darf. */
-  function cellsMask(cells, i) {
-    const cx = cells[i][0], cy = cells[i][1];
-    let m = 0;
-    for (let j = 0; j < cells.length; j++) {
-      if (j === i) continue;
-      const dx = cells[j][0] - cx, dy = cells[j][1] - cy;
-      if (dx === 0 && dy === -1) m |= MASK.UP;
-      else if (dx === 1 && dy === 0) m |= MASK.RIGHT;
-      else if (dx === 0 && dy === 1) m |= MASK.DOWN;
-      else if (dx === -1 && dy === 0) m |= MASK.LEFT;
-    }
-    return m;
-  }
-
-  // Im Stapel wachsen nur gleiche Steinsorten zusammen — Grenzen bleiben sichtbar.
-  function boardMask(board, r, c) {
-    const type = board[r][c];
-    let m = 0;
-    if (r > 0 && board[r - 1][c] === type) m |= MASK.UP;
-    if (c < COLS - 1 && board[r][c + 1] === type) m |= MASK.RIGHT;
-    if (r < ROWS - 1 && board[r + 1][c] === type) m |= MASK.DOWN;
-    if (c > 0 && board[r][c - 1] === type) m |= MASK.LEFT;
-    return m;
-  }
 
   function create(canvas) {
     const ctx = canvas.getContext("2d");
@@ -119,19 +91,6 @@ const TetrisFx = (function () {
       const iv = TetrisPieces.gravityMs(g.level);
       if (!(iv > 0)) return 0;
       return Math.max(0, Math.min(1, g.dropTimer / iv));
-    }
-
-    // Der Rahmen des ganzen Steins in Bildpunkten — über ihn läuft der Farbverlauf.
-    function cellsFrame(cells, px, py) {
-      let x0 = cells[0][0], x1 = x0, y0 = cells[0][1], y1 = y0;
-      for (let i = 1; i < cells.length; i++) {
-        if (cells[i][0] < x0) x0 = cells[i][0];
-        if (cells[i][0] > x1) x1 = cells[i][0];
-        if (cells[i][1] < y0) y0 = cells[i][1];
-        if (cells[i][1] > y1) y1 = cells[i][1];
-      }
-      return [(px + x0) * cell, (py + y0) * cell,
-              (x1 - x0 + 1) * cell, (y1 - y0 + 1) * cell];
     }
 
     /* Die Meldungen der Regel: Drehung, Fallenlassen, Einrasten. */
@@ -339,7 +298,7 @@ const TetrisFx = (function () {
           if (!type) continue;
           const hex = hot ? "#ffffff" : P.typeColor(type);
           const x = cc * cell, y = r * cell;
-          if (hi) P.block(c, x, y, cell, hex, dim, hot ? 0.8 : 0, boardMask(g.board, r, cc));
+          if (hi) P.block(c, x, y, cell, hex, dim, hot ? 0.8 : 0);
           else {
             c.fillStyle = P.col(hex, hot ? 0.95 : 0.4 * dim);
             c.fillRect(x, y, cell, cell);
@@ -360,7 +319,7 @@ const TetrisFx = (function () {
         const y = p.y + cells[i][1] + d;
         if (y < 0) continue;
         const x = (p.x + cells[i][0]) * cell;
-        if (hi) P.ghost(c, x, y * cell, cell, hex, a, cellsMask(cells, i));
+        if (hi) P.ghost(c, x, y * cell, cell, hex, a);
         else { c.fillStyle = P.col(hex, 0.1); c.fillRect(x, y * cell, cell, cell); }
       }
     }
@@ -374,13 +333,12 @@ const TetrisFx = (function () {
       const cells = TetrisPieces.SHAPES[p.type][p.rot];
       const hex = P.typeColor(p.type);
       const py = vy === null ? p.y : vy;
-      const frame = cellsFrame(cells, p.x, py);
       const glow = 0.5 + 0.25 * Math.sin(t / 190);
       for (let i = 0; i < cells.length; i++) {
         const y = py + cells[i][1];
         if (y < -1) continue;
         const x = (p.x + cells[i][0]) * cell;
-        if (hi) P.block(c, x, y * cell, cell, hex, 1, glow, cellsMask(cells, i), frame);
+        if (hi) P.block(c, x, y * cell, cell, hex, 1, glow);
         else { c.fillStyle = P.col(hex, 0.8); c.fillRect(x, y * cell, cell, cell); }
       }
     }
@@ -396,10 +354,9 @@ const TetrisFx = (function () {
         const cells = TetrisPieces.SHAPES[q.type][q.rot];
         c.fillStyle = P.col(P.typeColor(q.type), a);
         for (let j = 0; j < cells.length; j++) {
-          const m = cellsMask(cells, j);
           const b = P.tileBox((q.x + cells[j][0]) * cell, (q.y + cells[j][1]) * cell,
-                              cell, cell * 0.05, m);
-          P.roundRect(c, b[0], b[1], b[2] - b[0], b[3] - b[1], P.tileRadii(cell * 0.26, m));
+                              cell, cell * P.PAD);
+          P.roundRect(c, b[0], b[1], b[2] - b[0], b[3] - b[1], cell * P.RAD);
           c.fill();
         }
       }
