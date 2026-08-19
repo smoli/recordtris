@@ -3,8 +3,7 @@
 ## Ziel
 
 Fallende Steine so stapeln, dass eine Reihe über die volle Breite geschlossen ist.
-Volle Reihen blitzen weiß auf, zerspringen und verschwinden, alles darüber rutscht
-nach. Erreicht
+Volle Reihen blinken kurz auf und verschwinden, alles darüber rutscht nach. Erreicht
 ein Stein die Oberkante, ist das Spiel vorbei.
 
 ## Anfangen
@@ -124,27 +123,6 @@ die Liste das oben an — sie gilt dann nur für die laufende Sitzung.
   schneller.
 - **Nächster** — der Stein, der als Nächstes kommt.
 - **Statistik** links — wie oft jede Steinsorte bisher kam.
-
-## Was im Feld passiert
-
-Das Spielfeld zeigt mehr als nur die Steine — vieles davon ist Rückmeldung, keine
-Zierde:
-
-- Der **fallende Stein** leuchtet und zieht eine kurze Spur hinter sich her.
-- Der **gestrichelte Umriss** unten zeigt, wo er landen wird.
-- **Leertaste** schickt eine Lichtsäule durch die Spalten, in denen der Stein
-  hinunterfährt — je weiter der Weg, desto kräftiger der Aufschlag.
-- **Volle Reihen** blitzen auf und zerspringen in die Farben ihrer Steine; das Bild
-  erzittert umso stärker, je mehr Reihen auf einmal fallen. Vier auf einmal färben
-  den ganzen Bildschirm und schreiben **TETRIS** ins Feld.
-- Die **Punkte** einer Reihe steigen als Zahl aus dem Feld auf.
-- Bei jedem **Levelaufstieg** läuft eine Druckwelle durchs Feld — und die Farbe des
-  Hintergrunds, des Saums und der Anzeigen wechselt. Zehn Level, zehn Farben, dann
-  beginnt die Reihe von vorn.
-- Am **Spielende** zerfällt der Stapel.
-
-Die Wiedergabe zeigt dieselben Bilder; die Aufblitzer der Reihen, die Punktezahlen
-und die Levelwechsel laufen dort mit.
 
 ## Das Besondere
 

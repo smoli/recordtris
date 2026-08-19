@@ -308,7 +308,7 @@ function App() {
     const frames = tapeRef.current;
     const frame = frames[rp.index];
     const view = TetrisEngine.fromSnapshot(frame);
-    return html`<div class=${"app replaying lv" + (view.level % 10)}>
+    return html`<div class="app replaying">
       <aside class="panel left">
         <h2>Statistik</h2>
         <${Stats} stats=${view.stats} />
@@ -344,7 +344,7 @@ function App() {
   }
 
   if (!g) {
-    return html`<div class="app intro-view">
+    return html`<div class="app">
       <div class="stage intro">
         <${StartScreen} level=${startLevel} onLevel=${setStartLevel}
           seed=${seedWord} onSeed=${setSeedWord}
@@ -362,7 +362,7 @@ function App() {
   const isRecord = !!(sum && lastEntry && sum.best === lastEntry);
   const rank = sum && lastEntry ? sum.entries.indexOf(lastEntry) + 1 : 0;
 
-  return html`<div class=${"app lv" + (g.level % 10)}>
+  return html`<div class="app">
     <aside class="panel left">
       <h2>Statistik</h2>
       <${Stats} stats=${g.stats} />

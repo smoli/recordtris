@@ -21,82 +21,33 @@
      abzüglich der beiden Spalten" (weite Fenster). */
   --cell: clamp(16px, min(4.6vh, max(4.4vw, (100vw - 500px) / 10)), 60px);
   --mini: calc(var(--cell) * 0.7);
-  --bg: #05070d;
-  --panel: rgba(20, 26, 40, .78);
-  --line: rgba(255, 255, 255, .09);
-  --ink: #eef2fb;
-  --dim: #93a0ba;
+  --bg: #0d1017;
+  --panel: #161b26;
+  --line: #262d3d;
+  --ink: #e8ecf5;
+  --dim: #8c97ad;
   --accent: #6ea8ff;
-  --glow: #6ea8ff;
-  --c-I: #33e6f5;
-  --c-J: #5b7cff;
-  --c-L: #ffa726;
-  --c-O: #ffe040;
-  --c-S: #4dfb9a;
-  --c-T: #c77dff;
-  --c-Z: #ff5c78;
+  --c-I: #33cfe0;
+  --c-J: #4a6cf7;
+  --c-L: #f59e0b;
+  --c-O: #f2d024;
+  --c-S: #3ddc84;
+  --c-T: #b46cf7;
+  --c-Z: #f4506a;
 }
-
-/* Jedes Level färbt die ganze Oberfläche um — dieselbe Reihe wie in fxpaint.js. */
-.app.lv0 { --glow: #6ea8ff; }
-.app.lv1 { --glow: #4dfb9a; }
-.app.lv2 { --glow: #ffe040; }
-.app.lv3 { --glow: #ff5c78; }
-.app.lv4 { --glow: #c77dff; }
-.app.lv5 { --glow: #33e6f5; }
-.app.lv6 { --glow: #ffa726; }
-.app.lv7 { --glow: #ff7ac6; }
-.app.lv8 { --glow: #7dff9b; }
-.app.lv9 { --glow: #5b7cff; }
 
 * { box-sizing: border-box; }
 
 html, body {
   margin: 0;
   height: 100%;
-  background: var(--bg);
+  background: radial-gradient(1200px 800px at 50% -10%, #1b2233, var(--bg));
   color: var(--ink);
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
   overflow: hidden;
 }
 
-/* Hinter allem wabern drei farbige Schleier — das Licht des Raums. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: -25%;
-  background:
-    radial-gradient(38vw 38vw at 22% 24%, rgba(110, 168, 255, .20), transparent 68%),
-    radial-gradient(34vw 34vw at 78% 18%, rgba(199, 125, 255, .17), transparent 68%),
-    radial-gradient(42vw 42vw at 58% 88%, rgba(77, 251, 154, .13), transparent 68%);
-  filter: blur(30px);
-  animation: drift 30s ease-in-out infinite alternate;
-  pointer-events: none;
-}
-
-/* Darüber ein feines Raster, das zum Rand hin verschwindet. */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, .028) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, .028) 1px, transparent 1px);
-  background-size: 46px 46px;
-  -webkit-mask-image: radial-gradient(circle at 50% 42%, transparent 22%, #000 88%);
-  mask-image: radial-gradient(circle at 50% 42%, transparent 22%, #000 88%);
-  pointer-events: none;
-}
-
-@keyframes drift {
-  0%   { transform: translate3d(-3%, -2%, 0) scale(1); }
-  50%  { transform: translate3d(4%, 3%, 0) scale(1.12); }
-  100% { transform: translate3d(-2%, 4%, 0) scale(1.04); }
-}
-
-/* z-index 0 macht daraus eine eigene Ebene: Der Heiligenschein des Feldes liegt
-   damit über den Schleiern des Hintergrunds statt darunter. */
-#app { position: relative; z-index: 0; height: 100%; }
+#app { height: 100%; }
 
 .app {
   height: 100%;
@@ -113,76 +64,66 @@ body::after {
   position: relative;
   width: calc(var(--cell) * 10);
   height: calc(var(--cell) * 20);
-  border-radius: 14px;
-  background: transparent;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: #0a0d14;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .55), inset 0 0 60px rgba(0, 0, 0, .6);
   flex: none;
-  box-shadow: 0 34px 90px rgba(0, 0, 0, .75);
-}
-
-/* Der Heiligenschein: ein weich gezeichneter Farbkreis hinter dem Feld, der
-   atmet und dabei durch die Farben wandert. */
-.stage::before {
-  content: "";
-  position: absolute;
-  inset: -5px;
-  z-index: -1;
-  border-radius: 20px;
-  background: conic-gradient(from 180deg at 50% 50%,
-    var(--c-I), var(--c-T), var(--c-Z), var(--c-L), var(--c-O), var(--c-S), var(--c-I));
-  animation: aura 9s ease-in-out infinite;
-}
-
-@keyframes aura {
-  0%, 100% { opacity: .40; filter: blur(11px) hue-rotate(0deg); }
-  50%      { opacity: .72; filter: blur(19px) hue-rotate(45deg); }
-}
-
-/* Die Fassung über der Leinwand: heller Grat innen, tiefer Schatten am Rand. */
-.stage::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 13px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .13),
-              inset 0 0 34px rgba(0, 0, 0, .55);
-  pointer-events: none;
 }
 
 /* Der Startbildschirm braucht mehr Platz als ein schmales Feld hergibt. */
 .stage.intro {
-  min-width: 320px;
-  min-height: 430px;
+  min-width: 300px;
+  min-height: 400px;
 }
 
 .board {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 13px;
+  display: grid;
+  grid-template-columns: repeat(10, var(--cell));
+  grid-template-rows: repeat(20, var(--cell));
 }
 
-/* Die Kacheln der Vorschau und die Farbtupfer der Statistik. */
-.cell { border-radius: 4px; }
-
-.c-I { background: var(--c-I); color: var(--c-I); }
-.c-J { background: var(--c-J); color: var(--c-J); }
-.c-L { background: var(--c-L); color: var(--c-L); }
-.c-O { background: var(--c-O); color: var(--c-O); }
-.c-S { background: var(--c-S); color: var(--c-S); }
-.c-T { background: var(--c-T); color: var(--c-T); }
-.c-Z { background: var(--c-Z); color: var(--c-Z); }
-
-.chip {
-  box-shadow: 0 0 12px currentColor,
-              inset 0 0 0 2px rgba(255, 255, 255, .3),
-              inset 0 -3px 7px rgba(0, 0, 0, .45);
+.cell {
+  border: 1px solid rgba(255, 255, 255, .035);
 }
 
-/* Die Vorschau zeigt einen Stein, kein Raster: Die Felder stoßen ohne Fuge und
-   ohne eigene Ecken aneinander, damit sie zu einer Form zusammenwachsen. */
-.preview .cell:not(.empty) {
-  border-radius: 0;
-  box-shadow: 0 0 12px currentColor;
+.cell.c-I, .cell.c-J, .cell.c-L, .cell.c-O,
+.cell.c-S, .cell.c-T, .cell.c-Z {
+  border: 1px solid rgba(0, 0, 0, .45);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .18),
+              inset 0 -3px 6px rgba(0, 0, 0, .35);
+}
+
+.c-I { background: var(--c-I); }
+.c-J { background: var(--c-J); }
+.c-L { background: var(--c-L); }
+.c-O { background: var(--c-O); }
+.c-S { background: var(--c-S); }
+.c-T { background: var(--c-T); }
+.c-Z { background: var(--c-Z); }
+
+.cell.ghost {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px currentColor;
+  opacity: .32;
+}
+.cell.ghost.c-I { color: var(--c-I); }
+.cell.ghost.c-J { color: var(--c-J); }
+.cell.ghost.c-L { color: var(--c-L); }
+.cell.ghost.c-O { color: var(--c-O); }
+.cell.ghost.c-S { color: var(--c-S); }
+.cell.ghost.c-T { color: var(--c-T); }
+.cell.ghost.c-Z { color: var(--c-Z); }
+
+.cell.clear {
+  background: #fff;
+  box-shadow: 0 0 12px rgba(255, 255, 255, .7);
+  animation: blink .11s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% { background: #9fb6ff; }
 }
 
 /* --- Seitenspalten --- */
@@ -196,25 +137,10 @@ body::after {
 }
 
 .box, .stats {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(160deg, rgba(30, 38, 58, .8), rgba(13, 17, 27, .82));
+  background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .07);
+  border-radius: 10px;
   padding: clamp(10px, calc(var(--cell) * 0.32), 15px) clamp(12px, calc(var(--cell) * 0.4), 18px);
-}
-
-/* Ein Lichtstrich in der Farbe des Levels über jeder Karte. */
-.box::after, .stats::after {
-  content: "";
-  position: absolute;
-  left: 14%;
-  right: 14%;
-  top: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--glow), transparent);
-  opacity: .75;
 }
 
 .box.row { display: flex; gap: 14px; }
@@ -223,7 +149,7 @@ body::after {
 h2 {
   margin: 0 0 4px;
   font-size: clamp(11px, calc(var(--cell) * 0.36), 14px);
-  letter-spacing: .16em;
+  letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--dim);
   font-weight: 600;
@@ -234,17 +160,16 @@ h2 {
   font-size: clamp(16px, calc(var(--cell) * 0.82), 34px);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  text-shadow: 0 0 18px color-mix(in srgb, var(--glow) 55%, transparent);
 }
 
 .preview {
   display: grid;
   justify-content: center;
-  gap: 0;
-  padding: 9px 0 5px;
+  gap: 1px;
+  padding: 6px 0 2px;
 }
 .preview .cell { width: var(--mini); height: var(--mini); }
-.preview .cell.empty { background: none; }
+.preview .cell.empty { border-color: transparent; }
 
 .stats { display: flex; flex-direction: column; gap: 6px; }
 .stat { display: flex; align-items: center; gap: 8px; font-size: clamp(13px, calc(var(--cell) * 0.44), 17px); }
@@ -252,7 +177,8 @@ h2 {
   flex: none;
   width: clamp(12px, calc(var(--cell) * 0.4), 16px);
   height: clamp(12px, calc(var(--cell) * 0.4), 16px);
-  border-radius: 4px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .2);
 }
 .stat-name { color: var(--dim); font-weight: 600; }
 .stat-count { margin-left: auto; font-variant-numeric: tabular-nums; }
@@ -271,29 +197,13 @@ kbd {
   border: 1px solid var(--line);
   border-bottom-width: 2px;
   border-radius: 5px;
-  background: rgba(40, 50, 74, .7);
+  background: #1e2534;
   color: var(--ink);
   font: inherit;
   font-size: clamp(11px, calc(var(--cell) * 0.37), 14px);
 }
 
-.seed-word {
-  margin: 0;
-  font-size: clamp(13px, calc(var(--cell) * 0.5), 20px);
-  font-weight: 700;
-  letter-spacing: .06em;
-  color: var(--glow);
-  text-shadow: 0 0 16px color-mix(in srgb, var(--glow) 60%, transparent);
-  overflow-wrap: anywhere;
-}
-
-/* Wer die Bewegung nicht mag, bekommt sie nicht. */
-@media (prefers-reduced-motion: reduce) {
-  body::before, .stage::before, .tl { animation: none; }
-}
-</style>
-<style>/* Alles, was sich über das Feld legt: Startbildschirm, Pause, Spielende —
-   und die Knöpfe und Felder, die überall darin vorkommen. */
+/* --- Einblendungen --- */
 
 .overlay {
   position: absolute;
@@ -305,57 +215,20 @@ kbd {
   gap: 6px;
   padding: 18px;
   text-align: center;
-  border-radius: 13px;
-  background: radial-gradient(120% 90% at 50% 0%, rgba(16, 22, 38, .72), rgba(4, 6, 12, .9));
-  -webkit-backdrop-filter: blur(6px) saturate(1.25);
-  backdrop-filter: blur(6px) saturate(1.25);
+  background: rgba(8, 11, 18, .88);
+  border-radius: 6px;
   overflow: auto;
-  animation: rise .28s ease-out;
-}
-
-@keyframes rise {
-  from { opacity: 0; transform: scale(.97); }
-  to   { opacity: 1; transform: scale(1); }
 }
 
 .overlay h1 {
   margin: 0 0 2px;
   font-size: clamp(20px, calc(var(--cell) * 1.05), 44px);
   letter-spacing: .2em;
-  text-shadow: 0 0 26px color-mix(in srgb, var(--glow) 70%, transparent);
-}
-
-/* Der Schriftzug des Startbildschirms: jeder Buchstabe in seiner eigenen
-   Steinfarbe, jeder mit eigenem Takt. */
-.title {
-  display: flex;
-  gap: .04em;
-  letter-spacing: .08em;
-  text-shadow: none;
-}
-.tl {
-  display: inline-block;
-  animation: bob 2.8s ease-in-out infinite;
-  animation-delay: calc(var(--i) * .12s);
-  text-shadow: 0 0 22px currentColor, 0 3px 0 rgba(0, 0, 0, .45);
-}
-.tl:nth-child(1) { color: var(--c-I); }
-.tl:nth-child(2) { color: var(--c-T); }
-.tl:nth-child(3) { color: var(--c-S); }
-.tl:nth-child(4) { color: var(--c-Z); }
-.tl:nth-child(5) { color: var(--c-O); }
-.tl:nth-child(6) { color: var(--c-J); }
-
-@keyframes bob {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50%      { transform: translateY(-.1em) scale(1.07); }
 }
 
 .lead { margin: 0 0 10px; font-size: clamp(13px, calc(var(--cell) * 0.44), 17px); color: var(--dim); line-height: 1.45; }
-.label { margin: 6px 0 2px; font-size: clamp(11px, calc(var(--cell) * 0.36), 14px); letter-spacing: .16em; text-transform: uppercase; color: var(--dim); }
+.label { margin: 6px 0 2px; font-size: clamp(11px, calc(var(--cell) * 0.36), 14px); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
 .hint { margin: 8px 0 0; font-size: clamp(11px, calc(var(--cell) * 0.36), 14px); color: var(--dim); }
-.hint.tight { margin: 0; }
-.hint.warn { color: var(--c-L); }
 
 .levels {
   display: grid;
@@ -369,21 +242,19 @@ kbd {
 .lvl {
   padding: clamp(6px, calc(var(--cell) * 0.2), 11px) 0;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(28, 36, 56, .7);
+  border-radius: 6px;
+  background: #1a2130;
   color: var(--dim);
   font: inherit;
   font-size: clamp(13px, calc(var(--cell) * 0.44), 17px);
   cursor: pointer;
-  transition: transform .12s ease, box-shadow .18s ease, color .18s ease;
 }
-.lvl:hover { border-color: var(--accent); color: var(--ink); transform: translateY(-2px); }
+.lvl:hover { border-color: var(--accent); color: var(--ink); }
 .lvl.on {
-  background: linear-gradient(180deg, #8ec0ff, #4a86e8);
-  border-color: transparent;
-  color: #06101f;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0b1220;
   font-weight: 700;
-  box-shadow: 0 0 20px rgba(110, 168, 255, .6);
 }
 
 /* --- Merkwort --- */
@@ -400,72 +271,52 @@ kbd {
   min-width: 0;
   padding: clamp(6px, calc(var(--cell) * 0.2), 11px) 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(10, 14, 24, .8);
+  border-radius: 6px;
+  background: #1a2130;
   color: var(--ink);
   font: inherit;
   font-size: clamp(13px, calc(var(--cell) * 0.44), 17px);
   letter-spacing: .06em;
   text-align: center;
 }
-.seed-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(110, 168, 255, .2), 0 0 22px rgba(110, 168, 255, .3);
-}
+.seed-input:focus { outline: none; border-color: var(--accent); }
 .seed-input::placeholder { color: var(--dim); letter-spacing: normal; }
 
 .dice {
   flex: none;
   width: clamp(34px, calc(var(--cell) * 1.1), 46px);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(28, 36, 56, .7);
+  border-radius: 6px;
+  background: #1a2130;
   font-size: clamp(14px, calc(var(--cell) * 0.46), 19px);
   line-height: 1;
   cursor: pointer;
-  transition: transform .2s ease, border-color .2s ease;
 }
-.dice:hover { border-color: var(--accent); transform: rotate(-18deg) scale(1.1); }
+.dice:hover { border-color: var(--accent); }
 
 .seed-hint { margin-bottom: 10px; }
 
-/* --- Knöpfe --- */
+.seed-word {
+  margin: 0;
+  font-size: clamp(13px, calc(var(--cell) * 0.5), 20px);
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
 
 .start {
-  position: relative;
-  overflow: hidden;
   padding: clamp(9px, calc(var(--cell) * 0.3), 14px) clamp(22px, calc(var(--cell) * 0.75), 34px);
   border: none;
-  border-radius: 10px;
-  background: linear-gradient(180deg, #8ec0ff, #4a86e8);
-  color: #06101f;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #7db2ff, #4a86e8);
+  color: #08101f;
   font: inherit;
   font-size: clamp(14px, calc(var(--cell) * 0.46), 19px);
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(74, 134, 232, .45);
-  transition: transform .12s ease, box-shadow .18s ease;
 }
-.start:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(110, 168, 255, .6); }
-.start:active { transform: translateY(0); }
-
-/* Ein Lichtstreif wandert in Ruhe über den Knopf. */
-.start::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 45%;
-  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .5), transparent);
-  animation: sweep 3.4s ease-in-out infinite;
-}
-
-@keyframes sweep {
-  0%        { transform: translateX(-160%); }
-  55%, 100% { transform: translateX(330%); }
-}
+.start:hover { filter: brightness(1.08); }
 
 .start.small {
   padding: clamp(6px, calc(var(--cell) * 0.2), 10px) clamp(14px, calc(var(--cell) * 0.5), 24px);
@@ -473,29 +324,12 @@ kbd {
 }
 
 .start:disabled, .rb:disabled {
-  opacity: .35;
+  opacity: .38;
   cursor: default;
-  box-shadow: none;
+  filter: none;
 }
-.start:disabled:hover { transform: none; box-shadow: none; }
-.start:disabled::after { animation: none; display: none; }
+.start:disabled:hover { filter: none; }
 .rb:disabled:hover { border-color: var(--line); }
-
-.record {
-  margin: 0;
-  font-size: clamp(13px, calc(var(--cell) * 0.44), 17px);
-  font-weight: 700;
-  color: var(--c-S);
-  text-shadow: 0 0 20px var(--c-S);
-  animation: bob 1.4s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .overlay, .start::after, .record { animation: none; }
-}
-</style>
-<style>/* Die beiden großen Nebenansichten: die Wiedergabe unter dem Feld und die
-   Bestenliste, die an die Stelle von allem anderen tritt. */
 
 /* --- Wiedergabe --- */
 
@@ -515,25 +349,20 @@ kbd {
 
 .replay-tag {
   position: absolute;
-  top: 8px;
+  top: 6px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 3px 12px;
+  padding: 2px 10px;
   border-radius: 999px;
-  background: rgba(6, 9, 16, .82);
+  background: rgba(8, 11, 18, .8);
   border: 1px solid var(--line);
   color: var(--dim);
   font-size: clamp(10px, calc(var(--cell) * 0.32), 13px);
-  letter-spacing: .14em;
+  letter-spacing: .12em;
   text-transform: uppercase;
   pointer-events: none;
-  z-index: 1;
 }
-.replay-tag.end {
-  color: var(--c-Z);
-  border-color: var(--c-Z);
-  box-shadow: 0 0 22px rgba(255, 92, 120, .45);
-}
+.replay-tag.end { color: var(--c-Z); border-color: var(--c-Z); }
 
 .replay-bar {
   width: max(260px, calc(var(--cell) * 10));
@@ -541,16 +370,15 @@ kbd {
   flex-direction: column;
   gap: 7px;
   padding: clamp(8px, calc(var(--cell) * 0.28), 14px);
-  background: linear-gradient(160deg, rgba(30, 38, 58, .8), rgba(13, 17, 27, .82));
+  background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .45);
+  border-radius: 10px;
 }
 
 .scrub {
   width: 100%;
   margin: 0;
-  accent-color: var(--glow);
+  accent-color: var(--accent);
   cursor: pointer;
 }
 
@@ -572,7 +400,7 @@ kbd {
 .replay-label {
   flex: none;
   font-size: clamp(10px, calc(var(--cell) * 0.32), 13px);
-  letter-spacing: .14em;
+  letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--dim);
 }
@@ -582,27 +410,28 @@ kbd {
   min-width: 0;
   padding: clamp(5px, calc(var(--cell) * 0.17), 9px) 2px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(28, 36, 56, .7);
+  border-radius: 6px;
+  background: #1a2130;
   color: var(--ink);
   font: inherit;
   font-size: clamp(11px, calc(var(--cell) * 0.34), 15px);
   line-height: 1.25;
   cursor: pointer;
-  transition: border-color .15s ease, box-shadow .18s ease, transform .12s ease;
 }
-.rb:hover { border-color: var(--accent); transform: translateY(-1px); }
+.rb:hover { border-color: var(--accent); }
 .rb.on {
-  background: linear-gradient(180deg, #8ec0ff, #4a86e8);
-  border-color: transparent;
-  color: #06101f;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0b1220;
   font-weight: 700;
-  box-shadow: 0 0 18px rgba(110, 168, 255, .55);
 }
 
 .replay-row.wide { margin-top: 2px; }
 .replay-row.wide .start.small { flex: 1; }
 .replay-row.wide .rb.wideb { flex: none; padding-left: 14px; padding-right: 14px; }
+
+.hint.tight { margin: 0; }
+.hint.warn { color: var(--c-L); }
 
 /* --- Bestenliste --- */
 
@@ -631,11 +460,7 @@ kbd {
 .scores h1 {
   margin: 0;
   font-size: clamp(20px, 3.4vh, 34px);
-  letter-spacing: .2em;
-  background: linear-gradient(100deg, var(--c-I), var(--c-T), var(--c-O));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  letter-spacing: .18em;
 }
 
 .scores-head .rb.wideb { flex: none; padding: 8px 18px; }
@@ -662,22 +487,17 @@ kbd {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 0 8px;
-  padding: 9px 12px;
+  padding: 8px 11px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: rgba(20, 26, 40, .72);
+  border-radius: 8px;
+  background: var(--panel);
   color: var(--ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color .15s ease, background .15s ease;
 }
 .seed-row-btn:hover { border-color: var(--accent); }
-.seed-row-btn.on {
-  border-color: var(--accent);
-  background: rgba(38, 58, 100, .8);
-  box-shadow: 0 0 22px rgba(110, 168, 255, .25);
-}
+.seed-row-btn.on { border-color: var(--accent); background: #1d2740; }
 
 .sr-word {
   font-weight: 700;
@@ -716,14 +536,11 @@ kbd {
 
 .play {
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: linear-gradient(160deg, rgba(28, 36, 56, .72), rgba(13, 17, 27, .78));
-  padding: 11px 14px;
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 10px 13px;
 }
-.play.top {
-  border-color: var(--accent);
-  box-shadow: 0 0 26px rgba(110, 168, 255, .22);
-}
+.play.top { border-color: var(--accent); }
 
 /* Rechts in der Kopfzeile der Knopf, der dieses Wort noch einmal spielt. */
 .dh-word { min-width: 0; }
@@ -747,10 +564,7 @@ kbd {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.play.top .play-score {
-  color: var(--accent);
-  text-shadow: 0 0 18px rgba(110, 168, 255, .6);
-}
+.play.top .play-score { color: var(--accent); }
 .play-date { margin-left: auto; font-size: 12px; color: var(--dim); }
 
 .facts {
@@ -780,6 +594,13 @@ kbd {
 
 .resumed { margin: 6px 0 0; font-size: 12px; color: var(--c-L); }
 
+.record {
+  margin: 0;
+  font-size: clamp(13px, calc(var(--cell) * 0.44), 17px);
+  font-weight: 700;
+  color: var(--c-S);
+}
+
 .scores-empty {
   flex: 1;
   display: flex;
@@ -796,8 +617,8 @@ kbd {
 }
 </style>
 </head>
-<body data-morphos-src="src/index.html:12:1">
-<div data-morphos-src="src/index.html:13:1" id="app"></div>
+<body data-morphos-src="src/index.html:10:1">
+<div data-morphos-src="src/index.html:11:1" id="app"></div>
 <script>/* Der Zufall des originalen NES-Tetris.
    Er besteht aus zwei Teilen:
    1. einem 16-Bit-Schieberegister (LFSR), das die Konsole als Zufallsquelle nutzt,
@@ -1022,13 +843,6 @@ const TetrisEngine = (function () {
     return board;
   }
 
-  /* Was der Zustand nicht selbst verrät, meldet er: ein kurzes Band von Ereignissen,
-     das die Bildschau ausliest und danach leert. Es gehört nicht zum Spielstand und
-     steht deshalb auch nicht in der Momentaufnahme. */
-  function emit(state, ev) {
-    if (state.fx && state.fx.length < 48) state.fx.push(ev);
-  }
-
   function collides(board, type, rot, x, y) {
     const cells = TetrisPieces.SHAPES[type][rot];
     for (let i = 0; i < cells.length; i++) {
@@ -1065,7 +879,6 @@ const TetrisEngine = (function () {
       clearRows: null,
       clearTimer: 0,
       elapsed: 0,
-      fx: [],
       version: 0
     };
     state.nextType = state.rng.nextPiece();
@@ -1106,7 +919,6 @@ const TetrisEngine = (function () {
       if (!collides(state.board, p.type, rot, p.x + kicks[i], p.y)) {
         p.rot = rot;
         p.x += kicks[i];
-        emit(state, { k: "rot", type: p.type, rot: p.rot, x: p.x, y: p.y });
         state.version++;
         return true;
       }
@@ -1139,7 +951,6 @@ const TetrisEngine = (function () {
 
   function dropDistance(state) {
     const p = state.piece;
-    if (!p) return 0;
     let d = 0;
     while (!collides(state.board, p.type, p.rot, p.x, p.y + d + 1)) d++;
     return d;
@@ -1148,11 +959,8 @@ const TetrisEngine = (function () {
   function hardDrop(state) {
     if (!playable(state)) return false;
     const d = dropDistance(state);
-    const from = state.piece.y;
     state.piece.y += d;
     state.score += d;
-    emit(state, { k: "drop", type: state.piece.type, rot: state.piece.rot,
-      x: state.piece.x, from: from, to: state.piece.y, dist: d });
     lock(state);
     return true;
   }
@@ -1160,7 +968,6 @@ const TetrisEngine = (function () {
   function lock(state) {
     const p = state.piece;
     const cells = TetrisPieces.SHAPES[p.type][p.rot];
-    emit(state, { k: "lock", type: p.type, rot: p.rot, x: p.x, y: p.y });
     let aboveField = false;
     for (let i = 0; i < cells.length; i++) {
       const cx = p.x + cells[i][0];
@@ -1224,6 +1031,36 @@ const TetrisEngine = (function () {
     state.version++;
   }
 
+  /* Baut das Bild des Feldes: liegende Steine, blinkende Reihen,
+     Schattenriss der Landestelle und der fallende Stein selbst. */
+  function renderCells(state) {
+    const out = new Array(ROWS * COLS);
+    for (let r = 0; r < ROWS; r++) {
+      const flashing = state.clearRows && state.clearRows.indexOf(r) !== -1;
+      for (let c = 0; c < COLS; c++) {
+        out[r * COLS + c] = { type: state.board[r][c], kind: flashing ? "clear" : "fixed" };
+      }
+    }
+    if (state.piece && !state.over) {
+      const p = state.piece;
+      const cells = TetrisPieces.SHAPES[p.type][p.rot];
+      const d = dropDistance(state);
+      if (d > 0) {
+        for (let i = 0; i < cells.length; i++) {
+          const cx = p.x + cells[i][0];
+          const cy = p.y + cells[i][1] + d;
+          if (cy >= 0) out[cy * COLS + cx] = { type: p.type, kind: "ghost" };
+        }
+      }
+      for (let i = 0; i < cells.length; i++) {
+        const cx = p.x + cells[i][0];
+        const cy = p.y + cells[i][1];
+        if (cy >= 0) out[cy * COLS + cx] = { type: p.type, kind: "active" };
+      }
+    }
+    return out;
+  }
+
   /* Eine vollständige Momentaufnahme: alles, was das Bild ausmacht, und dazu der
      Zustand des Zufalls. Aus ihr lässt sich das Bild zeigen UND weiterspielen. */
   function snapshot(state) {
@@ -1271,7 +1108,6 @@ const TetrisEngine = (function () {
       clearRows: snap.clearRows ? snap.clearRows.slice() : null,
       clearTimer: snap.clearTimer,
       elapsed: snap.t,
-      fx: [],
       version: 0
     };
   }
@@ -1280,7 +1116,7 @@ const TetrisEngine = (function () {
     COLS: COLS, ROWS: ROWS,
     create: create, update: update,
     move: move, rotate: rotate, softDrop: softDrop, hardDrop: hardDrop,
-    dropDistance: dropDistance, togglePause: togglePause,
+    togglePause: togglePause, renderCells: renderCells,
     snapshot: snapshot, fromSnapshot: fromSnapshot
   };
 })();
@@ -1451,847 +1287,19 @@ const TetrisScores = (function () {
   };
 })();
 </script>
-<script>/* Der Pinselkasten der Bildschau: Farben mischen und die immer gleichen Formen
-   zeichnen — Kachel, Schattenriss, Hintergrund, Saum. Reine Zeichenarbeit ohne
-   eigenen Zustand; wer wann was zeichnet, entscheidet fx.js. */
-const TetrisPaint = (function () {
-  const TYPE_COLOR = {
-    I: "#33e6f5", J: "#5b7cff", L: "#ffa726", O: "#ffe040",
-    S: "#4dfb9a", T: "#c77dff", Z: "#ff5c78"
-  };
-  // Jedes Level färbt Hintergrund, Saum und Aufblitzen anders ein.
-  const LEVEL_TINT = [
-    "#6ea8ff", "#4dfb9a", "#ffe040", "#ff5c78", "#c77dff",
-    "#33e6f5", "#ffa726", "#ff7ac6", "#7dff9b", "#5b7cff"
-  ];
-
-  const rgbCache = {};
-  function rgb(hex) {
-    let v = rgbCache[hex];
-    if (!v) {
-      v = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
-      rgbCache[hex] = v;
-    }
-    return v;
-  }
-
-  function col(hex, a) {
-    const c = rgb(hex);
-    return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")";
-  }
-
-  // f über 1 zieht die Farbe zum Weiß, f unter 1 ins Dunkle.
-  function shade(hex, f, a) {
-    const c = rgb(hex);
-    const k = f >= 1 ? f - 1 : 0;
-    const r = f >= 1 ? c[0] + (255 - c[0]) * k : c[0] * f;
-    const g = f >= 1 ? c[1] + (255 - c[1]) * k : c[1] * f;
-    const b = f >= 1 ? c[2] + (255 - c[2]) * k : c[2] * f;
-    return "rgba(" + (r | 0) + "," + (g | 0) + "," + (b | 0) + "," + (a === undefined ? 1 : a) + ")";
-  }
-
-  function typeColor(t) { return TYPE_COLOR[t] || "#8c97ad"; }
-  function levelColor(l) {
-    const n = LEVEL_TINT.length;
-    return LEVEL_TINT[((l % n) + n) % n];
-  }
-
-  // r ist entweder eine Zahl für alle vier Ecken oder [oben-links … unten-links].
-  function roundRect(c, x, y, w, h, r) {
-    const lim = Math.min(w / 2, h / 2);
-    const a = typeof r === "number" ? [r, r, r, r] : r;
-    const tl = Math.max(0, Math.min(a[0], lim)), tr = Math.max(0, Math.min(a[1], lim));
-    const br = Math.max(0, Math.min(a[2], lim)), bl = Math.max(0, Math.min(a[3], lim));
-    c.beginPath();
-    c.moveTo(x + tl, y);
-    c.lineTo(x + w - tr, y); c.quadraticCurveTo(x + w, y, x + w, y + tr);
-    c.lineTo(x + w, y + h - br); c.quadraticCurveTo(x + w, y + h, x + w - br, y + h);
-    c.lineTo(x + bl, y + h); c.quadraticCurveTo(x, y + h, x, y + h - bl);
-    c.lineTo(x, y + tl); c.quadraticCurveTo(x, y, x + tl, y);
-    c.closePath();
-  }
-
-  /* Damit vier Felder ein Stein werden statt vier Kästchen: Eine Maske sagt für
-     jede Zelle, an welchen Seiten ein Nachbar desselben Steins liegt. Dort reicht
-     die Kachel bis an den Rand der Zelle, die Ecke bleibt spitz und der Lichtgrat
-     läuft durch — die Felder wachsen zu einer Form zusammen. */
-  const MASK = { UP: 1, RIGHT: 2, DOWN: 4, LEFT: 8 };
-  const BLEED = 0.5; // Überlappung gegen Haarrisse an den zusammengewachsenen Kanten
-
-  function tileBox(x, y, s, pad, mask) {
-    const m = mask || 0;
-    return [
-      x + ((m & MASK.LEFT) ? -BLEED : pad),
-      y + ((m & MASK.UP) ? -BLEED : pad),
-      x + s - ((m & MASK.RIGHT) ? -BLEED : pad),
-      y + s - ((m & MASK.DOWN) ? -BLEED : pad)
-    ];
-  }
-
-  function tileRadii(r, mask) {
-    const m = mask || 0;
-    return [
-      (m & (MASK.UP | MASK.LEFT)) ? 0 : r,
-      (m & (MASK.UP | MASK.RIGHT)) ? 0 : r,
-      (m & (MASK.DOWN | MASK.RIGHT)) ? 0 : r,
-      (m & (MASK.DOWN | MASK.LEFT)) ? 0 : r
-    ];
-  }
-
-  /* Eine Kachel: Verlauf von der hellen Kante zum dunklen Fuß und ein Grat aus
-     Licht, der nur an den AUSSEN liegenden Kanten sichtbar ist. glow > 0 legt
-     einen Schein darum; frame ist der Rahmen, über den der Verlauf laufen soll
-     (das ganze Tetromino statt der einzelnen Zelle) — fehlt er, gilt die Zelle. */
-  function block(c, x, y, s, hex, alpha, glow, mask, frame) {
-    const m = mask || 0;
-    const b = tileBox(x, y, s, s * 0.05, m);
-    const w = b[2] - b[0], h = b[3] - b[1];
-    if (w <= 0 || h <= 0) return;
-    const rad = tileRadii(s * 0.26, m);
-    const f = frame || [x, y, s, s];
-    c.save();
-    c.globalAlpha = alpha;
-    if (glow > 0) { c.shadowColor = col(hex, 0.85); c.shadowBlur = s * glow; }
-    const g = c.createLinearGradient(f[0], f[1], f[0] + f[2] * 0.4, f[1] + f[3]);
-    g.addColorStop(0, shade(hex, 1.5));
-    g.addColorStop(0.45, shade(hex, 1.02));
-    g.addColorStop(1, shade(hex, 0.5));
-    c.fillStyle = g;
-    roundRect(c, b[0], b[1], w, h, rad);
-    c.fill();
-    c.shadowBlur = 0;
-
-    /* Der Grat wird über die geteilten Kanten hinaus gezogen und dann auf die
-       Zelle beschnitten: So verschwindet er dort ganz, statt eine Naht zu setzen. */
-    const lw = Math.max(1, s * 0.06);
-    c.beginPath();
-    c.rect(b[0], b[1], w, h);
-    c.clip();
-    const sx0 = (m & MASK.LEFT) ? b[0] - lw : b[0] + lw / 2;
-    const sy0 = (m & MASK.UP) ? b[1] - lw : b[1] + lw / 2;
-    const sx1 = (m & MASK.RIGHT) ? b[2] + lw : b[2] - lw / 2;
-    const sy1 = (m & MASK.DOWN) ? b[3] + lw : b[3] - lw / 2;
-    c.lineWidth = lw;
-    c.strokeStyle = shade(hex, 1.9, 0.5);
-    roundRect(c, sx0, sy0, sx1 - sx0, sy1 - sy0, rad.map((v) => v - lw / 2));
-    c.stroke();
-    c.restore();
-  }
-
-  // Der Schattenriss der Landestelle: gestrichelter Umriss um das ganze Tetromino.
-  function ghost(c, x, y, s, hex, alpha, mask) {
-    const m = mask || 0;
-    const b = tileBox(x, y, s, s * 0.12, m);
-    const w = b[2] - b[0], h = b[3] - b[1];
-    if (w <= 0 || h <= 0) return;
-    const rad = tileRadii(s * 0.16, m);
-    c.save();
-    c.globalAlpha = alpha;
-    c.fillStyle = col(hex, 0.09);
-    roundRect(c, b[0], b[1], w, h, rad);
-    c.fill();
-    const lw = Math.max(1, s * 0.07);
-    c.beginPath();
-    c.rect(b[0], b[1], w, h);
-    c.clip();
-    const sx0 = (m & MASK.LEFT) ? b[0] - lw : b[0] + lw / 2;
-    const sy0 = (m & MASK.UP) ? b[1] - lw : b[1] + lw / 2;
-    const sx1 = (m & MASK.RIGHT) ? b[2] + lw : b[2] - lw / 2;
-    const sy1 = (m & MASK.DOWN) ? b[3] + lw : b[3] - lw / 2;
-    c.lineWidth = lw;
-    c.strokeStyle = col(hex, 0.95);
-    c.setLineDash([s * 0.22, s * 0.16]);
-    roundRect(c, sx0, sy0, sx1 - sx0, sy1 - sy0, rad.map((v) => v - lw / 2));
-    c.stroke();
-    c.setLineDash([]);
-    c.restore();
-  }
-
-  // Ein weicher Lichtpunkt je Farbe, einmal gezeichnet und danach nur noch kopiert.
-  const dots = {};
-  function dot(hex) {
-    let cv = dots[hex];
-    if (!cv) {
-      cv = document.createElement("canvas");
-      cv.width = 64; cv.height = 64;
-      const c = cv.getContext("2d");
-      const g = c.createRadialGradient(32, 32, 0, 32, 32, 32);
-      g.addColorStop(0, col(hex, 1));
-      g.addColorStop(0.3, col(hex, 0.55));
-      g.addColorStop(1, col(hex, 0));
-      c.fillStyle = g;
-      c.fillRect(0, 0, 64, 64);
-      dots[hex] = cv;
-    }
-    return cv;
-  }
-
-  /* Der Hintergrund des Feldes: Tiefe, zwei wandernde Schleier in der Farbe des
-     Levels, ein Sternenfeld und das Raster der Zellen. */
-  function backdrop(c, w, h, cell, t, hex, stars) {
-    const g = c.createLinearGradient(0, 0, 0, h);
-    g.addColorStop(0, "#04060c");
-    g.addColorStop(0.55, "#070a13");
-    g.addColorStop(1, "#0c1120");
-    c.fillStyle = g;
-    c.fillRect(0, 0, w, h);
-
-    c.save();
-    c.globalCompositeOperation = "lighter";
-    for (let i = 0; i < 2; i++) {
-      const ph = t / (i ? 9700 : 6300) + i * 2.1;
-      const cx = w * (0.5 + 0.45 * Math.sin(ph));
-      const cy = h * (0.5 + 0.4 * Math.cos(ph * 0.77 + i));
-      const rad = Math.max(w, h) * (i ? 0.6 : 0.45);
-      const rg = c.createRadialGradient(cx, cy, 0, cx, cy, rad);
-      rg.addColorStop(0, col(hex, i ? 0.12 : 0.17));
-      rg.addColorStop(1, col(hex, 0));
-      c.fillStyle = rg;
-      c.fillRect(0, 0, w, h);
-    }
-    for (let i = 0; i < stars.length; i++) {
-      const s = stars[i];
-      const a = s.a * (0.25 + 0.75 * (0.5 + 0.5 * Math.sin(t / 700 * s.f + s.p)));
-      c.fillStyle = "rgba(255,255,255," + a.toFixed(3) + ")";
-      c.fillRect(s.x * w, s.y * h, s.s, s.s);
-    }
-    c.restore();
-
-    c.save();
-    c.strokeStyle = col(hex, 0.075);
-    c.lineWidth = 1;
-    c.beginPath();
-    for (let x = cell; x < w - 0.5; x += cell) {
-      const px = Math.round(x) + 0.5;
-      c.moveTo(px, 0); c.lineTo(px, h);
-    }
-    for (let y = cell; y < h - 0.5; y += cell) {
-      const py = Math.round(y) + 0.5;
-      c.moveTo(0, py); c.lineTo(w, py);
-    }
-    c.stroke();
-    c.restore();
-  }
-
-  // Dunkler Saum außen, dazu ein farbiger Hauch in der Farbe des Levels.
-  function vignette(c, w, h, hex, strength) {
-    const r0 = Math.min(w, h) * 0.34;
-    const r1 = Math.max(w, h) * 0.8;
-    const g = c.createRadialGradient(w / 2, h / 2, r0, w / 2, h / 2, r1);
-    g.addColorStop(0, "rgba(0,0,0,0)");
-    g.addColorStop(1, "rgba(0,0,0," + (0.2 + 0.5 * strength).toFixed(3) + ")");
-    c.fillStyle = g;
-    c.fillRect(0, 0, w, h);
-
-    c.save();
-    c.globalCompositeOperation = "lighter";
-    const g2 = c.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.5, w / 2, h / 2, r1);
-    g2.addColorStop(0, col(hex, 0));
-    g2.addColorStop(1, col(hex, 0.18 * strength));
-    c.fillStyle = g2;
-    c.fillRect(0, 0, w, h);
-    c.restore();
-  }
-
-  return {
-    MASK: MASK,
-    col: col, shade: shade, typeColor: typeColor, levelColor: levelColor,
-    roundRect: roundRect, tileBox: tileBox, tileRadii: tileRadii,
-    block: block, ghost: ghost, dot: dot,
-    backdrop: backdrop, vignette: vignette
-  };
-})();
-</script>
-<script>/* Die Bildschau des Spielfelds. Ein eigener Bildtakt zeichnet fortlaufend den
-   neuesten Spielzustand — mit Nachglühen, Funken, Lichtsäulen und Erschütterung.
-   Sie liest den Zustand nur; verändert wird er allein in engine.js.
-
-   Woher sie weiß, was geschehen ist: Was man dem Zustand ansieht (volle Reihen,
-   Level, Punkte, Spielende), erkennt sie am Vergleich mit dem letzten Bild — das
-   gilt auch für die Wiedergabe. Was man ihm nicht ansieht (Drehung, Fallenlassen,
-   Einrasten), meldet die Regel selbst über das Band state.fx. */
-const TetrisFx = (function () {
-  const COLS = 10, ROWS = 20;
-  const MAX_PARTS = 520;
-  const TAU = Math.PI * 2;
-  const P = TetrisPaint;
-  const MASK = P.MASK;
-
-  /* An welchen Seiten dieser Zelle liegt ein Nachbar desselben Steins? Nur so
-     weiß der Pinsel, welche Kante nach außen zeigt und welche zuwachsen darf. */
-  function cellsMask(cells, i) {
-    const cx = cells[i][0], cy = cells[i][1];
-    let m = 0;
-    for (let j = 0; j < cells.length; j++) {
-      if (j === i) continue;
-      const dx = cells[j][0] - cx, dy = cells[j][1] - cy;
-      if (dx === 0 && dy === -1) m |= MASK.UP;
-      else if (dx === 1 && dy === 0) m |= MASK.RIGHT;
-      else if (dx === 0 && dy === 1) m |= MASK.DOWN;
-      else if (dx === -1 && dy === 0) m |= MASK.LEFT;
-    }
-    return m;
-  }
-
-  // Im Stapel wachsen nur gleiche Steinsorten zusammen — Grenzen bleiben sichtbar.
-  function boardMask(board, r, c) {
-    const type = board[r][c];
-    let m = 0;
-    if (r > 0 && board[r - 1][c] === type) m |= MASK.UP;
-    if (c < COLS - 1 && board[r][c + 1] === type) m |= MASK.RIGHT;
-    if (r < ROWS - 1 && board[r + 1][c] === type) m |= MASK.DOWN;
-    if (c > 0 && board[r][c - 1] === type) m |= MASK.LEFT;
-    return m;
-  }
-
-  function create(canvas) {
-    const ctx = canvas.getContext("2d");
-    const bloom = document.createElement("canvas");
-    const bctx = bloom.getContext("2d");
-
-    let w = 0, h = 0, cell = 0, ox = 0, oy = 0, dpr = 1, bk = 1;
-    let raf = 0, alive = true, last = 0, t = 0;
-    let game = null, stars = [];
-    let shake = 0, flash = 0, flashHex = "#ffffff";
-    let vy = null, vyPiece = null; // die gezeichnete Höhe des Steins und wessen sie ist
-
-    const parts = [], rings = [], beams = [], bars = [], texts = [], trail = [];
-    const prev = { word: null, elapsed: null, level: null, score: null,
-                   clearKey: "", over: false, mark: null, clearY: 0 };
-
-    // --- Maße ---
-
-    function resize() {
-      const rw = canvas.clientWidth, rh = canvas.clientHeight;
-      if (!rw || !rh) return;
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      w = rw; h = rh;
-      cell = Math.min(w / COLS, h / ROWS);
-      ox = (w - cell * COLS) / 2;
-      oy = (h - cell * ROWS) / 2;
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      bloom.width = Math.max(1, Math.round(w * dpr * 0.34));
-      bloom.height = Math.max(1, Math.round(h * dpr * 0.34));
-      bk = bloom.width / w;
-      stars = [];
-      for (let i = 0; i < 70; i++) {
-        stars.push({ x: Math.random(), y: Math.random(), s: Math.random() < 0.8 ? 1 : 2,
-                     a: 0.15 + Math.random() * 0.5, f: 0.6 + Math.random() * 1.8, p: Math.random() * TAU });
-      }
-    }
-
-    // --- Was gezeigt werden soll ---
-
-    function spark(x, y, hex, vx, vy, life, size, kind) {
-      if (parts.length >= MAX_PARTS) return;
-      parts.push({ x: x, y: y, vx: vx, vy: vy, life: life, max: life, hex: hex,
-                   size: size, kind: kind || "dot",
-                   rot: Math.random() * TAU, vr: (Math.random() - 0.5) * 0.02 });
-    }
-    function burst(x, y, hex, n, speed, life, size, kind) {
-      for (let i = 0; i < n; i++) {
-        const a = Math.random() * TAU;
-        const v = speed * (0.3 + Math.random());
-        spark(x, y, hex, Math.cos(a) * v, Math.sin(a) * v, life * (0.6 + Math.random() * 0.7), size, kind);
-      }
-    }
-    function ring(x, y, hex, rMax, life, width) {
-      rings.push({ x: x, y: y, hex: hex, rMax: rMax, life: life, max: life, width: width });
-    }
-    function say(x, y, text, hex, size, life) {
-      texts.push({ x: x, y: y, text: text, hex: hex, size: size, life: life, max: life });
-    }
-    function reset(g) {
-      parts.length = 0; rings.length = 0; beams.length = 0;
-      bars.length = 0; texts.length = 0; trail.length = 0;
-      shake = 0; flash = 0;
-      prev.level = g ? g.level : null;
-      prev.score = g ? g.score : null;
-      prev.clearKey = g && g.clearRows ? g.clearRows.join(",") : "";
-      prev.over = g ? g.over : false;
-      prev.mark = null;
-      vy = null; vyPiece = null;
-    }
-
-    /* Wie weit der Stein zwischen zwei Feldern schon unterwegs ist — 0 bis 1.
-       Voll bis 1 gezählt: 1 ist genau das nächste Feld, deshalb geht die Bewegung
-       ohne Sprung in den nächsten Schritt der Regel über. */
-    function pieceFrac(g) {
-      if (!g.piece || g.over || g.paused || g.clearRows) return 0;
-      if (TetrisEngine.dropDistance(g) <= 0) return 0;
-      const iv = TetrisPieces.gravityMs(g.level);
-      if (!(iv > 0)) return 0;
-      return Math.max(0, Math.min(1, g.dropTimer / iv));
-    }
-
-    // Der Rahmen des ganzen Steins in Bildpunkten — über ihn läuft der Farbverlauf.
-    function cellsFrame(cells, px, py) {
-      let x0 = cells[0][0], x1 = x0, y0 = cells[0][1], y1 = y0;
-      for (let i = 1; i < cells.length; i++) {
-        if (cells[i][0] < x0) x0 = cells[i][0];
-        if (cells[i][0] > x1) x1 = cells[i][0];
-        if (cells[i][1] < y0) y0 = cells[i][1];
-        if (cells[i][1] > y1) y1 = cells[i][1];
-      }
-      return [(px + x0) * cell, (py + y0) * cell,
-              (x1 - x0 + 1) * cell, (y1 - y0 + 1) * cell];
-    }
-
-    /* Die Meldungen der Regel: Drehung, Fallenlassen, Einrasten. */
-    function handle(ev) {
-      const hex = P.typeColor(ev.type);
-      const cells = TetrisPieces.SHAPES[ev.type] ? TetrisPieces.SHAPES[ev.type][ev.rot] : null;
-      if (!cells) return;
-      if (ev.k === "rot") {
-        let sx = 0, sy = 0;
-        for (let i = 0; i < cells.length; i++) { sx += ev.x + cells[i][0] + 0.5; sy += ev.y + cells[i][1] + 0.5; }
-        ring(sx / cells.length * cell, sy / cells.length * cell, hex, cell * 1.6, 280, cell * 0.1);
-        return;
-      }
-      if (ev.k === "drop") {
-        // Über jede Spalte des Steins eine Lichtsäule, vom Absprung bis zum Aufschlag.
-        const deep = {};
-        for (let i = 0; i < cells.length; i++) {
-          const c = ev.x + cells[i][0];
-          if (deep[c] === undefined || cells[i][1] > deep[c]) deep[c] = cells[i][1];
-        }
-        for (const key in deep) {
-          const c = Number(key);
-          beams.push({ x: c * cell, w: cell, hex: hex, life: 340, max: 340,
-                       y0: (ev.from + deep[key]) * cell, y1: (ev.to + deep[key] + 1) * cell });
-          burst((c + 0.5) * cell, (ev.to + deep[key] + 1) * cell, hex,
-                4, cell * 0.006, 420, cell * 0.12, "dot");
-        }
-        shake = Math.min(16, shake + 2.5 + ev.dist * 0.5);
-        return;
-      }
-      if (ev.k === "lock") {
-        for (let i = 0; i < cells.length; i++) {
-          const x = (ev.x + cells[i][0] + 0.5) * cell;
-          const y = (ev.y + cells[i][1] + 1) * cell;
-          burst(x, y, hex, 3, cell * 0.004, 380, cell * 0.1, "dot");
-        }
-        shake = Math.min(12, shake + 1.8);
-      }
-    }
-
-    /* Volle Reihen: gleißender Balken, Splitter in den Farben der Steine, eine
-       Druckwelle und ein Aufblitzen, das mit der Zahl der Reihen wächst. */
-    function clearBurst(g, rows) {
-      const n = rows.length;
-      for (let i = 0; i < n; i++) {
-        const r = rows[i];
-        bars.push({ row: r, life: 420, max: 420 });
-        for (let c = 0; c < COLS; c++) {
-          const hex = P.typeColor(g.board[r][c]);
-          burst((c + 0.5) * cell, (r + 0.5) * cell, hex,
-                n >= 4 ? 5 : 3, cell * 0.009, 620, cell * 0.14,
-                Math.random() < 0.45 ? "shard" : "dot");
-        }
-        ring(COLS * cell / 2, (r + 0.5) * cell, "#ffffff", cell * 8, 460, cell * 0.14);
-      }
-      prev.clearY = (rows[0] + 0.5) * cell;
-      shake = Math.min(28, shake + 5 + n * 4);
-      flash = Math.min(1, flash + 0.15 * n);
-      flashHex = n >= 4 ? P.levelColor(g.level) : "#ffffff";
-      if (n >= 4) say(COLS * cell / 2, prev.clearY, "TETRIS", "#ffffff", cell * 1.1, 1200);
-      else if (n === 3) say(COLS * cell / 2, prev.clearY, "DREIFACH", "#ffe040", cell * 0.7, 900);
-    }
-
-    function levelUp(g) {
-      const hex = P.levelColor(g.level);
-      flash = Math.max(flash, 0.32);
-      flashHex = hex;
-      ring(COLS * cell / 2, ROWS * cell / 2, hex, cell * 12, 850, cell * 0.32);
-      burst(COLS * cell / 2, ROWS * cell / 2, hex, 30, cell * 0.009, 1000, cell * 0.18, "dot");
-      say(COLS * cell / 2, ROWS * cell * 0.3, "LEVEL " + g.level, hex, cell * 0.8, 1400);
-    }
-
-    function gameOver(g) {
-      flash = 0.7; flashHex = "#ff5c78";
-      shake = 24;
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          if (!g.board[r][c] || Math.random() > 0.5) continue;
-          spark((c + 0.5) * cell, (r + 0.5) * cell, P.typeColor(g.board[r][c]),
-                (Math.random() - 0.5) * cell * 0.006, -Math.random() * cell * 0.005,
-                800 + Math.random() * 700, cell * 0.16, "shard");
-        }
-      }
-    }
-
-    // --- Fortschreiben ---
-
-    function watch(g) {
-      const key = g.clearRows ? g.clearRows.join(",") : "";
-      if (key && key !== prev.clearKey) clearBurst(g, g.clearRows);
-      prev.clearKey = key;
-
-      if (prev.level !== null && g.level > prev.level) levelUp(g);
-      prev.level = g.level;
-
-      if (prev.score !== null && g.score - prev.score >= 40) {
-        say(COLS * cell / 2, prev.clearY || ROWS * cell * 0.45, "+" + (g.score - prev.score),
-            P.levelColor(g.level), cell * 0.62, 950);
-      }
-      prev.score = g.score;
-
-      if (g.over && !prev.over) gameOver(g);
-      prev.over = g.over;
-    }
-
-    function step(dt) {
-      t += dt;
-      const g = game;
-      if (g) {
-        // Ein neues Spiel — oder ein Sprung zurück in der Aufzeichnung — räumt auf.
-        if (prev.word !== g.seedWord || prev.elapsed === null || g.elapsed < prev.elapsed - 1) reset(g);
-        prev.word = g.seedWord;
-        prev.elapsed = g.elapsed;
-        if (g.fx && g.fx.length) {
-          for (let i = 0; i < g.fx.length; i++) handle(g.fx[i]);
-          g.fx.length = 0;
-        }
-        watch(g);
-
-        /* Die gezeichnete Höhe des Steins zieht der Regel weich nach. Zwischen zwei
-           Feldern gleitet sie ohnehin mit; das Nachziehen glättet zusätzlich die
-           Sprünge, die die Regel selbst macht — vor allem beim Halten von "ein Feld
-           tiefer", wo der Stein sonst im Raster hüpft. Ein neuer Stein oder ein
-           weiter Sprung setzt sie sofort, damit nichts hinterherschleift. */
-        if (g.piece && !g.over) {
-          const target = g.piece.y + pieceFrac(g);
-          if (vy === null || vyPiece !== g.piece || g.paused || Math.abs(target - vy) > 2.5) {
-            vy = target;
-          } else {
-            vy += (target - vy) * (1 - Math.pow(0.004, dt / 90));
-            if (Math.abs(target - vy) < 0.004) vy = target;
-          }
-          vyPiece = g.piece;
-        } else { vy = null; vyPiece = null; }
-
-        // Das Nachglühen: abgetastet wird die gleitende Lage, nicht das Feldraster.
-        if (g.piece && !g.over && !g.paused) {
-          const p = g.piece;
-          const m = prev.mark;
-          if (!m || m.type !== p.type || m.rot !== p.rot || m.x !== p.x ||
-              Math.abs(vy - m.y) >= 0.26) {
-            prev.mark = { type: p.type, rot: p.rot, x: p.x, y: vy };
-            trail.push({ type: p.type, rot: p.rot, x: p.x, y: vy, life: 190, max: 190 });
-            if (trail.length > 12) trail.shift();
-          }
-        } else prev.mark = null;
-      }
-
-      const grav = cell * 0.00001;
-      for (let i = parts.length - 1; i >= 0; i--) {
-        const q = parts[i];
-        q.life -= dt;
-        if (q.life <= 0) { parts.splice(i, 1); continue; }
-        q.x += q.vx * dt;
-        q.y += q.vy * dt;
-        q.vy += grav * dt;
-        q.vx *= 0.995;
-        q.rot += q.vr * dt;
-      }
-      decay(rings, dt); decay(beams, dt); decay(bars, dt); decay(texts, dt); decay(trail, dt);
-
-      const k = dt / 16.7;
-      shake *= Math.pow(0.86, k);
-      flash *= Math.pow(0.85, k);
-      if (shake < 0.15) shake = 0;
-      if (flash < 0.004) flash = 0;
-    }
-
-    function decay(list, dt) {
-      for (let i = list.length - 1; i >= 0; i--) {
-        list[i].life -= dt;
-        if (list[i].life <= 0) list.splice(i, 1);
-      }
-    }
-
-    // --- Zeichnen ---
-
-    /* Die Szene wird zweimal gezeichnet: einmal fein auf das sichtbare Bild und
-       einmal grob auf eine kleine Fläche, die danach weich und additiv darüber
-       kommt — daher das Glühen. */
-    function scene(c, hi) {
-      const g = game;
-      c.save();
-      c.translate(ox, oy);
-      if (g) {
-        drawBoard(c, g, hi);
-        drawBars(c);
-        drawTrail(c);
-        drawGhost(c, g, hi);
-        drawPiece(c, g, hi);
-      }
-      drawBeams(c);
-      drawRings(c);
-      drawParts(c);
-      if (hi) drawTexts(c);
-      c.restore();
-    }
-
-    function drawBoard(c, g, hi) {
-      const dim = g.over ? 0.5 : 1;
-      for (let r = 0; r < ROWS; r++) {
-        const hot = g.clearRows && g.clearRows.indexOf(r) !== -1;
-        for (let cc = 0; cc < COLS; cc++) {
-          const type = g.board[r][cc];
-          if (!type) continue;
-          const hex = hot ? "#ffffff" : P.typeColor(type);
-          const x = cc * cell, y = r * cell;
-          if (hi) P.block(c, x, y, cell, hex, dim, hot ? 0.8 : 0, boardMask(g.board, r, cc));
-          else {
-            c.fillStyle = P.col(hex, hot ? 0.95 : 0.4 * dim);
-            c.fillRect(x, y, cell, cell);
-          }
-        }
-      }
-    }
-
-    function drawGhost(c, g, hi) {
-      if (!g.piece || g.over) return;
-      const d = TetrisEngine.dropDistance(g);
-      if (d <= 0) return;
-      const p = g.piece;
-      const cells = TetrisPieces.SHAPES[p.type][p.rot];
-      const hex = P.typeColor(p.type);
-      const a = 0.5 + 0.2 * Math.sin(t / 260);
-      for (let i = 0; i < cells.length; i++) {
-        const y = p.y + cells[i][1] + d;
-        if (y < 0) continue;
-        const x = (p.x + cells[i][0]) * cell;
-        if (hi) P.ghost(c, x, y * cell, cell, hex, a, cellsMask(cells, i));
-        else { c.fillStyle = P.col(hex, 0.1); c.fillRect(x, y * cell, cell, cell); }
-      }
-    }
-
-    /* Gezeichnet wird die nachgezogene Höhe vy, nicht die des Spielstands: Der Stein
-       gleitet zwischen zwei Feldern weiter — die volle Feldbreite, denn erst dann
-       geht der letzte Bildpunkt nahtlos in den nächsten Schritt der Regel über. */
-    function drawPiece(c, g, hi) {
-      if (!g.piece || g.over) return;
-      const p = g.piece;
-      const cells = TetrisPieces.SHAPES[p.type][p.rot];
-      const hex = P.typeColor(p.type);
-      const py = vy === null ? p.y : vy;
-      const frame = cellsFrame(cells, p.x, py);
-      const glow = 0.5 + 0.25 * Math.sin(t / 190);
-      for (let i = 0; i < cells.length; i++) {
-        const y = py + cells[i][1];
-        if (y < -1) continue;
-        const x = (p.x + cells[i][0]) * cell;
-        if (hi) P.block(c, x, y * cell, cell, hex, 1, glow, cellsMask(cells, i), frame);
-        else { c.fillStyle = P.col(hex, 0.8); c.fillRect(x, y * cell, cell, cell); }
-      }
-    }
-
-    function drawTrail(c) {
-      c.save();
-      c.globalCompositeOperation = "lighter";
-      for (let i = 0; i < trail.length; i++) {
-        const q = trail[i];
-        const k = q.life / q.max;
-        const a = 0.22 * k * k;
-        if (a < 0.008) continue;
-        const cells = TetrisPieces.SHAPES[q.type][q.rot];
-        c.fillStyle = P.col(P.typeColor(q.type), a);
-        for (let j = 0; j < cells.length; j++) {
-          const m = cellsMask(cells, j);
-          const b = P.tileBox((q.x + cells[j][0]) * cell, (q.y + cells[j][1]) * cell,
-                              cell, cell * 0.05, m);
-          P.roundRect(c, b[0], b[1], b[2] - b[0], b[3] - b[1], P.tileRadii(cell * 0.26, m));
-          c.fill();
-        }
-      }
-      c.restore();
-    }
-
-    function drawBars(c) {
-      c.save();
-      c.globalCompositeOperation = "lighter";
-      for (let i = 0; i < bars.length; i++) {
-        const b = bars[i];
-        const k = b.life / b.max;
-        const y = b.row * cell;
-        const grow = (1 - k) * cell * 1.4;
-        const g = c.createLinearGradient(0, y - grow, 0, y + cell + grow);
-        g.addColorStop(0, "rgba(255,255,255,0)");
-        g.addColorStop(0.5, "rgba(255,255,255," + (0.85 * k).toFixed(3) + ")");
-        g.addColorStop(1, "rgba(255,255,255,0)");
-        c.fillStyle = g;
-        c.fillRect(-cell, y - grow, cell * (COLS + 2), cell + grow * 2);
-      }
-      c.restore();
-    }
-
-    function drawBeams(c) {
-      c.save();
-      c.globalCompositeOperation = "lighter";
-      for (let i = 0; i < beams.length; i++) {
-        const b = beams[i];
-        const k = b.life / b.max;
-        const g = c.createLinearGradient(0, b.y0, 0, b.y1);
-        g.addColorStop(0, P.col(b.hex, 0));
-        g.addColorStop(1, P.col(b.hex, 0.7 * k));
-        c.fillStyle = g;
-        const inset = (1 - k) * b.w * 0.34;
-        c.fillRect(b.x + inset, b.y0, b.w - inset * 2, Math.max(0, b.y1 - b.y0));
-      }
-      c.restore();
-    }
-
-    function drawRings(c) {
-      c.save();
-      c.globalCompositeOperation = "lighter";
-      for (let i = 0; i < rings.length; i++) {
-        const r = rings[i];
-        const k = 1 - r.life / r.max;
-        const rad = r.rMax * (1 - (1 - k) * (1 - k));
-        if (rad <= 0) continue;
-        c.strokeStyle = P.col(r.hex, 0.65 * (1 - k));
-        c.lineWidth = Math.max(1, r.width * (1 - k));
-        c.beginPath();
-        c.arc(r.x, r.y, rad, 0, TAU);
-        c.stroke();
-      }
-      c.restore();
-    }
-
-    function drawParts(c) {
-      c.save();
-      c.globalCompositeOperation = "lighter";
-      for (let i = 0; i < parts.length; i++) {
-        const q = parts[i];
-        const k = q.life / q.max;
-        const a = Math.min(1, k * 1.7);
-        if (q.kind === "shard") {
-          c.save();
-          c.translate(q.x, q.y);
-          c.rotate(q.rot);
-          c.fillStyle = P.col(q.hex, a);
-          c.fillRect(-q.size / 2, -q.size / 2, q.size, q.size * 0.7);
-          c.restore();
-        } else {
-          const s = q.size * (0.5 + k);
-          c.globalAlpha = a;
-          c.drawImage(P.dot(q.hex), q.x - s, q.y - s, s * 2, s * 2);
-          c.globalAlpha = 1;
-        }
-      }
-      c.restore();
-    }
-
-    function drawTexts(c) {
-      for (let i = 0; i < texts.length; i++) {
-        const q = texts[i];
-        const k = q.life / q.max;
-        const grow = Math.min(1, (1 - k) * 6);
-        c.save();
-        c.globalAlpha = Math.min(1, k * 2.4);
-        c.translate(q.x, q.y - (1 - k) * cell * 1.6);
-        c.scale(0.6 + 0.4 * grow, 0.6 + 0.4 * grow);
-        c.textAlign = "center";
-        c.textBaseline = "middle";
-        c.font = "800 " + q.size.toFixed(1) + "px 'Segoe UI', system-ui, sans-serif";
-        c.lineWidth = Math.max(2, q.size * 0.16);
-        c.strokeStyle = "rgba(0,0,0,.6)";
-        c.strokeText(q.text, 0, 0);
-        c.shadowColor = q.hex;
-        c.shadowBlur = q.size * 0.8;
-        c.fillStyle = "#ffffff";
-        c.fillText(q.text, 0, 0);
-        c.fillStyle = q.hex;
-        c.globalAlpha *= 0.55;
-        c.fillText(q.text, 0, 0);
-        c.restore();
-      }
-    }
-
-    function draw() {
-      const g = game;
-      const hex = g ? P.levelColor(g.level) : "#6ea8ff";
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, w, h);
-      P.backdrop(ctx, w, h, cell, t, hex, stars);
-
-      const sx = shake ? (Math.random() * 2 - 1) * shake : 0;
-      const sy = shake ? (Math.random() * 2 - 1) * shake : 0;
-      ctx.translate(sx, sy);
-      bctx.setTransform(bk, 0, 0, bk, sx * bk, sy * bk);
-      bctx.clearRect(-sx, -sy, w, h);
-
-      scene(ctx, true);
-      scene(bctx, false);
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
-      ctx.globalAlpha = 0.75;
-      ctx.filter = "blur(" + Math.max(2, cell * 0.28).toFixed(1) + "px)";
-      ctx.drawImage(bloom, 0, 0, w, h);
-      ctx.restore();
-
-      if (flash > 0) {
-        ctx.save();
-        ctx.globalCompositeOperation = "lighter";
-        ctx.fillStyle = P.col(flashHex, Math.min(0.8, flash));
-        ctx.fillRect(0, 0, w, h);
-        ctx.restore();
-      }
-
-      const over = !!(g && g.over);
-      P.vignette(ctx, w, h, over ? "#ff5c78" : hex, over ? 0.6 : 0.32);
-    }
-
-    // --- Bildtakt ---
-
-    function frame(now) {
-      if (!alive) return;
-      if (canvas.clientWidth !== w || canvas.clientHeight !== h) resize();
-      const dt = last ? Math.min(now - last, 50) : 16;
-      last = now;
-      if (w > 0 && h > 0) { step(dt); draw(); }
-      raf = requestAnimationFrame(frame);
-    }
-
-    resize();
-    raf = requestAnimationFrame(frame);
-
-    return {
-      setGame: function (g) { game = g; },
-      destroy: function () { alive = false; cancelAnimationFrame(raf); }
-    };
-  }
-
-  return { create: create };
-})();
-</script>
 <script>/* Die Ansichten des Spiels: Feld, Vorschau, Statistik und der Startbildschirm.
    Sie zeigen nur an, was man ihnen gibt — gesteuert wird in app.js. */
+function Cell({ cell }) {
+  const cls = cell.type
+    ? "cell c-" + cell.type + (cell.kind === "ghost" ? " ghost" : "") +
+      (cell.kind === "clear" ? " clear" : "")
+    : "cell";
+  return html`<div class=${cls}></div>`;
+}
 
-/* Das Feld ist eine Leinwand: Preact hängt sie nur auf und reicht ihr den
-   jeweils neuesten Spielzustand; gezeichnet wird in fx.js mit eigenem Bildtakt. */
 function Board({ game }) {
-  const { useRef, useEffect } = preactHooks;
-  const nodeRef = useRef(null);
-  const fxRef = useRef(null);
-
-  useEffect(() => {
-    const fx = TetrisFx.create(nodeRef.current);
-    fxRef.current = fx;
-    fx.setGame(game);
-    return () => { fx.destroy(); fxRef.current = null; };
-  }, []);
-
-  // Nach jedem Neuzeichnen bekommt die Leinwand den aktuellen Stand gereicht.
-  useEffect(() => { if (fxRef.current) fxRef.current.setGame(game); });
-
-  return html`<canvas class="board" ref=${nodeRef}></canvas>`;
+  const cells = TetrisEngine.renderCells(game);
+  return html`<div class="board">${cells.map((c, i) => html`<${Cell} key=${i} cell=${c} />`)}</div>`;
 }
 
 function Preview({ type }) {
@@ -2315,15 +1323,11 @@ function Stats({ stats }) {
   </div>`;
 }
 
-// Der Schriftzug zerfällt in Buchstaben, damit jeder für sich leuchten kann.
-const TITLE_LETTERS = ["T", "E", "T", "R", "I", "S"];
-
 function StartScreen({ level, onLevel, seed, onSeed, summary, onScores, onStart }) {
   const levels = [];
   for (let i = 0; i <= 9; i++) levels.push(i);
   return html`<div class="overlay">
-    <h1 class="title">${TITLE_LETTERS.map((ch, i) => html`
-      <span class="tl" key=${i} style=${"--i:" + i}>${ch}</span>`)}</h1>
+    <h1>TETRIS</h1>
     <p class="lead">Steine ziehen wie im Original — mit dem Zufallsverfahren des NES.</p>
     <p class="label">Startlevel</p>
     <div class="levels">
@@ -2925,7 +1929,7 @@ function App() {
     const frames = tapeRef.current;
     const frame = frames[rp.index];
     const view = TetrisEngine.fromSnapshot(frame);
-    return html`<div class=${"app replaying lv" + (view.level % 10)}>
+    return html`<div class="app replaying">
       <aside class="panel left">
         <h2>Statistik</h2>
         <${Stats} stats=${view.stats} />
@@ -2961,7 +1965,7 @@ function App() {
   }
 
   if (!g) {
-    return html`<div class="app intro-view">
+    return html`<div class="app">
       <div class="stage intro">
         <${StartScreen} level=${startLevel} onLevel=${setStartLevel}
           seed=${seedWord} onSeed=${setSeedWord}
@@ -2979,7 +1983,7 @@ function App() {
   const isRecord = !!(sum && lastEntry && sum.best === lastEntry);
   const rank = sum && lastEntry ? sum.entries.indexOf(lastEntry) + 1 : 0;
 
-  return html`<div class=${"app lv" + (g.level % 10)}>
+  return html`<div class="app">
     <aside class="panel left">
       <h2>Statistik</h2>
       <${Stats} stats=${g.stats} />

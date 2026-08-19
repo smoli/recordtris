@@ -1,24 +1,16 @@
 /* Die Ansichten des Spiels: Feld, Vorschau, Statistik und der Startbildschirm.
    Sie zeigen nur an, was man ihnen gibt — gesteuert wird in app.js. */
+function Cell({ cell }) {
+  const cls = cell.type
+    ? "cell c-" + cell.type + (cell.kind === "ghost" ? " ghost" : "") +
+      (cell.kind === "clear" ? " clear" : "")
+    : "cell";
+  return html`<div class=${cls}></div>`;
+}
 
-/* Das Feld ist eine Leinwand: Preact hängt sie nur auf und reicht ihr den
-   jeweils neuesten Spielzustand; gezeichnet wird in fx.js mit eigenem Bildtakt. */
 function Board({ game }) {
-  const { useRef, useEffect } = preactHooks;
-  const nodeRef = useRef(null);
-  const fxRef = useRef(null);
-
-  useEffect(() => {
-    const fx = TetrisFx.create(nodeRef.current);
-    fxRef.current = fx;
-    fx.setGame(game);
-    return () => { fx.destroy(); fxRef.current = null; };
-  }, []);
-
-  // Nach jedem Neuzeichnen bekommt die Leinwand den aktuellen Stand gereicht.
-  useEffect(() => { if (fxRef.current) fxRef.current.setGame(game); });
-
-  return html`<canvas class="board" ref=${nodeRef}></canvas>`;
+  const cells = TetrisEngine.renderCells(game);
+  return html`<div class="board">${cells.map((c, i) => html`<${Cell} key=${i} cell=${c} />`)}</div>`;
 }
 
 function Preview({ type }) {
@@ -42,15 +34,11 @@ function Stats({ stats }) {
   </div>`;
 }
 
-// Der Schriftzug zerfällt in Buchstaben, damit jeder für sich leuchten kann.
-const TITLE_LETTERS = ["T", "E", "T", "R", "I", "S"];
-
 function StartScreen({ level, onLevel, seed, onSeed, summary, onScores, onStart }) {
   const levels = [];
   for (let i = 0; i <= 9; i++) levels.push(i);
   return html`<div class="overlay">
-    <h1 class="title">${TITLE_LETTERS.map((ch, i) => html`
-      <span class="tl" key=${i} style=${"--i:" + i}>${ch}</span>`)}</h1>
+    <h1>TETRIS</h1>
     <p class="lead">Steine ziehen wie im Original — mit dem Zufallsverfahren des NES.</p>
     <p class="label">Startlevel</p>
     <div class="levels">
