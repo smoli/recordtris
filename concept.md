@@ -22,16 +22,24 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
 - `src/pieces.js` — die sieben Steine mit ihren vier Drehlagen, die Falltempo-Tabelle
   und die Punktetabelle.
 - `src/engine.js` — Spielfeld, Kollision, Einrasten, Reihenauflösung, Level.
-  Ein einfacher Zustandsobjekt-Baum, der von außen verändert wird; dazu die
+  Ein einfacher Zustandsobjekt-Baum, der von außen verändert wird; dazu das kurze
+  Ereignisband `fx` für die Bildschau und die
   Momentaufnahme (`snapshot`) und ihre Umkehrung (`fromSnapshot`).
 - `src/replay.js` — das Band der Aufzeichnung und der Abspielkopf.
 - `src/highscores.js` — die Bestenliste: Lesen und Schreiben der Datei, das Bilden
   der Einträge und ihre Gruppierung nach dem Merkwort.
-- `src/gameui.js` — die Ansichten des Spiels: Feld, Vorschau, Statistik, Startbild.
+- `src/gameui.js` — die Ansichten des Spiels: Leinwand des Feldes, Vorschau,
+  Statistik, Startbild.
 - `src/replayui.js` — die Bedienleiste der Wiedergabe.
 - `src/scoresui.js` — die Ansicht der Bestenliste.
 - `src/app.js` — Zustand, Tastensteuerung, Bildtakt, Aufzeichnung, Eintrag ins Ergebnis.
-- `src/style.css` — Aussehen.
+- `src/fxpaint.js` — der Pinselkasten: Farben mischen, Kachel, Schattenriss,
+  Hintergrund und Saum zeichnen.
+- `src/fx.js` — die Bildschau des Feldes: eigener Bildtakt, Ereignisse, Teilchen,
+  Erschütterung, Nachglühen.
+- `src/style.css` — Grundmaße, Farben, Feld und Seitenspalten.
+- `src/overlay.css` — Startbildschirm, Einblendungen, Knöpfe, Eingabefelder.
+- `src/screens.css` — Wiedergabe und Bestenliste.
 
 Der Spielzustand liegt bewusst nicht in einem Preact-State, sondern in einer Ref:
 Der Bildtakt (`requestAnimationFrame`) schreibt ihn fort und stößt ein Neuzeichnen
@@ -66,6 +74,53 @@ sie sonst an einer Wand scheitern würden — das Original kennt das nicht, ohne
 ist Spielen an der Wand aber unnötig zäh. Dazu kommen ein Schattenriss der
 Landestelle und die Leertaste zum sofortigen Fallenlassen (ein Punkt je Feld);
 beides gibt es im Original ebenfalls nicht.
+
+**Das Feld ist eine Leinwand, nicht ein Raster aus Kästchen.** Bis auf das Feld
+bleibt die ganze Oberfläche Preact und CSS; das Feld selbst zeichnet ein eigener
+Bildtakt auf ein `<canvas>`. Nur so lassen sich Dinge zeigen, die zwischen zwei
+Spielzuständen liegen: der Stein gleitet zwischen zwei Feldern weiter, statt zu
+springen; Funken, Lichtsäulen, Druckwellen und das Erzittern des Bildes laufen
+weiter, auch wenn sich am Spielstand gerade nichts ändert. Preact hängt die
+Leinwand nur auf und reicht ihr nach jedem Neuzeichnen den neuesten Zustand — die
+Bildschau liest ihn, verändert ihn nie.
+
+**Woher die Bildschau weiß, was geschehen ist.** Zweierlei. Was man dem Zustand
+ansieht — volle Reihen, Level, Punkte, Spielende —, erkennt sie am Vergleich mit
+dem vorigen Bild; das wirkt deshalb auch in der Wiedergabe, die ja nur
+Momentaufnahmen zeigt. Was man ihm nicht ansieht — Drehung, Fallenlassen,
+Einrasten —, meldet die Regel selbst über ein kurzes Ereignisband `state.fx`, das
+die Bildschau ausliest und leert. Das Band gehört nicht zum Spielstand und steht
+darum weder in der Momentaufnahme noch in der Bestenliste.
+
+**Das Glühen entsteht durch ein zweites, grobes Bild.** Jede Szene wird zweimal
+gezeichnet: fein auf das sichtbare Bild und grob auf eine Fläche von einem Drittel
+der Kantenlänge. Diese wird weich gezeichnet und additiv darübergelegt. Das kostet
+kaum etwas und lässt alles Helle nach außen strahlen — Kacheln, Funken, Balken und
+Schrift zugleich, ohne dass jede Form ihren eigenen Schein braucht.
+
+**Vier Felder, ein Stein.** Beim Zeichnen weiß jede Zelle, an welchen Seiten ein
+Nachbar desselben Steins liegt. Dort reicht ihre Kachel bis an den Rand der Zelle,
+die Ecke bleibt spitz, und der Grat aus Licht wird an dieser Kante weggeschnitten,
+statt eine Naht zu setzen — die vier Felder wachsen zu einer Form zusammen. Der
+Farbverlauf läuft dabei über den ganzen Stein, nicht über jede Zelle einzeln. Im
+Stapel wachsen nur gleiche Steinsorten zusammen: Wo zwei verschiedene Steine
+aneinanderstoßen, bleibt die Grenze sichtbar. Die Vorschau in der Seitenspalte
+folgt derselben Regel, dort mit Mitteln von CSS.
+
+**Die gezeichnete Höhe zieht der Regel nach.** Der Stein gleitet nicht nur zwischen
+zwei Feldern mit — die gezeichnete Höhe folgt der des Spielstands zusätzlich weich
+nach. Das glättet die Sprünge, die die Regel selbst macht: vor allem beim Halten
+von "ein Feld tiefer", wo der Stein sonst im Feldraster hüpft, weil dort die Uhr der
+Schwerkraft bei jedem Schritt neu beginnt. Ein neuer Stein oder ein Sprung über
+mehrere Felder setzt die Höhe sofort, damit nichts hinterherschleift. Die Spur
+hinter dem Stein tastet dieselbe gleitende Höhe ab und ist deshalb ein Schmier,
+kein Abdruck im Raster.
+
+**Jedes Level hat seine Farbe.** Zehn Farben wechseln sich ab; sie färben den
+Hintergrund des Feldes, den Saum, das Aufblitzen beim Tetris und — über die Klasse
+`lv0` bis `lv9` am Wurzelelement — auch die Lichtstriche der Seitenspalten und die
+Zahlen. Die Reihe steht doppelt: in `fxpaint.js` für die Leinwand und in
+`style.css` für alles andere. Sie muss zusammenpassen.
 
 **Das Feld füllt das Fenster.** Alle Maße hängen an einer einzigen Größe, der
 Kantenlänge eines Feldes (`--cell` in `src/style.css`); Seitenspalten, Schriften und

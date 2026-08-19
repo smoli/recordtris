@@ -30,6 +30,13 @@ const TetrisEngine = (function () {
     return board;
   }
 
+  /* Was der Zustand nicht selbst verrät, meldet er: ein kurzes Band von Ereignissen,
+     das die Bildschau ausliest und danach leert. Es gehört nicht zum Spielstand und
+     steht deshalb auch nicht in der Momentaufnahme. */
+  function emit(state, ev) {
+    if (state.fx && state.fx.length < 48) state.fx.push(ev);
+  }
+
   function collides(board, type, rot, x, y) {
     const cells = TetrisPieces.SHAPES[type][rot];
     for (let i = 0; i < cells.length; i++) {
@@ -66,6 +73,7 @@ const TetrisEngine = (function () {
       clearRows: null,
       clearTimer: 0,
       elapsed: 0,
+      fx: [],
       version: 0
     };
     state.nextType = state.rng.nextPiece();
@@ -106,6 +114,7 @@ const TetrisEngine = (function () {
       if (!collides(state.board, p.type, rot, p.x + kicks[i], p.y)) {
         p.rot = rot;
         p.x += kicks[i];
+        emit(state, { k: "rot", type: p.type, rot: p.rot, x: p.x, y: p.y });
         state.version++;
         return true;
       }
@@ -138,6 +147,7 @@ const TetrisEngine = (function () {
 
   function dropDistance(state) {
     const p = state.piece;
+    if (!p) return 0;
     let d = 0;
     while (!collides(state.board, p.type, p.rot, p.x, p.y + d + 1)) d++;
     return d;
@@ -146,8 +156,11 @@ const TetrisEngine = (function () {
   function hardDrop(state) {
     if (!playable(state)) return false;
     const d = dropDistance(state);
+    const from = state.piece.y;
     state.piece.y += d;
     state.score += d;
+    emit(state, { k: "drop", type: state.piece.type, rot: state.piece.rot,
+      x: state.piece.x, from: from, to: state.piece.y, dist: d });
     lock(state);
     return true;
   }
@@ -155,6 +168,7 @@ const TetrisEngine = (function () {
   function lock(state) {
     const p = state.piece;
     const cells = TetrisPieces.SHAPES[p.type][p.rot];
+    emit(state, { k: "lock", type: p.type, rot: p.rot, x: p.x, y: p.y });
     let aboveField = false;
     for (let i = 0; i < cells.length; i++) {
       const cx = p.x + cells[i][0];
@@ -218,36 +232,6 @@ const TetrisEngine = (function () {
     state.version++;
   }
 
-  /* Baut das Bild des Feldes: liegende Steine, blinkende Reihen,
-     Schattenriss der Landestelle und der fallende Stein selbst. */
-  function renderCells(state) {
-    const out = new Array(ROWS * COLS);
-    for (let r = 0; r < ROWS; r++) {
-      const flashing = state.clearRows && state.clearRows.indexOf(r) !== -1;
-      for (let c = 0; c < COLS; c++) {
-        out[r * COLS + c] = { type: state.board[r][c], kind: flashing ? "clear" : "fixed" };
-      }
-    }
-    if (state.piece && !state.over) {
-      const p = state.piece;
-      const cells = TetrisPieces.SHAPES[p.type][p.rot];
-      const d = dropDistance(state);
-      if (d > 0) {
-        for (let i = 0; i < cells.length; i++) {
-          const cx = p.x + cells[i][0];
-          const cy = p.y + cells[i][1] + d;
-          if (cy >= 0) out[cy * COLS + cx] = { type: p.type, kind: "ghost" };
-        }
-      }
-      for (let i = 0; i < cells.length; i++) {
-        const cx = p.x + cells[i][0];
-        const cy = p.y + cells[i][1];
-        if (cy >= 0) out[cy * COLS + cx] = { type: p.type, kind: "active" };
-      }
-    }
-    return out;
-  }
-
   /* Eine vollständige Momentaufnahme: alles, was das Bild ausmacht, und dazu der
      Zustand des Zufalls. Aus ihr lässt sich das Bild zeigen UND weiterspielen. */
   function snapshot(state) {
@@ -295,6 +279,7 @@ const TetrisEngine = (function () {
       clearRows: snap.clearRows ? snap.clearRows.slice() : null,
       clearTimer: snap.clearTimer,
       elapsed: snap.t,
+      fx: [],
       version: 0
     };
   }
@@ -303,7 +288,7 @@ const TetrisEngine = (function () {
     COLS: COLS, ROWS: ROWS,
     create: create, update: update,
     move: move, rotate: rotate, softDrop: softDrop, hardDrop: hardDrop,
-    togglePause: togglePause, renderCells: renderCells,
+    dropDistance: dropDistance, togglePause: togglePause,
     snapshot: snapshot, fromSnapshot: fromSnapshot
   };
 })();
