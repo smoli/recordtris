@@ -121,21 +121,8 @@ die Liste das oben an — sie gilt dann nur für die laufende Sitzung.
   fallen lässt, gibt einen Punkt dazu.
 - **Level** und **Reihen** — alle zehn Reihen steigt das Level, die Steine fallen
   schneller.
-- **Nächster** — der Stein, der als Nächstes kommt; er dreht sich langsam vor dir.
+- **Nächster** — der Stein, der als Nächstes kommt.
 - **Statistik** links — wie oft jede Steinsorte bisher kam.
-
-## Das Bild
-
-Gespielt wird nicht auf einer Fläche, sondern in einem Schacht, in den du
-hineinschaust. Die Steine sind Körper mit leuchtendem Kern: Der fallende Stein nimmt
-sein Licht mit und wirft einen Schatten auf die Rückwand. Setzt er auf, läuft eine
-Druckwelle über die Stelle; lässt du ihn fallen, zieht er Lichtbahnen hinter sich her.
-Volle Reihen glühen weiß auf und zerspringen, dann rutscht der Stapel nach. Mit jedem
-Level wechselt die Grundfarbe des Schachts.
-
-All das ist nur Anblick — gespielt wird genau wie zuvor, und auch die Punkte ändern
-sich dadurch nicht. Kann dein Rechner die räumliche Darstellung nicht anzeigen, zeigt
-das Spiel von selbst das flache Feld wie früher; spielen lässt es sich dann genauso.
 
 ## Das Besondere
 
