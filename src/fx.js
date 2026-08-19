@@ -11,6 +11,34 @@ const TetrisFx = (function () {
   const MAX_PARTS = 520;
   const TAU = Math.PI * 2;
   const P = TetrisPaint;
+  const MASK = P.MASK;
+
+  /* An welchen Seiten dieser Zelle liegt ein Nachbar desselben Steins? Nur so
+     weiß der Pinsel, welche Kante nach außen zeigt und welche zuwachsen darf. */
+  function cellsMask(cells, i) {
+    const cx = cells[i][0], cy = cells[i][1];
+    let m = 0;
+    for (let j = 0; j < cells.length; j++) {
+      if (j === i) continue;
+      const dx = cells[j][0] - cx, dy = cells[j][1] - cy;
+      if (dx === 0 && dy === -1) m |= MASK.UP;
+      else if (dx === 1 && dy === 0) m |= MASK.RIGHT;
+      else if (dx === 0 && dy === 1) m |= MASK.DOWN;
+      else if (dx === -1 && dy === 0) m |= MASK.LEFT;
+    }
+    return m;
+  }
+
+  // Im Stapel wachsen nur gleiche Steinsorten zusammen — Grenzen bleiben sichtbar.
+  function boardMask(board, r, c) {
+    const type = board[r][c];
+    let m = 0;
+    if (r > 0 && board[r - 1][c] === type) m |= MASK.UP;
+    if (c < COLS - 1 && board[r][c + 1] === type) m |= MASK.RIGHT;
+    if (r < ROWS - 1 && board[r + 1][c] === type) m |= MASK.DOWN;
+    if (c > 0 && board[r][c - 1] === type) m |= MASK.LEFT;
+    return m;
+  }
 
   function create(canvas) {
     const ctx = canvas.getContext("2d");
@@ -21,10 +49,11 @@ const TetrisFx = (function () {
     let raf = 0, alive = true, last = 0, t = 0;
     let game = null, stars = [];
     let shake = 0, flash = 0, flashHex = "#ffffff";
+    let vy = null, vyPiece = null; // die gezeichnete Höhe des Steins und wessen sie ist
 
     const parts = [], rings = [], beams = [], bars = [], texts = [], trail = [];
     const prev = { word: null, elapsed: null, level: null, score: null,
-                   clearKey: "", over: false, pose: null, clearY: 0 };
+                   clearKey: "", over: false, mark: null, clearY: 0 };
 
     // --- Maße ---
 
@@ -77,7 +106,32 @@ const TetrisFx = (function () {
       prev.score = g ? g.score : null;
       prev.clearKey = g && g.clearRows ? g.clearRows.join(",") : "";
       prev.over = g ? g.over : false;
-      prev.pose = null;
+      prev.mark = null;
+      vy = null; vyPiece = null;
+    }
+
+    /* Wie weit der Stein zwischen zwei Feldern schon unterwegs ist — 0 bis 1.
+       Voll bis 1 gezählt: 1 ist genau das nächste Feld, deshalb geht die Bewegung
+       ohne Sprung in den nächsten Schritt der Regel über. */
+    function pieceFrac(g) {
+      if (!g.piece || g.over || g.paused || g.clearRows) return 0;
+      if (TetrisEngine.dropDistance(g) <= 0) return 0;
+      const iv = TetrisPieces.gravityMs(g.level);
+      if (!(iv > 0)) return 0;
+      return Math.max(0, Math.min(1, g.dropTimer / iv));
+    }
+
+    // Der Rahmen des ganzen Steins in Bildpunkten — über ihn läuft der Farbverlauf.
+    function cellsFrame(cells, px, py) {
+      let x0 = cells[0][0], x1 = x0, y0 = cells[0][1], y1 = y0;
+      for (let i = 1; i < cells.length; i++) {
+        if (cells[i][0] < x0) x0 = cells[i][0];
+        if (cells[i][0] > x1) x1 = cells[i][0];
+        if (cells[i][1] < y0) y0 = cells[i][1];
+        if (cells[i][1] > y1) y1 = cells[i][1];
+      }
+      return [(px + x0) * cell, (py + y0) * cell,
+              (x1 - x0 + 1) * cell, (y1 - y0 + 1) * cell];
     }
 
     /* Die Meldungen der Regel: Drehung, Fallenlassen, Einrasten. */
@@ -197,16 +251,33 @@ const TetrisFx = (function () {
         }
         watch(g);
 
-        // Das Nachglühen des fallenden Steins: jede neue Lage bleibt kurz stehen.
+        /* Die gezeichnete Höhe des Steins zieht der Regel weich nach. Zwischen zwei
+           Feldern gleitet sie ohnehin mit; das Nachziehen glättet zusätzlich die
+           Sprünge, die die Regel selbst macht — vor allem beim Halten von "ein Feld
+           tiefer", wo der Stein sonst im Raster hüpft. Ein neuer Stein oder ein
+           weiter Sprung setzt sie sofort, damit nichts hinterherschleift. */
+        if (g.piece && !g.over) {
+          const target = g.piece.y + pieceFrac(g);
+          if (vy === null || vyPiece !== g.piece || g.paused || Math.abs(target - vy) > 2.5) {
+            vy = target;
+          } else {
+            vy += (target - vy) * (1 - Math.pow(0.004, dt / 90));
+            if (Math.abs(target - vy) < 0.004) vy = target;
+          }
+          vyPiece = g.piece;
+        } else { vy = null; vyPiece = null; }
+
+        // Das Nachglühen: abgetastet wird die gleitende Lage, nicht das Feldraster.
         if (g.piece && !g.over && !g.paused) {
           const p = g.piece;
-          const pose = p.type + p.rot + ":" + p.x + ":" + p.y;
-          if (pose !== prev.pose) {
-            prev.pose = pose;
-            trail.push({ type: p.type, rot: p.rot, x: p.x, y: p.y, life: 230, max: 230 });
-            if (trail.length > 8) trail.shift();
+          const m = prev.mark;
+          if (!m || m.type !== p.type || m.rot !== p.rot || m.x !== p.x ||
+              Math.abs(vy - m.y) >= 0.26) {
+            prev.mark = { type: p.type, rot: p.rot, x: p.x, y: vy };
+            trail.push({ type: p.type, rot: p.rot, x: p.x, y: vy, life: 190, max: 190 });
+            if (trail.length > 12) trail.shift();
           }
-        } else prev.pose = null;
+        } else prev.mark = null;
       }
 
       const grav = cell * 0.00001;
@@ -268,10 +339,10 @@ const TetrisFx = (function () {
           if (!type) continue;
           const hex = hot ? "#ffffff" : P.typeColor(type);
           const x = cc * cell, y = r * cell;
-          if (hi) P.block(c, x, y, cell, hex, dim, hot ? 0.8 : 0);
+          if (hi) P.block(c, x, y, cell, hex, dim, hot ? 0.8 : 0, boardMask(g.board, r, cc));
           else {
             c.fillStyle = P.col(hex, hot ? 0.95 : 0.4 * dim);
-            c.fillRect(x + cell * 0.1, y + cell * 0.1, cell * 0.8, cell * 0.8);
+            c.fillRect(x, y, cell, cell);
           }
         }
       }
@@ -289,28 +360,27 @@ const TetrisFx = (function () {
         const y = p.y + cells[i][1] + d;
         if (y < 0) continue;
         const x = (p.x + cells[i][0]) * cell;
-        if (hi) P.ghost(c, x, y * cell, cell, hex, a);
+        if (hi) P.ghost(c, x, y * cell, cell, hex, a, cellsMask(cells, i));
         else { c.fillStyle = P.col(hex, 0.1); c.fillRect(x, y * cell, cell, cell); }
       }
     }
 
-    /* Der fallende Stein rückt zwischen zwei Feldern weiter, damit er gleitet
-       statt zu springen — aber nur, solange unter ihm noch Platz ist. */
+    /* Gezeichnet wird die nachgezogene Höhe vy, nicht die des Spielstands: Der Stein
+       gleitet zwischen zwei Feldern weiter — die volle Feldbreite, denn erst dann
+       geht der letzte Bildpunkt nahtlos in den nächsten Schritt der Regel über. */
     function drawPiece(c, g, hi) {
       if (!g.piece || g.over) return;
       const p = g.piece;
       const cells = TetrisPieces.SHAPES[p.type][p.rot];
       const hex = P.typeColor(p.type);
-      let frac = 0;
-      if (!g.paused && !g.clearRows && TetrisEngine.dropDistance(g) > 0) {
-        frac = Math.max(0, Math.min(0.85, g.dropTimer / TetrisPieces.gravityMs(g.level)));
-      }
+      const py = vy === null ? p.y : vy;
+      const frame = cellsFrame(cells, p.x, py);
       const glow = 0.5 + 0.25 * Math.sin(t / 190);
       for (let i = 0; i < cells.length; i++) {
-        const y = p.y + cells[i][1] + frac;
+        const y = py + cells[i][1];
         if (y < -1) continue;
         const x = (p.x + cells[i][0]) * cell;
-        if (hi) P.block(c, x, y * cell, cell, hex, 1, glow);
+        if (hi) P.block(c, x, y * cell, cell, hex, 1, glow, cellsMask(cells, i), frame);
         else { c.fillStyle = P.col(hex, 0.8); c.fillRect(x, y * cell, cell, cell); }
       }
     }
@@ -321,13 +391,15 @@ const TetrisFx = (function () {
       for (let i = 0; i < trail.length; i++) {
         const q = trail[i];
         const k = q.life / q.max;
-        const a = 0.26 * k * k;
-        if (a < 0.01) continue;
+        const a = 0.22 * k * k;
+        if (a < 0.008) continue;
         const cells = TetrisPieces.SHAPES[q.type][q.rot];
         c.fillStyle = P.col(P.typeColor(q.type), a);
         for (let j = 0; j < cells.length; j++) {
-          const x = (q.x + cells[j][0]) * cell, y = (q.y + cells[j][1]) * cell;
-          P.roundRect(c, x + cell * 0.1, y + cell * 0.1, cell * 0.8, cell * 0.8, cell * 0.2);
+          const m = cellsMask(cells, j);
+          const b = P.tileBox((q.x + cells[j][0]) * cell, (q.y + cells[j][1]) * cell,
+                              cell, cell * 0.05, m);
+          P.roundRect(c, b[0], b[1], b[2] - b[0], b[3] - b[1], P.tileRadii(cell * 0.26, m));
           c.fill();
         }
       }
@@ -470,7 +542,6 @@ const TetrisFx = (function () {
 
       const over = !!(g && g.over);
       P.vignette(ctx, w, h, over ? "#ff5c78" : hex, over ? 0.6 : 0.32);
-      P.scanlines(ctx, w, h);
     }
 
     // --- Bildtakt ---

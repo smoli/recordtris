@@ -98,6 +98,24 @@ der Kantenlänge. Diese wird weich gezeichnet und additiv darübergelegt. Das ko
 kaum etwas und lässt alles Helle nach außen strahlen — Kacheln, Funken, Balken und
 Schrift zugleich, ohne dass jede Form ihren eigenen Schein braucht.
 
+**Vier Felder, ein Stein.** Beim Zeichnen weiß jede Zelle, an welchen Seiten ein
+Nachbar desselben Steins liegt. Dort reicht ihre Kachel bis an den Rand der Zelle,
+die Ecke bleibt spitz, und der Grat aus Licht wird an dieser Kante weggeschnitten,
+statt eine Naht zu setzen — die vier Felder wachsen zu einer Form zusammen. Der
+Farbverlauf läuft dabei über den ganzen Stein, nicht über jede Zelle einzeln. Im
+Stapel wachsen nur gleiche Steinsorten zusammen: Wo zwei verschiedene Steine
+aneinanderstoßen, bleibt die Grenze sichtbar. Die Vorschau in der Seitenspalte
+folgt derselben Regel, dort mit Mitteln von CSS.
+
+**Die gezeichnete Höhe zieht der Regel nach.** Der Stein gleitet nicht nur zwischen
+zwei Feldern mit — die gezeichnete Höhe folgt der des Spielstands zusätzlich weich
+nach. Das glättet die Sprünge, die die Regel selbst macht: vor allem beim Halten
+von "ein Feld tiefer", wo der Stein sonst im Feldraster hüpft, weil dort die Uhr der
+Schwerkraft bei jedem Schritt neu beginnt. Ein neuer Stein oder ein Sprung über
+mehrere Felder setzt die Höhe sofort, damit nichts hinterherschleift. Die Spur
+hinter dem Stein tastet dieselbe gleitende Höhe ab und ist deshalb ein Schmier,
+kein Abdruck im Raster.
+
 **Jedes Level hat seine Farbe.** Zehn Farben wechseln sich ab; sie färben den
 Hintergrund des Feldes, den Saum, das Aufblitzen beim Tetris und — über die Klasse
 `lv0` bis `lv9` am Wurzelelement — auch die Lichtstriche der Seitenspalten und die

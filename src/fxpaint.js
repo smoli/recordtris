@@ -43,60 +43,112 @@ const TetrisPaint = (function () {
     return LEVEL_TINT[((l % n) + n) % n];
   }
 
+  // r ist entweder eine Zahl für alle vier Ecken oder [oben-links … unten-links].
   function roundRect(c, x, y, w, h, r) {
-    const k = Math.min(r, w / 2, h / 2);
+    const lim = Math.min(w / 2, h / 2);
+    const a = typeof r === "number" ? [r, r, r, r] : r;
+    const tl = Math.max(0, Math.min(a[0], lim)), tr = Math.max(0, Math.min(a[1], lim));
+    const br = Math.max(0, Math.min(a[2], lim)), bl = Math.max(0, Math.min(a[3], lim));
     c.beginPath();
-    c.moveTo(x + k, y);
-    c.lineTo(x + w - k, y); c.quadraticCurveTo(x + w, y, x + w, y + k);
-    c.lineTo(x + w, y + h - k); c.quadraticCurveTo(x + w, y + h, x + w - k, y + h);
-    c.lineTo(x + k, y + h); c.quadraticCurveTo(x, y + h, x, y + h - k);
-    c.lineTo(x, y + k); c.quadraticCurveTo(x, y, x + k, y);
+    c.moveTo(x + tl, y);
+    c.lineTo(x + w - tr, y); c.quadraticCurveTo(x + w, y, x + w, y + tr);
+    c.lineTo(x + w, y + h - br); c.quadraticCurveTo(x + w, y + h, x + w - br, y + h);
+    c.lineTo(x + bl, y + h); c.quadraticCurveTo(x, y + h, x, y + h - bl);
+    c.lineTo(x, y + tl); c.quadraticCurveTo(x, y, x + tl, y);
     c.closePath();
   }
 
-  /* Eine Kachel: Verlauf von der hellen Kante zum dunklen Fuß, ein Grat aus Licht
-     und ein glühender Kern. glow > 0 legt zusätzlich einen Schein darum. */
-  function block(c, x, y, s, hex, alpha, glow) {
-    const pad = s * 0.07;
-    const r = s * 0.2;
-    const bx = x + pad, by = y + pad, bs = s - pad * 2;
-    if (bs <= 0) return;
+  /* Damit vier Felder ein Stein werden statt vier Kästchen: Eine Maske sagt für
+     jede Zelle, an welchen Seiten ein Nachbar desselben Steins liegt. Dort reicht
+     die Kachel bis an den Rand der Zelle, die Ecke bleibt spitz und der Lichtgrat
+     läuft durch — die Felder wachsen zu einer Form zusammen. */
+  const MASK = { UP: 1, RIGHT: 2, DOWN: 4, LEFT: 8 };
+  const BLEED = 0.5; // Überlappung gegen Haarrisse an den zusammengewachsenen Kanten
+
+  function tileBox(x, y, s, pad, mask) {
+    const m = mask || 0;
+    return [
+      x + ((m & MASK.LEFT) ? -BLEED : pad),
+      y + ((m & MASK.UP) ? -BLEED : pad),
+      x + s - ((m & MASK.RIGHT) ? -BLEED : pad),
+      y + s - ((m & MASK.DOWN) ? -BLEED : pad)
+    ];
+  }
+
+  function tileRadii(r, mask) {
+    const m = mask || 0;
+    return [
+      (m & (MASK.UP | MASK.LEFT)) ? 0 : r,
+      (m & (MASK.UP | MASK.RIGHT)) ? 0 : r,
+      (m & (MASK.DOWN | MASK.RIGHT)) ? 0 : r,
+      (m & (MASK.DOWN | MASK.LEFT)) ? 0 : r
+    ];
+  }
+
+  /* Eine Kachel: Verlauf von der hellen Kante zum dunklen Fuß und ein Grat aus
+     Licht, der nur an den AUSSEN liegenden Kanten sichtbar ist. glow > 0 legt
+     einen Schein darum; frame ist der Rahmen, über den der Verlauf laufen soll
+     (das ganze Tetromino statt der einzelnen Zelle) — fehlt er, gilt die Zelle. */
+  function block(c, x, y, s, hex, alpha, glow, mask, frame) {
+    const m = mask || 0;
+    const b = tileBox(x, y, s, s * 0.05, m);
+    const w = b[2] - b[0], h = b[3] - b[1];
+    if (w <= 0 || h <= 0) return;
+    const rad = tileRadii(s * 0.26, m);
+    const f = frame || [x, y, s, s];
     c.save();
     c.globalAlpha = alpha;
     if (glow > 0) { c.shadowColor = col(hex, 0.85); c.shadowBlur = s * glow; }
-    const g = c.createLinearGradient(bx, by, bx + bs * 0.4, by + bs);
+    const g = c.createLinearGradient(f[0], f[1], f[0] + f[2] * 0.4, f[1] + f[3]);
     g.addColorStop(0, shade(hex, 1.5));
     g.addColorStop(0.45, shade(hex, 1.02));
     g.addColorStop(1, shade(hex, 0.5));
     c.fillStyle = g;
-    roundRect(c, bx, by, bs, bs, r);
+    roundRect(c, b[0], b[1], w, h, rad);
     c.fill();
     c.shadowBlur = 0;
-    const lw = Math.max(1, s * 0.07);
+
+    /* Der Grat wird über die geteilten Kanten hinaus gezogen und dann auf die
+       Zelle beschnitten: So verschwindet er dort ganz, statt eine Naht zu setzen. */
+    const lw = Math.max(1, s * 0.06);
+    c.beginPath();
+    c.rect(b[0], b[1], w, h);
+    c.clip();
+    const sx0 = (m & MASK.LEFT) ? b[0] - lw : b[0] + lw / 2;
+    const sy0 = (m & MASK.UP) ? b[1] - lw : b[1] + lw / 2;
+    const sx1 = (m & MASK.RIGHT) ? b[2] + lw : b[2] - lw / 2;
+    const sy1 = (m & MASK.DOWN) ? b[3] + lw : b[3] - lw / 2;
     c.lineWidth = lw;
     c.strokeStyle = shade(hex, 1.9, 0.5);
-    roundRect(c, bx + lw / 2, by + lw / 2, bs - lw, bs - lw, r * 0.85);
+    roundRect(c, sx0, sy0, sx1 - sx0, sy1 - sy0, rad.map((v) => v - lw / 2));
     c.stroke();
-    c.globalCompositeOperation = "lighter";
-    c.fillStyle = col(hex, 0.2);
-    roundRect(c, bx + bs * 0.22, by + bs * 0.22, bs * 0.56, bs * 0.56, r * 0.6);
-    c.fill();
     c.restore();
   }
 
-  // Der Schattenriss der Landestelle: gestrichelter Umriss, kaum gefüllt.
-  function ghost(c, x, y, s, hex, alpha) {
-    const pad = s * 0.13;
-    const w = s - pad * 2;
-    if (w <= 0) return;
+  // Der Schattenriss der Landestelle: gestrichelter Umriss um das ganze Tetromino.
+  function ghost(c, x, y, s, hex, alpha, mask) {
+    const m = mask || 0;
+    const b = tileBox(x, y, s, s * 0.12, m);
+    const w = b[2] - b[0], h = b[3] - b[1];
+    if (w <= 0 || h <= 0) return;
+    const rad = tileRadii(s * 0.16, m);
     c.save();
     c.globalAlpha = alpha;
     c.fillStyle = col(hex, 0.09);
-    roundRect(c, x + pad, y + pad, w, w, s * 0.16);
+    roundRect(c, b[0], b[1], w, h, rad);
     c.fill();
-    c.lineWidth = Math.max(1, s * 0.08);
+    const lw = Math.max(1, s * 0.07);
+    c.beginPath();
+    c.rect(b[0], b[1], w, h);
+    c.clip();
+    const sx0 = (m & MASK.LEFT) ? b[0] - lw : b[0] + lw / 2;
+    const sy0 = (m & MASK.UP) ? b[1] - lw : b[1] + lw / 2;
+    const sx1 = (m & MASK.RIGHT) ? b[2] + lw : b[2] - lw / 2;
+    const sy1 = (m & MASK.DOWN) ? b[3] + lw : b[3] - lw / 2;
+    c.lineWidth = lw;
     c.strokeStyle = col(hex, 0.95);
-    c.setLineDash([s * 0.2, s * 0.15]);
+    c.setLineDash([s * 0.22, s * 0.16]);
+    roundRect(c, sx0, sy0, sx1 - sx0, sy1 - sy0, rad.map((v) => v - lw / 2));
     c.stroke();
     c.setLineDash([]);
     c.restore();
@@ -168,7 +220,7 @@ const TetrisPaint = (function () {
     c.restore();
   }
 
-  // Dunkler Saum außen, dazu ein farbiger Hauch — und ein Hauch Röhrenbildschirm.
+  // Dunkler Saum außen, dazu ein farbiger Hauch in der Farbe des Levels.
   function vignette(c, w, h, hex, strength) {
     const r0 = Math.min(w, h) * 0.34;
     const r1 = Math.max(w, h) * 0.8;
@@ -188,16 +240,11 @@ const TetrisPaint = (function () {
     c.restore();
   }
 
-  function scanlines(c, w, h) {
-    c.save();
-    c.fillStyle = "rgba(0,0,0,.16)";
-    for (let y = 0; y < h; y += 3) c.fillRect(0, y, w, 1);
-    c.restore();
-  }
-
   return {
+    MASK: MASK,
     col: col, shade: shade, typeColor: typeColor, levelColor: levelColor,
-    roundRect: roundRect, block: block, ghost: ghost, dot: dot,
-    backdrop: backdrop, vignette: vignette, scanlines: scanlines
+    roundRect: roundRect, tileBox: tileBox, tileRadii: tileRadii,
+    block: block, ghost: ghost, dot: dot,
+    backdrop: backdrop, vignette: vignette
   };
 })();

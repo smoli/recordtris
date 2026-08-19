@@ -155,10 +155,17 @@ body::after {
 .c-T { background: var(--c-T); color: var(--c-T); }
 .c-Z { background: var(--c-Z); color: var(--c-Z); }
 
-.preview .cell:not(.empty), .chip {
+.chip {
   box-shadow: 0 0 12px currentColor,
               inset 0 0 0 2px rgba(255, 255, 255, .3),
               inset 0 -3px 7px rgba(0, 0, 0, .45);
+}
+
+/* Die Vorschau zeigt einen Stein, kein Raster: Die Felder stoßen ohne Fuge und
+   ohne eigene Ecken aneinander, damit sie zu einer Form zusammenwachsen. */
+.preview .cell:not(.empty) {
+  border-radius: 0;
+  box-shadow: 0 0 12px currentColor;
 }
 
 /* --- Seitenspalten --- */
@@ -216,8 +223,8 @@ h2 {
 .preview {
   display: grid;
   justify-content: center;
-  gap: 2px;
-  padding: 7px 0 3px;
+  gap: 0;
+  padding: 9px 0 5px;
 }
 .preview .cell { width: var(--mini); height: var(--mini); }
 .preview .cell.empty { background: none; }
