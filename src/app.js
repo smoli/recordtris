@@ -67,7 +67,11 @@ function App() {
     bump((v) => v + 1);
   }, []);
 
+  /* Zurück zum Startbildschirm. Eine durchgespielte Partie ist eine erledigte Aufgabe:
+     Von dort führt der Weg mit einem frisch gewürfelten Merkwort zurück. Ein Abbruch
+     mitten im Spiel behält das Wort — wer aufgibt, versucht es meist noch einmal. */
   const quit = useCallback(() => {
+    if (gameRef.current && gameRef.current.over) setSeedWord(TetrisSeed.randomWord());
     gameRef.current = null;
     heldRef.current = {};
     tapeRef.current = [];
@@ -388,7 +392,7 @@ function App() {
         <button class="start small" disabled=${!tapeRef.current.length}
           onClick=${openReplay}>Aufzeichnung ansehen</button>
         <button class="start small" onClick=${openScores}>Bestenliste</button>
-        <p class="hint">Enter dieselbe Folge · R Aufzeichnung · H Bestenliste · Esc zurück</p></div>`}
+        <p class="hint">Enter dieselbe Folge · R Aufzeichnung · H Bestenliste · Esc zurück mit neuem Wort</p></div>`}
     </div>
 
     <aside class="panel right">

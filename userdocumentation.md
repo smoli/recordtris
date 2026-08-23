@@ -22,7 +22,10 @@ sechzehn Zeichen. Groß- und Kleinschreibung macht keinen Unterschied.
 
 Während des Spiels steht das Wort rechts in der Spalte, nach dem Spielende auch in
 der Einblendung — du kannst es dir also noch notieren, wenn die Partie gut lief.
-**Noch einmal** und Enter starten dieselbe Folge erneut.
+**Noch einmal** und Enter starten dieselbe Folge erneut. Gehst du nach dem Spielende
+mit **Esc** zurück zum Startbildschirm, steht dort ein neu gewürfeltes Wort — die
+nächste Runde ist also von sich aus eine neue Aufgabe. Willst du das alte Wort doch
+noch, findest du es in der **Bestenliste** und kannst es von dort direkt spielen.
 
 Wenn die Tasten nicht reagieren, einmal ins Spielfeld klicken.
 
@@ -38,7 +41,7 @@ Wenn die Tasten nicht reagieren, einmal ins Spielfeld klicken.
 | P | Pause und weiter |
 | R | in der Pause oder nach dem Spielende: Aufzeichnung ansehen |
 | H | Bestenliste öffnen (auf dem Startbildschirm, in der Pause, nach dem Spielende) |
-| Esc | Spiel beenden, zurück zum Startbildschirm |
+| Esc | Spiel beenden, zurück zum Startbildschirm (nach dem Spielende mit neuem Merkwort) |
 | Enter | nach dem Spielende noch einmal dieselbe Steinfolge; in der Bestenliste das gewählte Wort spielen |
 
 Der blasse Umriss unten im Feld zeigt, wo der Stein landen wird.

@@ -64,6 +64,12 @@ Ziffern entfällt; "Grün!" und "gruen" sind also dieselbe Partie. Wer keines ei
 bekommt ein gewürfeltes aus Silben (Anlaut plus Kern, zwei oder drei Silben) — es
 steht danach im Feld und in der Seitenspalte, kann also nachträglich notiert werden.
 
+Der Rückweg zum Startbildschirm würfelt neu — aber nur nach einer durchgespielten
+Partie: Sie ist eine erledigte Aufgabe, die nächste soll eine neue sein; wer das Wort
+behalten will, findet es in der Bestenliste und startet es von dort. Ein Abbruch
+mitten im Spiel lässt das Wort dagegen stehen, denn wer aufgibt, versucht meist
+dieselbe Folge noch einmal.
+
 **Startlagen und Falltempo wie im Original.** Die Steine erscheinen mit der flachen
 Seite nach oben, mittig. Die Tabelle der Bilder pro Feld (48 bei Level 0 bis 1 ab
 Level 29) stammt aus dem Original, ebenso die Punkte 40/100/300/1200 mal (Level + 1).
