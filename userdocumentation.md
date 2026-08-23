@@ -48,7 +48,11 @@ Der blasse Umriss unten im Feld zeigt, wo der Stein landen wird.
 
 ## Aufzeichnung und Wiedergabe
 
-Jede Partie wird von der ersten Sekunde an mitgeschrieben. In der **Pause** und nach
+Jede Partie wird von der ersten Sekunde an mitgeschrieben — und beim *Game Over*
+vollständig gespeichert. Du kannst sie deshalb nicht nur sofort, sondern auch Wochen
+später noch ansehen; wie, steht weiter unten unter *Alte Partien ansehen*.
+
+In der **Pause** und nach
 dem **Spielende** führt der Knopf *Aufzeichnung ansehen* (oder die Taste **R**) zur
 Wiedergabe. Das Feld zeigt dann nicht das Spiel, sondern die Aufnahme — Punkte,
 Level, Statistik und Vorschau laufen mit.
@@ -67,7 +71,7 @@ Unter dem Feld liegt die Bedienleiste:
 | B | rückwärts abspielen |
 | 1 … 5 | Tempo ¼×, ½×, 1×, 2×, 4× |
 | Enter | hier weiterspielen |
-| Esc | zurück zum Spiel |
+| Esc | zurück zum Spiel — bei einer Partie aus dem Archiv zurück zur Bestenliste |
 
 ### Hier weiterspielen
 
@@ -95,6 +99,7 @@ zeigt rechts alle Partien dazu, die beste zuerst, und zu jeder:
 - **Reihen**, **Level** (samt Startlevel) und die **Dauer**
 - wie oft du **Einfach**, **Doppel**, **Dreifach** und **Tetris** geräumt hast
 - wie oft jede **Steinsorte** kam
+- zwei Knöpfe: **▶ Aufzeichnung ansehen** und **▾ Auswertung**
 
 Weil dasselbe Merkwort immer dieselbe Steinfolge bringt, sind die Partien eines Wortes
 direkt vergleichbar: Spiel dieselbe Aufgabe mehrmals und sieh zu, wie der Bestwert
@@ -114,9 +119,51 @@ Eine Partie, die du über *Hier weiterspielen* aus der Aufzeichnung fortgesetzt 
 wird ebenfalls eingetragen, aber mit dem Vermerk **↻ mit Wiedereinstieg gespielt** —
 sie ist mit einer durchgespielten Partie nicht ganz vergleichbar.
 
+### Alte Partien ansehen
+
+Unter jeder einzelnen Partie stehen zwei Knöpfe:
+
+- **▶ Aufzeichnung ansehen** öffnet die Wiedergabe genau dieser Partie — mit derselben
+  Bedienleiste wie bei der frischen Aufzeichnung: Schieberegler, Einzelbild, vorwärts,
+  rückwärts, Tempo. Sie läuft gleich von Anfang an los. Oben im Feld steht *Archiv*
+  samt Merkwort, rechts in der Spalte die Partie, um die es geht. **Esc** bringt dich
+  zurück in die Liste.
+- **▾ Auswertung** klappt in der Karte die Zahlen hinter dem Ergebnis auf.
+
+Auch aus einer alten Partie heraus kannst du **Hier weiterspielen** — an jeder Stelle,
+an der das Spiel noch nicht verloren ist. Damit greifst du eine Partie von vor drei
+Wochen mitten im Zug wieder auf; sie zählt danach als Partie mit Wiedereinstieg.
+
+Bloßes Ansehen kostet dich nichts: Eine laufende Partie bleibt stehen, während du dir
+eine alte anschaust. Nur *Hier weiterspielen* verwirft sie — darauf weist die
+Bedienleiste dann auch hin.
+
+### Auswertung einer Partie
+
+**▾ Auswertung** rechnet aus dem gespeicherten Verlauf aus, was im Ergebnis nicht steht:
+
+- **Tempo** — Punkte, Steine und Reihen je Minute, und wie viele Sekunden ein Stein im
+  Schnitt brauchte.
+- **Ausbeute** — wie viele Steine du gesetzt hast, wie viele Reihen auf einen Stein
+  kamen, welcher Anteil deiner Reihen aus einem Tetris stammt, und wie lang die längste
+  Strecke ohne die lange Stange war.
+- **Stapel** — der höchste Stand des Stapels und sein Stand am Ende, dazu die Löcher:
+  leere Felder, über denen etwas liegt und die du erst wieder freiräumen musst.
+- **Züge** — wie oft du gedreht und verschoben hast und wie viele Züge damit auf einen
+  Stein kamen.
+
+Darunter zwei Kurven über die Spielzeit: **Punkte und Reihen**, und **der Stapel** mit
+seiner Höhe und der Zahl seiner Löcher. An ihnen sieht man meist gut, wo eine Partie
+gekippt ist — oft lange bevor sie zu Ende ging.
+
+Partien, die vor der Einführung des Archivs gespielt wurden, haben keinen gespeicherten
+Verlauf: Bei ihnen sind beide Knöpfe grau, und ein Hinweis sagt es.
+
 Die Liste liegt als Datei `tetris-highscores.json` im Datenordner und bleibt damit
 über das Schließen der App hinaus erhalten. Ist kein Datenordner eingerichtet, sagt
-die Liste das oben an — sie gilt dann nur für die laufende Sitzung.
+die Liste das oben an — sie gilt dann nur für die laufende Sitzung. Die Partien selbst
+liegen als je eine Datei im Ordner `tetris-games` daneben; ohne Datenordner wird nichts
+davon gespeichert.
 
 ## Anzeigen
 
@@ -159,10 +206,11 @@ Unterschied schnell — und sollte flacher stapeln.
 
 ## Grenzen
 
-Gespeichert werden nur die Ergebnisse der Partien, nicht die Partien selbst: Die
-Aufzeichnung gehört zur laufenden Partie und lässt sich nicht ablegen. Aus der
-Bestenliste lässt sich nichts löschen. Ein Ergebnis wird nur eingetragen, wenn die
-Partie mit *Game Over* endet — brichst du mit Esc ab, zählt sie nicht.
+Aus der Bestenliste und dem Archiv lässt sich in der App nichts löschen; wer aufräumen
+will, muss die Dateien im Datenordner selbst anfassen. Eingetragen und aufgezeichnet
+wird eine Partie nur, wenn sie mit *Game Over* endet — brichst du mit Esc ab, zählt
+sie nicht, und ihr Verlauf ist verloren.
 
-Ein neues Spiel oder Esc zum Startbildschirm verwirft die Aufzeichnung. Weitergeben
-lässt sich aber das Merkwort — damit spielt jemand anderes dieselbe Steinfolge.
+Ein neues Spiel oder Esc zum Startbildschirm verwirft die laufende Aufzeichnung — eine
+durchgespielte Partie liegt da längst im Archiv. Weitergeben lässt sich außerdem das
+Merkwort — damit spielt jemand anderes dieselbe Steinfolge.

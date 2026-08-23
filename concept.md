@@ -28,10 +28,15 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
 - `src/replay.js` — das Band der Aufzeichnung und der Abspielkopf.
 - `src/highscores.js` — die Bestenliste: Lesen und Schreiben der Datei, das Bilden
   der Einträge und ihre Gruppierung nach dem Merkwort.
+- `src/archive.js` — das Archiv: eine Datei je gespielter Partie, das Verdichten des
+  Bandes und der Weg zurück zu ihm.
+- `src/analysis.js` — was aus einem ganzen Band ablesbar ist: Tempo, Ausbeute, Stapel,
+  Züge, Durststrecken und die Kurven über die Spielzeit.
 - `src/gameui.js` — die Ansichten des Spiels: Leinwand des Feldes, Vorschau,
-  Statistik, Startbild.
-- `src/replayui.js` — die Bedienleiste der Wiedergabe.
+  Statistik, Startbild und die Ansicht der laufenden Partie samt Einblendungen.
+- `src/replayui.js` — die Ansicht der Wiedergabe und ihre Bedienleiste.
 - `src/scoresui.js` — die Ansicht der Bestenliste.
+- `src/statsui.js` — die Auswertung einer archivierten Partie: Zahlen und Kurven.
 - `src/app.js` — Zustand, Tastensteuerung, Bildtakt, Aufzeichnung, Eintrag ins Ergebnis.
 - `src/fxpaint.js` — der Pinselkasten: Farben mischen, Kachel, Schattenriss,
   Hintergrund und Saum zeichnen.
@@ -141,7 +146,8 @@ der innere Zustand des Zufallsregisters. Nicht die Tastendrücke werden aufgezei
 sondern die Zustände selbst. Das kostet mehr Platz, ist dafür aber unabhängig davon,
 ob ein Nachspielen exakt dieselben Zeitschritte träfe, und erlaubt das Rückwärtsgehen
 ohne Neuberechnung. Unveränderte Felder teilen sich dieselbe Zeichenkette, und
-wiederholte gleiche Bilder kommen gar nicht erst aufs Band.
+wiederholte gleiche Bilder kommen gar nicht erst aufs Band. Am Ende der Partie wandert
+das Band ins Archiv — es lebt damit nicht mehr nur so lange wie sie.
 
 **Wiedereinstieg statt bloßem Zusehen.** Weil die Momentaufnahme auch den Zufall
 enthält, ist jedes Bild der Wiedergabe ein vollwertiger Spielstand. "Hier
@@ -155,13 +161,17 @@ sich nicht fortsetzen.
 **Die Bestenliste gehört dem Merkwort.** Jede Partie, die mit "Game Over" endet, wird
 als ein Eintrag in `tetris-highscores.json` im Datenordner festgehalten: Zeitpunkt,
 Punkte, Reihen, Level und Startlevel, Spieldauer, wie oft eine, zwei, drei oder vier
-Reihen auf einmal fielen, und wie oft jede Steinsorte kam. Die Datei ist eine flache
-Liste aller Partien — nicht ein vorgerechnetes Ergebnis —, damit sich jede Sicht
+Reihen auf einmal fielen, wie oft jede Steinsorte kam — und der Name der Datei, in der
+das ganze Band dieser Partie liegt. Die Datei ist eine flache Liste aller Partien
+— nicht ein vorgerechnetes Ergebnis —, damit sich jede Sicht
 daraus ableiten lässt und nichts verloren geht. Aus der Liste heraus lässt sich das
 gewählte Wort sofort wieder spielen — die Bestenliste ist damit nicht nur Rückblick,
 sondern der kürzeste Weg zur nächsten Runde derselben Aufgabe. Das Startlevel bleibt
 dabei das auf dem Startbildschirm gewählte; die Enter-Abkürzung gilt nur, wenn keine
-laufende Partie daran hängt.
+laufende Partie daran hängt. An jeder einzelnen Partie stehen zwei weitere Wege: ihre
+Aufzeichnung ansehen und ihre Auswertung aufklappen. Beide brauchen das Band aus dem
+Archiv; Partien ohne Band — ältere oder solche, deren Ablegen misslang — sagen das an
+Ort und Stelle.
 
 Zusammengefasst wird beim Anzeigen: gruppiert nach dem normalisierten Merkwort, denn
 es bestimmt die Steinfolge, also die Aufgabe. Voreingestellt zeigt jede Zeile den
@@ -173,6 +183,38 @@ sagt das auch. Eine Partie, die aus der Aufzeichnung heraus fortgesetzt wurde, t
 den Vermerk des Wiedereinstiegs — ihr Ergebnis ist mit einem durchgespielten nicht
 vergleichbar.
 
-**Sonst kein Speichern.** Außer der Bestenliste hält das Spiel keinen Zustand über
-einen Neustart hinaus. Das Band der Aufzeichnung lebt nur so lange wie die Partie und
-wird mit jedem neuen Spiel verworfen.
+**Das Archiv: nicht nur das Ergebnis, die Partie.** Eine Zahl allein sagt wenig über
+eine Partie. Darum wird jede beendete Partie ganz behalten: Ihr Band wandert als eigene
+Datei in den Ordner `tetris-games`, und der Eintrag der Bestenliste merkt sich nur den
+Dateinamen. Zwei Dateien statt einer, weil die Liste bei jeder Partie neu geschrieben
+wird, ein Band aber nur einmal — und weil eine Liste, die alle Bänder enthielte, beim
+Öffnen der App vollständig gelesen werden müsste. So wird ein Band erst gelesen, wenn
+es gebraucht wird.
+
+Abgelegt wird verdichtet: Die Feldbilder wiederholen sich über viele Bilder hinweg und
+stehen deshalb nur einmal in einem Verzeichnis, auf das jedes Bild mit einer Nummer
+zeigt; der Rest eines Bildes wird zu einer nackten Zahlenreihe in fester Ordnung, ohne
+Feldnamen. Aus dem Archiv entsteht wieder genau die Momentaufnahme, die die Regel
+selbst schreibt — eine alte Partie lässt sich deshalb nicht nur ansehen, sondern an
+jeder Stelle auch fortsetzen, mit demselben Wiedereinstieg wie in der laufenden Partie.
+Sie legt sich dabei über alles andere und lässt eine laufende Partie unangetastet; erst
+der Wiedereinstieg verwirft sie, und die Bedienleiste warnt dann davor. Misslingt das
+Ablegen oder fehlt der Datenordner, bleibt der Eintrag ohne Band; die Bestenliste sagt
+das an der betroffenen Partie.
+
+**Die Auswertung liest das Band, nicht die Endzahlen.** Was eine Partie ausmacht, steht
+nicht im Ergebnis: wie schnell gespielt wurde, wie hoch der Stapel stand, wie viele
+Löcher er trug, wie oft gedreht und geschoben wurde, wie lang die längste Durststrecke
+ohne lange Stange war. All das wird nicht mitgeschrieben, sondern beim Ansehen aus dem
+Band gerechnet — jede Frage, die später aufkommt, lässt sich damit auch an alten
+Partien noch stellen. Die Zahl der Züge entsteht aus dem Vergleich aufeinanderfolgender
+Bilder: Solange das Feldbild unverändert bleibt und dieselbe Steinsorte fällt, ist es
+derselbe Stein, und jede Änderung von Drehlage oder Spalte war ein Zug. Ein Einrasten
+ändert das Feldbild und beendet die Zählung von selbst. Die Kurven über die Spielzeit
+werden auf höchstens neunzig Stützstellen ausgedünnt, damit auch eine lange Partie
+sofort erscheint.
+
+**Sonst kein Speichern.** Außer der Bestenliste und dem Archiv hält das Spiel keinen
+Zustand über einen Neustart hinaus. Das Band der laufenden Partie lebt nur so lange
+wie sie und wird mit jedem neuen Spiel verworfen — aber erst, nachdem es im Archiv
+liegt.

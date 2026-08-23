@@ -2,6 +2,7 @@
    Jede beendete Partie wird als ein Eintrag festgehalten — mit Zeitpunkt, Punkten,
    Reihen, den Reihenschlägen 1 bis 4 und der Steinstatistik. Gruppiert wird nach dem
    Merkwort, denn es bestimmt die Steinfolge: dieselbe Partie, mehrfach gespielt.
+   Dazu der Verweis auf die ganze Partie im Archiv (Feld `game`, siehe archive.js).
    Fehlt der Datenordner, lebt die Liste nur in dieser Sitzung weiter. */
 const TetrisScores = (function () {
   const FILE = "tetris-highscores.json";
@@ -34,7 +35,9 @@ const TetrisScores = (function () {
       duration: num(raw.duration),
       clears: clears,
       pieces: pieces,
-      resumed: !!raw.resumed
+      resumed: !!raw.resumed,
+      // Dateiname der ganzen Partie im Archiv — "" bei Partien ohne Aufzeichnung.
+      game: typeof raw.game === "string" ? raw.game : ""
     };
   }
 
@@ -57,7 +60,8 @@ const TetrisScores = (function () {
       duration: Math.round(state.elapsed),
       clears: state.clears.slice(1, 5),
       pieces: pieces,
-      resumed: !!state.resumed
+      resumed: !!state.resumed,
+      game: "" // wird nachgetragen, sobald das Band im Archiv liegt
     };
   }
 

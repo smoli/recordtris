@@ -42,6 +42,70 @@ function Stats({ stats }) {
   </div>`;
 }
 
+/* Die Ansicht der laufenden Partie: das Feld mit seinen Einblendungen, links die
+   Statistik, rechts Zahlen, Vorschau, Merkwort und Tastenhilfe. Wo diese Partie
+   unter den bisherigen desselben Merkworts steht, rechnet app.js aus. */
+function GameScreen({ game, summary, isRecord, rank, canReplay, onRestart, onReplay, onScores }) {
+  const g = game;
+  return html`<div class=${"app lv" + (g.level % 10)}>
+    <aside class="panel left">
+      <h2>Statistik</h2>
+      <${Stats} stats=${g.stats} />
+    </aside>
+
+    <div class="stage">
+      <${Board} game=${g} />
+      ${g.paused && html`<div class="overlay small">
+        <h1>Pause</h1>
+        <p class="hint">P zum Weiterspielen</p>
+        <button class="start small" disabled=${!canReplay}
+          onClick=${onReplay}>Aufzeichnung ansehen</button>
+        <button class="start small" onClick=${onScores}>Bestenliste</button>
+        <p class="hint">Taste R · Taste H</p></div>`}
+      ${g.over && html`<div class="overlay small">
+        <h1>Game Over</h1>
+        <p class="lead">${g.score} Punkte, ${g.lines} Reihen</p>
+        ${isRecord && summary.plays > 1 && html`<p class="record">Neuer Bestwert für dieses Wort!</p>`}
+        ${rank > 1 && html`<p class="hint">
+          Platz ${rank} von ${summary.plays} · Bestwert ${summary.best.score}</p>`}
+        <p class="hint seed-hint">Merkwort <b class="seed-word">${g.seedWord}</b></p>
+        <button class="start" onClick=${onRestart}>Noch einmal</button>
+        <button class="start small" disabled=${!canReplay}
+          onClick=${onReplay}>Aufzeichnung ansehen</button>
+        <button class="start small" onClick=${onScores}>Bestenliste</button>
+        <p class="hint">Enter dieselbe Folge · R Aufzeichnung · H Bestenliste · Esc zurück mit neuem Wort</p></div>`}
+    </div>
+
+    <aside class="panel right">
+      <div class="box">
+        <h2>Punkte</h2><p class="big">${g.score}</p>
+      </div>
+      <div class="box row">
+        <div><h2>Level</h2><p class="big">${g.level}</p></div>
+        <div><h2>Reihen</h2><p class="big">${g.lines}</p></div>
+      </div>
+      <div class="box">
+        <h2>Nächster</h2>
+        <${Preview} type=${g.nextType} />
+      </div>
+      <div class="box">
+        <h2>Merkwort</h2>
+        <p class="seed-word">${g.seedWord}</p>
+      </div>
+      <div class="box keys">
+        <h2>Tasten</h2>
+        <p><kbd>←</kbd><kbd>→</kbd> verschieben</p>
+        <p><kbd>A</kbd><kbd>D</kbd> drehen</p>
+        <p><kbd>↓</kbd> ein Feld tiefer</p>
+        <p><kbd>Leer</kbd> fallen lassen</p>
+        <p><kbd>P</kbd> Pause · <kbd>Esc</kbd> Ende</p>
+        <p><kbd>R</kbd> Aufzeichnung (in Pause)</p>
+        <p><kbd>H</kbd> Bestenliste (in Pause)</p>
+      </div>
+    </aside>
+  </div>`;
+}
+
 // Der Schriftzug zerfällt in Buchstaben, damit jeder für sich leuchten kann.
 const TITLE_LETTERS = ["T", "E", "T", "R", "I", "S"];
 

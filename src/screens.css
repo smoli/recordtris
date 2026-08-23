@@ -293,6 +293,111 @@
   text-align: center;
 }
 
+/* --- Aufzeichnung und Auswertung einer alten Partie --- */
+
+.play-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.play-actions .rb { padding: 6px 8px; font-size: 13px; }
+.play-actions .rb:disabled { opacity: .4; cursor: default; }
+.play-actions .rb:disabled:hover { border-color: var(--line); transform: none; }
+
+.analysis {
+  margin-top: 9px;
+  border-top: 1px solid var(--line);
+  padding-top: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.fact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.fact-box {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(12, 16, 26, .55);
+  padding: 8px 10px;
+}
+.fact-box h3 {
+  margin: 0 0 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.fact-box p {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--dim);
+}
+.fact-box b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.chart {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(12, 16, 26, .55);
+  padding: 8px 10px 6px;
+}
+.chart-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--dim);
+}
+.chart-title {
+  margin-right: auto;
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.lg b { font-variant-numeric: tabular-nums; }
+.lg::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+  border-radius: 2px;
+  background: currentColor;
+}
+.lg-score { color: var(--c-I); }
+.lg-lines { color: var(--c-O); }
+.lg-height { color: var(--c-T); }
+.lg-holes { color: var(--c-Z); }
+
+/* Das Koordinatenfeld ist 100 × 40 und wird auf die Breite der Karte gestreckt.
+   Die Striche behalten dabei ihre Stärke — dafür sorgt vector-effect. */
+.chart-svg {
+  display: block;
+  width: 100%;
+  height: clamp(72px, 12vh, 120px);
+}
+.cv {
+  fill: none;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.cv-score { fill: rgba(51, 230, 245, .16); stroke: var(--c-I); }
+.cv-lines { stroke: var(--c-O); }
+.cv-height { fill: rgba(199, 125, 255, .16); stroke: var(--c-T); }
+.cv-holes { stroke: var(--c-Z); }
+
 /* Im schmalen Fenster steht die Wortliste über den Partien statt daneben. */
 @media (max-width: 620px) {
   .scores-body { flex-direction: column; }

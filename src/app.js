@@ -1,6 +1,8 @@
 /* Zustand und Steuerung. Der Spielzustand liegt in einer Ref und wird vom Bildtakt
    fortgeschrieben; neu gezeichnet wird nur, wenn sich etwas geändert hat. Derselbe
-   Takt schreibt jedes veränderte Bild aufs Band — und spielt es auf Wunsch wieder ab. */
+   Takt schreibt jedes veränderte Bild aufs Band — und spielt es auf Wunsch wieder ab.
+   Am Ende einer Partie wandert das ganze Band ins Archiv, damit sie auch später
+   noch angesehen, fortgesetzt und ausgewertet werden kann. */
 const { render } = preact;
 const { useState, useRef, useEffect, useCallback } = preactHooks;
 
@@ -11,7 +13,9 @@ const DROP_RATE = 45;  // Wiederholung beim Halten von Pfeil runter
 function App() {
   const gameRef = useRef(null);
   const heldRef = useRef({});
-  const tapeRef = useRef([]);   // die Aufzeichnung der laufenden Partie
+  const tapeRef = useRef([]);     // die Aufzeichnung der laufenden Partie
+  const viewRef = useRef([]);     // das Band, das die Wiedergabe gerade zeigt
+  const archiveRef = useRef(null); // zu welcher Partie des Archivs es gehört, sonst null
   const replayRef = useRef(null); // der Abspielkopf, solange die Wiedergabe läuft
   const storeRef = useRef(TetrisScores.empty()); // die Bestenliste
   const lastRef = useRef(null);   // der Eintrag der eben beendeten Partie
@@ -19,6 +23,7 @@ function App() {
   const [startLevel, setStartLevel] = useState(0);
   const [seedWord, setSeedWord] = useState(() => TetrisSeed.randomWord());
   const [showScores, setShowScores] = useState(false);
+  const [notice, setNotice] = useState(""); // Meldung über der Bestenliste
   const [, bump] = useState(0);
 
   // Die Bestenliste kommt aus der Datei — einmal beim Öffnen der App.
@@ -44,21 +49,32 @@ function App() {
   }, []);
 
   /* Eine beendete Partie kommt in die Liste: Zeitpunkt, Punkte, Reihen, die
-     Reihenschläge und die Steinstatistik — und dann in die Datei. */
+     Reihenschläge und die Steinstatistik. Dazu das ganze Band ins Archiv — erst
+     danach wird die Liste geschrieben, damit der Eintrag den Dateinamen schon
+     trägt. Misslingt das Ablegen, bleibt der Eintrag ohne Aufzeichnung. */
   const saveResult = useCallback((g) => {
+    TetrisReplay.record(tapeRef.current, g); // das Bild des Endes gehört noch aufs Band
+    const frames = tapeRef.current.slice();
     const entry = TetrisScores.entryFrom(g);
     lastRef.current = entry;
     storeRef.current = TetrisScores.add(storeRef.current, entry);
     bump((v) => v + 1);
-    TetrisScores.save(storeRef.current).then((s) => {
-      storeRef.current = s;
-      bump((v) => v + 1);
-    });
+    TetrisArchive.save(entry, frames)
+      .then((file) => {
+        entry.game = file; // dieselbe Objektreferenz liegt schon in der Liste
+        return TetrisScores.save(storeRef.current);
+      })
+      .then((s) => {
+        storeRef.current = s;
+        bump((v) => v + 1);
+      });
   }, []);
 
   const startGame = useCallback((lvl, word) => {
     heldRef.current = {};
     tapeRef.current = [];
+    viewRef.current = [];
+    archiveRef.current = null;
     replayRef.current = null;
     savedRef.current = false;
     lastRef.current = null;
@@ -75,13 +91,15 @@ function App() {
     gameRef.current = null;
     heldRef.current = {};
     tapeRef.current = [];
+    viewRef.current = [];
+    archiveRef.current = null;
     replayRef.current = null;
     savedRef.current = false;
     lastRef.current = null;
     bump((v) => v + 1);
   }, []);
 
-  const openScores = useCallback(() => setShowScores(true), []);
+  const openScores = useCallback(() => { setNotice(""); setShowScores(true); }, []);
   const closeScores = useCallback(() => setShowScores(false), []);
 
   /* Aus der Bestenliste heraus dieselbe Steinfolge noch einmal: Das Wort wird
@@ -106,7 +124,7 @@ function App() {
       const g = gameRef.current;
       const rp = replayRef.current;
       if (rp) {
-        if (TetrisReplay.advance(rp, tapeRef.current, dt)) bump((v) => v + 1);
+        if (TetrisReplay.advance(rp, viewRef.current, dt)) bump((v) => v + 1);
       } else if (g) {
         repeatKeys(g, dt);
         TetrisEngine.update(g, dt);
@@ -147,12 +165,38 @@ function App() {
     const frames = tapeRef.current;
     if (!frames.length) return;
     heldRef.current = {};
+    viewRef.current = frames;
+    archiveRef.current = null;
     replayRef.current = TetrisReplay.cursor(frames, frames.length - 1);
     bump((v) => v + 1);
   }, []);
 
+  /* Eine alte Partie aus dem Archiv. Sie legt sich über alles andere, lässt eine
+     laufende Partie aber unangetastet — erst der Wiedereinstieg verwirft sie.
+     Angesehen wird sie von vorn und laufend, denn sie ist ja schon vorbei. */
+  const openArchive = useCallback((entry) => {
+    if (!entry || !entry.game) return;
+    setNotice("");
+    TetrisArchive.load(entry.game).then((frames) => {
+      if (!frames) { setNotice("Diese Aufzeichnung ließ sich nicht lesen."); return; }
+      heldRef.current = {};
+      viewRef.current = frames;
+      archiveRef.current = entry;
+      const cur = TetrisReplay.cursor(frames, 0);
+      TetrisReplay.play(cur, frames, 1);
+      replayRef.current = cur;
+      setShowScores(false);
+      bump((v) => v + 1);
+    });
+  }, []);
+
+  // Zurück — aus dem Archiv in die Bestenliste, sonst ins Spiel.
   const closeReplay = useCallback(() => {
+    const fromArchive = !!archiveRef.current;
     replayRef.current = null;
+    archiveRef.current = null;
+    viewRef.current = [];
+    if (fromArchive) setShowScores(true);
     bump((v) => v + 1);
   }, []);
 
@@ -160,28 +204,28 @@ function App() {
     const rp = replayRef.current;
     if (!rp) return;
     rp.playing = false;
-    TetrisReplay.seek(rp, tapeRef.current, i);
+    TetrisReplay.seek(rp, viewRef.current, i);
     bump((v) => v + 1);
   }, []);
 
   const stepBy = useCallback((d) => {
     const rp = replayRef.current;
     if (!rp) return;
-    TetrisReplay.step(rp, tapeRef.current, d);
+    TetrisReplay.step(rp, viewRef.current, d);
     bump((v) => v + 1);
   }, []);
 
   const playFrom = useCallback((dir) => {
     const rp = replayRef.current;
     if (!rp) return;
-    TetrisReplay.play(rp, tapeRef.current, dir);
+    TetrisReplay.play(rp, viewRef.current, dir);
     bump((v) => v + 1);
   }, []);
 
   const pausePlayback = useCallback(() => {
     const rp = replayRef.current;
     if (!rp) return;
-    TetrisReplay.pause(rp, tapeRef.current);
+    TetrisReplay.pause(rp, viewRef.current);
     bump((v) => v + 1);
   }, []);
 
@@ -193,19 +237,24 @@ function App() {
   }, []);
 
   /* Wiedereinstieg: Aus dem gezeigten Bild wird wieder ein laufendes Spiel. Das Band
-     endet an dieser Stelle und zeichnet von hier an den neuen Verlauf auf. */
+     endet an dieser Stelle und zeichnet von hier an den neuen Verlauf auf. Das gilt
+     auch für eine Partie aus dem Archiv — deren Merkwort gilt dann weiter. */
   const resumeHere = useCallback(() => {
     const rp = replayRef.current;
     if (!rp) return;
-    const frames = tapeRef.current;
+    const frames = viewRef.current;
     const frame = frames[rp.index];
     if (!frame || frame.over) return;
     tapeRef.current = frames.slice(0, rp.index + 1);
     gameRef.current = TetrisEngine.fromSnapshot(frame);
     // Die Partie ist wieder offen — und trägt fortan den Vermerk des Wiedereinstiegs.
     gameRef.current.resumed = true;
+    setSeedWord(frame.seedWord);
     savedRef.current = false;
+    lastRef.current = null;
     replayRef.current = null;
+    archiveRef.current = null;
+    viewRef.current = [];
     heldRef.current = {};
     bump((v) => v + 1);
   }, []);
@@ -237,7 +286,7 @@ function App() {
         else if (k === " ") { if (rp.playing && rp.dir > 0) pausePlayback(); else playFrom(1); }
         else if (k === "b" || k === "B") { if (rp.playing && rp.dir < 0) pausePlayback(); else playFrom(-1); }
         else if (k === "Home") seekTo(0);
-        else if (k === "End") seekTo(tapeRef.current.length - 1);
+        else if (k === "End") seekTo(viewRef.current.length - 1);
         else if (k.length === 1 && k >= "1" && k <= "5") setSpeed(TetrisReplay.SPEEDS[Number(k) - 1]);
         return;
       }
@@ -302,49 +351,21 @@ function App() {
   if (showScores) {
     return html`<div class="app scores-view">
       <${ScoresScreen} store=${store} seed=${g ? g.seedWord : seedWord}
-        startLevel=${startLevel} running=${!!(g && !g.over)}
-        onPlay=${playSeed} onClose=${closeScores} />
+        startLevel=${startLevel} running=${!!(g && !g.over)} notice=${notice}
+        onPlay=${playSeed} onReplay=${openArchive} onClose=${closeScores} />
     </div>`;
   }
 
   // Die Wiedergabe zeigt statt des Spiels das aufgezeichnete Bild — samt Zahlen.
-  if (rp && tapeRef.current.length) {
-    const frames = tapeRef.current;
+  if (rp && viewRef.current.length) {
+    const frames = viewRef.current;
     const frame = frames[rp.index];
-    const view = TetrisEngine.fromSnapshot(frame);
-    return html`<div class=${"app replaying lv" + (view.level % 10)}>
-      <aside class="panel left">
-        <h2>Statistik</h2>
-        <${Stats} stats=${view.stats} />
-      </aside>
-
-      <div class="center">
-        <div class="stage">
-          <${Board} game=${view} />
-          <div class=${"replay-tag" + (frame.over ? " end" : "")}>
-            ${frame.over ? "Game Over" : "Wiedergabe"}
-          </div>
-        </div>
-        <${ReplayBar} frames=${frames} cur=${rp} canResume=${!frame.over}
-          onSeek=${seekTo} onStep=${stepBy} onPlay=${playFrom} onPause=${pausePlayback}
-          onSpeed=${setSpeed} onResume=${resumeHere} onClose=${closeReplay} />
-      </div>
-
-      <aside class="panel right">
-        <div class="box">
-          <h2>Punkte</h2><p class="big">${view.score}</p>
-        </div>
-        <div class="box row">
-          <div><h2>Level</h2><p class="big">${view.level}</p></div>
-          <div><h2>Reihen</h2><p class="big">${view.lines}</p></div>
-        </div>
-        <div class="box">
-          <h2>Nächster</h2>
-          <${Preview} type=${view.nextType} />
-        </div>
-        <${ReplayKeys} />
-      </aside>
-    </div>`;
+    const arc = archiveRef.current;
+    return html`<${ReplayScreen} frames=${frames} cur=${rp} frame=${frame}
+      view=${TetrisEngine.fromSnapshot(frame)} archive=${arc}
+      warn=${arc && g && !g.over ? "Weiterspielen verwirft die laufende Partie." : ""}
+      onSeek=${seekTo} onStep=${stepBy} onPlay=${playFrom} onPause=${pausePlayback}
+      onSpeed=${setSpeed} onResume=${resumeHere} onClose=${closeReplay} />`;
   }
 
   if (!g) {
@@ -366,63 +387,10 @@ function App() {
   const isRecord = !!(sum && lastEntry && sum.best === lastEntry);
   const rank = sum && lastEntry ? sum.entries.indexOf(lastEntry) + 1 : 0;
 
-  return html`<div class=${"app lv" + (g.level % 10)}>
-    <aside class="panel left">
-      <h2>Statistik</h2>
-      <${Stats} stats=${g.stats} />
-    </aside>
-
-    <div class="stage">
-      <${Board} game=${g} />
-      ${g.paused && html`<div class="overlay small">
-        <h1>Pause</h1>
-        <p class="hint">P zum Weiterspielen</p>
-        <button class="start small" disabled=${!tapeRef.current.length}
-          onClick=${openReplay}>Aufzeichnung ansehen</button>
-        <button class="start small" onClick=${openScores}>Bestenliste</button>
-        <p class="hint">Taste R · Taste H</p></div>`}
-      ${g.over && html`<div class="overlay small">
-        <h1>Game Over</h1>
-        <p class="lead">${g.score} Punkte, ${g.lines} Reihen</p>
-        ${isRecord && sum.plays > 1 && html`<p class="record">Neuer Bestwert für dieses Wort!</p>`}
-        ${rank > 1 && html`<p class="hint">
-          Platz ${rank} von ${sum.plays} · Bestwert ${sum.best.score}</p>`}
-        <p class="hint seed-hint">Merkwort <b class="seed-word">${g.seedWord}</b></p>
-        <button class="start" onClick=${() => startGame(g.startLevel, g.seedWord)}>Noch einmal</button>
-        <button class="start small" disabled=${!tapeRef.current.length}
-          onClick=${openReplay}>Aufzeichnung ansehen</button>
-        <button class="start small" onClick=${openScores}>Bestenliste</button>
-        <p class="hint">Enter dieselbe Folge · R Aufzeichnung · H Bestenliste · Esc zurück mit neuem Wort</p></div>`}
-    </div>
-
-    <aside class="panel right">
-      <div class="box">
-        <h2>Punkte</h2><p class="big">${g.score}</p>
-      </div>
-      <div class="box row">
-        <div><h2>Level</h2><p class="big">${g.level}</p></div>
-        <div><h2>Reihen</h2><p class="big">${g.lines}</p></div>
-      </div>
-      <div class="box">
-        <h2>Nächster</h2>
-        <${Preview} type=${g.nextType} />
-      </div>
-      <div class="box">
-        <h2>Merkwort</h2>
-        <p class="seed-word">${g.seedWord}</p>
-      </div>
-      <div class="box keys">
-        <h2>Tasten</h2>
-        <p><kbd>←</kbd><kbd>→</kbd> verschieben</p>
-        <p><kbd>A</kbd><kbd>D</kbd> drehen</p>
-        <p><kbd>↓</kbd> ein Feld tiefer</p>
-        <p><kbd>Leer</kbd> fallen lassen</p>
-        <p><kbd>P</kbd> Pause · <kbd>Esc</kbd> Ende</p>
-        <p><kbd>R</kbd> Aufzeichnung (in Pause)</p>
-        <p><kbd>H</kbd> Bestenliste (in Pause)</p>
-      </div>
-    </aside>
-  </div>`;
+  return html`<${GameScreen} game=${g} summary=${sum} isRecord=${isRecord} rank=${rank}
+    canReplay=${!!tapeRef.current.length}
+    onRestart=${() => startGame(g.startLevel, g.seedWord)}
+    onReplay=${openReplay} onScores=${openScores} />`;
 }
 
 render(html`<${App} />`, document.getElementById("app"));

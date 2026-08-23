@@ -1,9 +1,11 @@
 /* Die Ansicht der Bestenliste: links jedes gespielte Merkwort mit seinem besten Wert
-   und der Zahl der Partien, rechts alle Partien dieses Wortes im Einzelnen. */
+   und der Zahl der Partien, rechts alle Partien dieses Wortes im Einzelnen — jede mit
+   dem Weg zu ihrer Aufzeichnung und zu ihrer Auswertung. */
 const CLEAR_LABELS = ["Einfach", "Doppel", "Dreifach", "Tetris"];
 
-function PlayCard({ entry, rank }) {
+function PlayCard({ entry, rank, open, onReplay, onToggle }) {
   const when = TetrisScores.formatDate(entry.date);
+  const taped = !!entry.game;
   return html`<div class=${"play" + (rank === 1 ? " top" : "")}>
     <div class="play-head">
       <span class="rank">${rank}.</span>
@@ -24,13 +26,28 @@ function PlayCard({ entry, rank }) {
         <span class="pc" key=${t}><span class=${"chip c-" + t}></span>${entry.pieces[t]}</span>`)}
     </div>
     ${entry.resumed ? html`<p class="resumed">↻ mit Wiedereinstieg gespielt</p>` : null}
+
+    <div class="play-actions">
+      <button class="rb" disabled=${!taped} onClick=${() => onReplay(entry)}>
+        ▶ Aufzeichnung ansehen
+      </button>
+      <button class=${"rb" + (open ? " on" : "")} disabled=${!taped}
+        onClick=${() => onToggle(open ? "" : entry.game)}>
+        ${open ? "▴ Auswertung" : "▾ Auswertung"}
+      </button>
+    </div>
+    ${!taped ? html`<p class="hint tight">
+      Von dieser Partie wurde nur das Ergebnis gespeichert, nicht der Verlauf.
+    </p>` : null}
+    ${taped && open ? html`<${PlayAnalysis} file=${entry.game} />` : null}
   </div>`;
 }
 
-function ScoresScreen({ store, seed, startLevel, running, onPlay, onClose }) {
+function ScoresScreen({ store, seed, startLevel, running, notice, onPlay, onReplay, onClose }) {
   const { useState, useEffect } = preactHooks;
   const groups = TetrisScores.bySeed(store);
   const [sel, setSel] = useState(TetrisSeed.normalize(seed));
+  const [openGame, setOpenGame] = useState(""); // Datei der aufgeklappten Auswertung
   const active = groups.filter((g) => g.key === sel)[0] || groups[0] || null;
   const word = active ? active.seed : "";
 
@@ -45,6 +62,11 @@ function ScoresScreen({ store, seed, startLevel, running, onPlay, onClose }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [word, running, onPlay]);
 
+  function choose(key) {
+    setSel(key);
+    setOpenGame("");
+  }
+
   return html`<div class="scores">
     <div class="scores-head">
       <div>
@@ -57,11 +79,13 @@ function ScoresScreen({ store, seed, startLevel, running, onPlay, onClose }) {
       <button class="rb wideb" onClick=${onClose}>Zurück</button>
     </div>
 
+    ${notice ? html`<p class="hint warn">${notice}</p>` : null}
+
     ${active ? html`<div class="scores-body">
       <div class="seed-col">
         ${groups.map((g) => html`
           <button key=${g.key} class=${"seed-row-btn" + (g.key === active.key ? " on" : "")}
-            onClick=${() => setSel(g.key)}>
+            onClick=${() => choose(g.key)}>
             <span class="sr-word">${g.seed}</span>
             <span class="sr-score">${g.best.score}</span>
             <span class="sr-plays">${g.plays}× gespielt</span>
@@ -89,7 +113,9 @@ function ScoresScreen({ store, seed, startLevel, running, onPlay, onClose }) {
           </div>
         </div>
         ${active.entries.map((e, i) => html`
-          <${PlayCard} key=${e.date + ":" + i} entry=${e} rank=${i + 1} />`)}
+          <${PlayCard} key=${e.date + ":" + i} entry=${e} rank=${i + 1}
+            open=${!!e.game && e.game === openGame}
+            onReplay=${onReplay} onToggle=${setOpenGame} />`)}
       </div>
     </div>` : html`<div class="scores-empty">
       <p class="lead">Noch keine Partie gespeichert.</p>
