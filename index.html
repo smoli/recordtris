@@ -151,7 +151,7 @@ body::after {
 /* Der Startbildschirm braucht mehr Platz als ein schmales Feld hergibt. */
 .stage.intro {
   min-width: 320px;
-  min-height: 430px;
+  min-height: 480px; /* Spielart, Level, Merkwort und die Knöpfe wollen Platz */
 }
 
 .board {
@@ -288,6 +288,15 @@ kbd {
   overflow-wrap: anywhere;
 }
 
+/* Die Nebenzeile der Karten: im Endlosspiel die Punkte unter der Uhr und der
+   Vermerk, dass das Level dort stehen bleibt. */
+.mode-line {
+  margin: 3px 0 0;
+  font-size: clamp(10px, calc(var(--cell) * 0.34), 13px);
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Wer die Bewegung nicht mag, bekommt sie nicht. */
 @media (prefers-reduced-motion: reduce) {
   body::before, .stage::before, .tl { animation: none; }
@@ -357,6 +366,17 @@ kbd {
 .hint { margin: 8px 0 0; font-size: clamp(11px, calc(var(--cell) * 0.36), 14px); color: var(--dim); }
 .hint.tight { margin: 0; }
 .hint.warn { color: var(--c-L); }
+
+/* Die beiden Spielarten stehen nebeneinander und tragen denselben Knopf wie
+   die Level darunter. */
+.modes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  width: 100%;
+  max-width: clamp(200px, calc(var(--cell) * 7), 330px);
+  margin-bottom: 10px;
+}
 
 .levels {
   display: grid;
@@ -640,6 +660,13 @@ kbd {
 }
 
 .scores-head .rb.wideb { flex: none; padding: 8px 18px; }
+
+/* Die beiden Register der Liste: klassische Partien und Endlospartien. */
+.scores-tabs {
+  display: flex;
+  gap: 6px;
+}
+.scores-tabs .rb { padding: 8px 4px; }
 
 .scores-body {
   flex: 1;
@@ -998,6 +1025,8 @@ const TetrisEngine = (function () {
   const COLS = 10;
   const ROWS = 20;
   const CLEAR_MS = 220; // Dauer des Aufblitzens voller Reihen
+  const CLASSIC = "classic"; // das Level steigt alle zehn Reihen
+  const FOREVER = "forever"; // das Level bleibt fest, es zählt die durchgehaltene Zeit
 
   function emptyBoard() {
     return Array.from({ length: ROWS }, () => new Array(COLS).fill(null));
@@ -1042,12 +1071,15 @@ const TetrisEngine = (function () {
   }
 
   /* Das Merkwort bestimmt den Startwert des Schieberegisters: dasselbe Wort
-     spielt dieselbe Steinfolge. Fehlt es, entsteht eines zufällig. */
-  function create(startLevel, seedWord) {
+     spielt dieselbe Steinfolge. Fehlt es, entsteht eines zufällig.
+     Die Spielart ist "classic" (das Level steigt alle zehn Reihen) oder "forever"
+     (das Level bleibt, wo es begann — es zählt allein, wie lange man durchhält). */
+  function create(startLevel, seedWord, mode) {
     const stats = {};
     TetrisPieces.TYPES.forEach((t) => { stats[t] = 0; });
     const word = TetrisSeed.normalize(seedWord) ? TetrisSeed.sanitizeInput(seedWord) : TetrisSeed.randomWord();
     const state = {
+      mode: mode === FOREVER ? FOREVER : CLASSIC,
       seedWord: word,
       rng: NesRng.create(TetrisSeed.toRegister(word)),
       board: emptyBoard(),
@@ -1194,7 +1226,8 @@ const TetrisEngine = (function () {
     state.lines += rows.length;
     state.clears[rows.length]++;
     state.score += TetrisPieces.LINE_SCORE[rows.length] * (state.level + 1);
-    state.level = state.startLevel + Math.floor(state.lines / 10);
+    // Im Endlosspiel bleibt das Level, wo es begann — das Tempo ist die Aufgabe.
+    if (state.mode !== FOREVER) state.level = state.startLevel + Math.floor(state.lines / 10);
     spawn(state);
   }
 
@@ -1230,6 +1263,7 @@ const TetrisEngine = (function () {
   function snapshot(state) {
     return {
       t: state.elapsed,
+      mode: state.mode,
       board: boardToText(state.board),
       piece: state.piece
         ? { type: state.piece.type, rot: state.piece.rot, x: state.piece.x, y: state.piece.y }
@@ -1254,6 +1288,7 @@ const TetrisEngine = (function () {
   // Aus einer Momentaufnahme wieder ein lebendiges Spiel — laufbereit, nicht pausiert.
   function fromSnapshot(snap) {
     return {
+      mode: snap.mode === FOREVER ? FOREVER : CLASSIC,
       seedWord: snap.seedWord,
       rng: NesRng.restore(snap.rng),
       board: boardFromText(snap.board),
@@ -1279,6 +1314,7 @@ const TetrisEngine = (function () {
 
   return {
     COLS: COLS, ROWS: ROWS,
+    CLASSIC: CLASSIC, FOREVER: FOREVER,
     create: create, update: update,
     move: move, rotate: rotate, softDrop: softDrop, hardDrop: hardDrop,
     dropDistance: dropDistance, togglePause: togglePause,
@@ -1288,8 +1324,10 @@ const TetrisEngine = (function () {
 </script>
 <script>/* Die Bestenliste: gespielte Partien als JSON-Datei im Datenordner.
    Jede beendete Partie wird als ein Eintrag festgehalten — mit Zeitpunkt, Punkten,
-   Reihen, den Reihenschlägen 1 bis 4 und der Steinstatistik. Gruppiert wird nach dem
-   Merkwort, denn es bestimmt die Steinfolge: dieselbe Partie, mehrfach gespielt.
+   Reihen, den Reihenschlägen 1 bis 4 und der Steinstatistik. Klassische Partien
+   werden nach dem Merkwort gruppiert, denn es bestimmt die Steinfolge: dieselbe
+   Partie, mehrfach gespielt. Endlospartien nach ihrem festen Level, und sie zählen
+   nicht die Punkte, sondern die durchgehaltene Zeit.
    Fehlt der Datenordner, lebt die Liste nur in dieser Sitzung weiter. */
 const TetrisScores = (function () {
   const FILE = "tetris-highscores.json";
@@ -1314,6 +1352,8 @@ const TetrisScores = (function () {
     });
     return {
       seed: seed,
+      // Ältere Dateien kennen die Spielart noch nicht — sie sind klassisch.
+      mode: raw.mode === TetrisEngine.FOREVER ? TetrisEngine.FOREVER : TetrisEngine.CLASSIC,
       date: typeof raw.date === "string" ? raw.date : "",
       score: num(raw.score),
       lines: num(raw.lines),
@@ -1337,6 +1377,7 @@ const TetrisScores = (function () {
     TetrisPieces.TYPES.forEach((t) => { pieces[t] = state.stats[t] || 0; });
     return {
       seed: state.seedWord,
+      mode: state.mode === TetrisEngine.FOREVER ? TetrisEngine.FOREVER : TetrisEngine.CLASSIC,
       date: new Date().toISOString(),
       score: state.score,
       lines: state.lines,
@@ -1393,10 +1434,22 @@ const TetrisScores = (function () {
     return String(b.date).localeCompare(String(a.date));
   }
 
+  /* Im Endlosspiel zählt, wie lange man durchgehalten hat; bei gleicher Zeit
+     entscheiden die Punkte. */
+  function byDuration(a, b) {
+    if (b.duration !== a.duration) return b.duration - a.duration;
+    if (b.score !== a.score) return b.score - a.score;
+    return String(b.date).localeCompare(String(a.date));
+  }
+
+  function isForever(e) { return e.mode === TetrisEngine.FOREVER; }
+
   // Eine Zeile je Merkwort: der beste Wert, wie oft gespielt, wann zuletzt.
+  // Nur klassische Partien — im Endlosspiel ist nicht das Wort die Aufgabe.
   function bySeed(store) {
     const map = {};
     store.entries.forEach((e) => {
+      if (isForever(e)) return;
       const k = keyOf(e.seed);
       if (!k) return;
       if (!map[k]) map[k] = { key: k, seed: k, plays: 0, entries: [], best: null, last: "" };
@@ -1416,9 +1469,38 @@ const TetrisScores = (function () {
   function summaryFor(store, seed) {
     const k = keyOf(seed);
     if (!k) return null;
-    const list = store.entries.filter((e) => keyOf(e.seed) === k).sort(byScore);
+    const list = store.entries.filter((e) => !isForever(e) && keyOf(e.seed) === k).sort(byScore);
     if (!list.length) return null;
     return { key: k, seed: k, plays: list.length, entries: list, best: list[0] };
+  }
+
+  /* Das Endlosspiel hat je Level seine eigene Liste: Eine Zeile je gespieltem
+     Level, die längste Partie oben. Gruppiert wird nach dem festen Startlevel. */
+  function byLevel(store) {
+    const map = {};
+    store.entries.forEach((e) => {
+      if (!isForever(e)) return;
+      const k = String(e.startLevel);
+      if (!map[k]) map[k] = { key: k, level: e.startLevel, plays: 0, entries: [], best: null, last: "" };
+      const g = map[k];
+      g.plays++;
+      g.entries.push(e);
+      if (!g.best || byDuration(e, g.best) < 0) g.best = e;
+      if (String(e.date) > g.last) g.last = String(e.date);
+    });
+    const out = Object.keys(map).map((k) => map[k]);
+    out.forEach((g) => g.entries.sort(byDuration));
+    out.sort((a, b) => a.level - b.level); // nach Level geordnet, nicht nach Bestwert
+    return out;
+  }
+
+  // Alles, was über ein einzelnes Endlos-Level bekannt ist — oder null.
+  function foreverSummaryFor(store, level) {
+    const list = store.entries
+      .filter((e) => isForever(e) && e.startLevel === level)
+      .sort(byDuration);
+    if (!list.length) return null;
+    return { key: String(level), level: level, plays: list.length, entries: list, best: list[0] };
   }
 
   // "17.08.2026, 14:32" — leer, wenn der Zeitpunkt fehlt oder unlesbar ist.
@@ -1446,7 +1528,9 @@ const TetrisScores = (function () {
     add: add,
     save: save,
     bySeed: bySeed,
+    byLevel: byLevel,
     summaryFor: summaryFor,
+    foreverSummaryFor: foreverSummaryFor,
     formatDate: formatDate,
     formatDuration: formatDuration
   };
@@ -2228,6 +2312,21 @@ function Preview({ type }) {
   return html`<div class="preview" style=${"grid-template-columns: repeat(" + n + ", var(--mini))"}>${grid}</div>`;
 }
 
+/* Die Kopfkarte der rechten Spalte: klassisch zählen die Punkte, im Endlosspiel
+   die durchgehaltene Zeit — sie ist dort das Ergebnis. */
+function ScoreBox({ game }) {
+  if (game.mode === TetrisEngine.FOREVER) {
+    return html`<div class="box">
+      <h2>Zeit</h2>
+      <p class="big">${TetrisScores.formatDuration(game.elapsed)}</p>
+      <p class="mode-line">${game.score} Punkte</p>
+    </div>`;
+  }
+  return html`<div class="box">
+    <h2>Punkte</h2><p class="big">${game.score}</p>
+  </div>`;
+}
+
 function Stats({ stats }) {
   return html`<div class="stats">
     ${TetrisPieces.TYPES.map((t) => html`
@@ -2241,14 +2340,24 @@ function Stats({ stats }) {
 // Der Schriftzug zerfällt in Buchstaben, damit jeder für sich leuchten kann.
 const TITLE_LETTERS = ["T", "E", "T", "R", "I", "S"];
 
-function StartScreen({ level, onLevel, seed, onSeed, summary, onScores, onStart }) {
+function StartScreen({ level, onLevel, mode, onMode, seed, onSeed, summary, onScores, onStart }) {
   const levels = [];
   for (let i = 0; i <= 9; i++) levels.push(i);
+  const forever = mode === TetrisEngine.FOREVER;
   return html`<div class="overlay">
     <h1 class="title">${TITLE_LETTERS.map((ch, i) => html`
       <span class="tl" key=${i} style=${"--i:" + i}>${ch}</span>`)}</h1>
-    <p class="lead">Steine ziehen wie im Original — mit dem Zufallsverfahren des NES.</p>
-    <p class="label">Startlevel</p>
+    <p class="lead">${forever
+      ? "Endlos: Das Level bleibt, wo es beginnt. Es zählt, wie lange du durchhältst."
+      : "Steine ziehen wie im Original — mit dem Zufallsverfahren des NES."}</p>
+    <p class="label">Spielart</p>
+    <div class="modes">
+      <button class=${"lvl" + (forever ? "" : " on")}
+        onClick=${() => onMode(TetrisEngine.CLASSIC)}>Klassisch</button>
+      <button class=${"lvl" + (forever ? " on" : "")}
+        onClick=${() => onMode(TetrisEngine.FOREVER)}>∞ Endlos</button>
+    </div>
+    <p class="label">${forever ? "Festes Level" : "Startlevel"}</p>
     <div class="levels">
       ${levels.map((i) => html`
         <button key=${i} class=${"lvl" + (i === level ? " on" : "")}
@@ -2262,32 +2371,49 @@ function StartScreen({ level, onLevel, seed, onSeed, summary, onScores, onStart 
       <button class="dice" title="Neues Wort würfeln"
         onClick=${() => onSeed(TetrisSeed.randomWord())}>🎲</button>
     </div>
-    ${summary
-      ? html`<p class="hint seed-hint">Bestwert <b>${summary.best.score}</b> aus
-          ${summary.plays === 1 ? "1 Partie" : summary.plays + " Partien"}</p>`
-      : html`<p class="hint seed-hint">Dasselbe Wort spielt dieselbe Steinfolge.</p>`}
+    ${forever
+      ? (summary
+          ? html`<p class="hint seed-hint">Bestzeit auf Level ${level}
+              <b>${TetrisScores.formatDuration(summary.best.duration)}</b> aus
+              ${summary.plays === 1 ? "1 Partie" : summary.plays + " Partien"}</p>`
+          : html`<p class="hint seed-hint">Level ${level} — noch keine Partie durchgehalten.</p>`)
+      : (summary
+          ? html`<p class="hint seed-hint">Bestwert <b>${summary.best.score}</b> aus
+              ${summary.plays === 1 ? "1 Partie" : summary.plays + " Partien"}</p>`
+          : html`<p class="hint seed-hint">Dasselbe Wort spielt dieselbe Steinfolge.</p>`)}
     <button class="start" onClick=${onStart}>Spiel starten</button>
     <button class="start small" onClick=${onScores}>Bestenliste</button>
-    <p class="hint">Enter startet · H zeigt die Bestenliste</p>
+    <p class="hint">Enter startet · M wechselt die Spielart · H zeigt die Bestenliste</p>
   </div>`;
 }
 </script>
-<script>/* Die Ansicht der Bestenliste: links jedes gespielte Merkwort mit seinem besten Wert
-   und der Zahl der Partien, rechts alle Partien dieses Wortes im Einzelnen. */
+<script>/* Die Ansicht der Bestenliste. Sie hat zwei Register, denn die beiden Spielarten
+   messen Verschiedenes: Klassisch gehört die Liste dem Merkwort und zählt die
+   Punkte; endlos gehört sie dem festen Level und zählt die durchgehaltene Zeit.
+   Links jede Zeile mit ihrem besten Wert, rechts alle Partien dazu im Einzelnen. */
 const CLEAR_LABELS = ["Einfach", "Doppel", "Dreifach", "Tetris"];
 
-function PlayCard({ entry, rank }) {
+function PlayCard({ entry, rank, metric }) {
   const when = TetrisScores.formatDate(entry.date);
+  const time = metric === "time"; // im Endlosspiel steht die Zeit obenan
   return html`<div class=${"play" + (rank === 1 ? " top" : "")}>
     <div class="play-head">
       <span class="rank">${rank}.</span>
-      <span class="play-score">${entry.score}</span>
+      <span class="play-score">
+        ${time ? TetrisScores.formatDuration(entry.duration) : entry.score}</span>
       <span class="play-date">${when || "ohne Zeitpunkt"}</span>
     </div>
     <div class="facts">
-      <span><b>${entry.lines}</b> Reihen</span>
-      <span>Level <b>${entry.level}</b> · Start ${entry.startLevel}</span>
-      <span>Dauer <b>${TetrisScores.formatDuration(entry.duration)}</b></span>
+      ${time
+        ? html`
+            <span><b>${entry.score}</b> Punkte</span>
+            <span><b>${entry.lines}</b> Reihen</span>
+            <span>Level <b>${entry.level}</b></span>
+            <span>Wort <b>${entry.seed}</b></span>`
+        : html`
+            <span><b>${entry.lines}</b> Reihen</span>
+            <span>Level <b>${entry.level}</b> · Start ${entry.startLevel}</span>
+            <span>Dauer <b>${TetrisScores.formatDuration(entry.duration)}</b></span>`}
     </div>
     <div class="facts clears">
       ${CLEAR_LABELS.map((label, i) => html`
@@ -2301,43 +2427,62 @@ function PlayCard({ entry, rank }) {
   </div>`;
 }
 
-function ScoresScreen({ store, seed, startLevel, running, onPlay, onClose }) {
+function ScoresScreen({ store, seed, nextSeed, level, mode, startLevel, running,
+                        onPlay, onPlayLevel, onClose }) {
   const { useState, useEffect } = preactHooks;
-  const groups = TetrisScores.bySeed(store);
+  // Offen ist zunächst das Register der Spielart, aus der man kommt.
+  const [tab, setTab] = useState(mode === TetrisEngine.FOREVER ? "forever" : "classic");
   const [sel, setSel] = useState(TetrisSeed.normalize(seed));
-  const active = groups.filter((g) => g.key === sel)[0] || groups[0] || null;
-  const word = active ? active.seed : "";
+  const [selLevel, setSelLevel] = useState(String(level));
 
-  /* Enter spielt das gewählte Wort noch einmal — aber nur, wenn dabei keine laufende
-     Partie verloren geht; die will man nicht versehentlich wegwerfen. */
+  const forever = tab === "forever";
+  const groups = forever ? TetrisScores.byLevel(store) : TetrisScores.bySeed(store);
+  const active = groups.filter((g) => g.key === (forever ? selLevel : sel))[0] || groups[0] || null;
+  const plays = groups.reduce((n, g) => n + g.plays, 0);
+
+  /* Enter spielt die gewählte Zeile noch einmal — aber nur, wenn dabei keine
+     laufende Partie verloren geht; die will man nicht versehentlich wegwerfen. */
+  const targetKey = active ? active.key : "";
   useEffect(() => {
-    if (!word || running) return;
+    if (!targetKey || running) return;
     function onKey(e) {
-      if (e.key === "Enter" && !e.repeat) onPlay(word);
+      if (e.key !== "Enter" || e.repeat) return;
+      if (forever) onPlayLevel(active.level);
+      else onPlay(active.seed);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [word, running, onPlay]);
+  }, [targetKey, forever, running, onPlay, onPlayLevel]);
 
   return html`<div class="scores">
     <div class="scores-head">
       <div>
         <h1>Bestenliste</h1>
         <p class="hint tight">
-          ${store.entries.length} ${store.entries.length === 1 ? "Partie" : "Partien"}
-          · ${groups.length} ${groups.length === 1 ? "Merkwort" : "Merkwörter"}
+          ${plays} ${plays === 1 ? "Partie" : "Partien"}
+          · ${groups.length} ${forever
+              ? "Level"
+              : (groups.length === 1 ? "Merkwort" : "Merkwörter")}
         </p>
       </div>
       <button class="rb wideb" onClick=${onClose}>Zurück</button>
+    </div>
+
+    <div class="scores-tabs">
+      <button class=${"rb" + (forever ? "" : " on")}
+        onClick=${() => setTab("classic")}>Klassisch · Punkte</button>
+      <button class=${"rb" + (forever ? " on" : "")}
+        onClick=${() => setTab("forever")}>∞ Endlos · Zeit</button>
     </div>
 
     ${active ? html`<div class="scores-body">
       <div class="seed-col">
         ${groups.map((g) => html`
           <button key=${g.key} class=${"seed-row-btn" + (g.key === active.key ? " on" : "")}
-            onClick=${() => setSel(g.key)}>
-            <span class="sr-word">${g.seed}</span>
-            <span class="sr-score">${g.best.score}</span>
+            onClick=${() => (forever ? setSelLevel(g.key) : setSel(g.key))}>
+            <span class="sr-word">${forever ? "Level " + g.level : g.seed}</span>
+            <span class="sr-score">
+              ${forever ? TetrisScores.formatDuration(g.best.duration) : g.best.score}</span>
             <span class="sr-plays">${g.plays}× gespielt</span>
           </button>`)}
       </div>
@@ -2345,29 +2490,39 @@ function ScoresScreen({ store, seed, startLevel, running, onPlay, onClose }) {
       <div class="detail-col">
         <div class="detail-head">
           <div class="dh-word">
-            <p class="seed-word">${active.seed}</p>
+            <p class="seed-word">${forever ? "Level " + active.level : active.seed}</p>
             <p class="hint tight">
               ${active.plays} ${active.plays === 1 ? "Partie" : "Partien"}
-              · Bestwert ${active.best.score} Punkte
+              · ${forever
+                  ? "Bestzeit " + TetrisScores.formatDuration(active.best.duration)
+                  : "Bestwert " + active.best.score + " Punkte"}
             </p>
           </div>
           <div class="dh-play">
-            <button class="start small" onClick=${() => onPlay(active.seed)}>
-              ▶ Dieses Wort spielen
-            </button>
+            ${forever
+              ? html`<button class="start small" onClick=${() => onPlayLevel(active.level)}>
+                  ▶ Endlos auf Level ${active.level}
+                </button>`
+              : html`<button class="start small" onClick=${() => onPlay(active.seed)}>
+                  ▶ Dieses Wort spielen
+                </button>`}
             <p class=${"hint tight" + (running ? " warn" : "")}>
-              ${running
-                ? "Startlevel " + startLevel + " · verwirft die laufende Partie"
-                : "Startlevel " + startLevel + " · Taste Enter"}
+              ${(forever ? "Merkwort " + nextSeed : "Startlevel " + startLevel) +
+                (running ? " · verwirft die laufende Partie" : " · Taste Enter")}
             </p>
           </div>
         </div>
         ${active.entries.map((e, i) => html`
-          <${PlayCard} key=${e.date + ":" + i} entry=${e} rank=${i + 1} />`)}
+          <${PlayCard} key=${e.date + ":" + i} entry=${e} rank=${i + 1}
+            metric=${forever ? "time" : "score"} />`)}
       </div>
     </div>` : html`<div class="scores-empty">
-      <p class="lead">Noch keine Partie gespeichert.</p>
-      <p class="hint">Jede beendete Partie kommt von selbst hierher.</p>
+      <p class="lead">${forever
+        ? "Noch keine Endlospartie gespeichert."
+        : "Noch keine klassische Partie gespeichert."}</p>
+      <p class="hint">${forever
+        ? "Im Endlosspiel bleibt das Level fest — gewertet wird die durchgehaltene Zeit."
+        : "Jede beendete Partie kommt von selbst hierher."}</p>
     </div>`}
 
     ${store.storage === "memory" ? html`<p class="hint warn">
@@ -2557,6 +2712,7 @@ function App() {
   const lastRef = useRef(null);   // der Eintrag der eben beendeten Partie
   const savedRef = useRef(false); // ist die laufende Partie schon eingetragen?
   const [startLevel, setStartLevel] = useState(0);
+  const [mode, setMode] = useState(TetrisEngine.CLASSIC); // Klassisch oder Endlos
   const [seedWord, setSeedWord] = useState(() => TetrisSeed.randomWord());
   const [showScores, setShowScores] = useState(false);
   const [, bump] = useState(0);
@@ -2596,13 +2752,13 @@ function App() {
     });
   }, []);
 
-  const startGame = useCallback((lvl, word) => {
+  const startGame = useCallback((lvl, word, m) => {
     heldRef.current = {};
     tapeRef.current = [];
     replayRef.current = null;
     savedRef.current = false;
     lastRef.current = null;
-    gameRef.current = TetrisEngine.create(lvl, word);
+    gameRef.current = TetrisEngine.create(lvl, word, m);
     setSeedWord(gameRef.current.seedWord); // ein gewürfeltes Wort bleibt sichtbar
     bump((v) => v + 1);
   }, []);
@@ -2627,15 +2783,26 @@ function App() {
     const clean = TetrisSeed.sanitizeInput(word);
     if (!clean) return;
     setSeedWord(clean);
+    setMode(TetrisEngine.CLASSIC);
     setShowScores(false);
-    startGame(startLevel, clean);
+    startGame(startLevel, clean, TetrisEngine.CLASSIC);
   }, [startLevel, startGame]);
+
+  /* Aus der Endlos-Liste heraus dasselbe Level noch einmal: Das Level wird
+     übernommen, das Merkwort bleibt das gewählte. */
+  const playLevel = useCallback((lvl) => {
+    setStartLevel(lvl);
+    setMode(TetrisEngine.FOREVER);
+    setShowScores(false);
+    startGame(lvl, seedWord, TetrisEngine.FOREVER);
+  }, [seedWord, startGame]);
 
   // Bildtakt: Schwerkraft, Tastenwiederholung, Aufzeichnung — oder die Wiedergabe.
   useEffect(() => {
     let raf = 0;
     let last = null;
     let seen = -1;
+    let clockSec = -1; // die zuletzt gezeigte Sekunde der Endlos-Uhr
     const step = (t) => {
       const dt = last === null ? 0 : Math.min(t - last, 200);
       last = t;
@@ -2649,8 +2816,13 @@ function App() {
         if (g.over && !savedRef.current) { savedRef.current = true; saveResult(g); }
         if (g.version !== seen) {
           seen = g.version;
+          clockSec = Math.round(g.elapsed / 1000);
           if (!g.paused) TetrisReplay.record(tapeRef.current, g);
           bump((v) => v + 1);
+        } else if (g.mode === TetrisEngine.FOREVER && !g.paused && !g.over) {
+          // Die Uhr des Endlosspiels läuft weiter, auch wenn sich sonst nichts regt.
+          const sec = Math.round(g.elapsed / 1000); // wie formatDuration rundet
+          if (sec !== clockSec) { clockSec = sec; bump((v) => v + 1); }
         }
       }
       raf = requestAnimationFrame(step);
@@ -2782,12 +2954,15 @@ function App() {
       const g = gameRef.current;
 
       if (!g) {
-        if (k === "Enter" || (k === " " && !inField)) startGame(startLevel, seedWord);
+        if (k === "Enter" || (k === " " && !inField)) startGame(startLevel, seedWord, mode);
         else if (!inField && (k === "h" || k === "H")) openScores();
+        else if (!inField && (k === "m" || k === "M")) {
+          setMode(mode === TetrisEngine.FOREVER ? TetrisEngine.CLASSIC : TetrisEngine.FOREVER);
+        }
         return;
       }
       if (g.over) {
-        if (k === "Enter") startGame(g.startLevel, g.seedWord);
+        if (k === "Enter") startGame(g.startLevel, g.seedWord, g.mode);
         else if (k === "r" || k === "R") openReplay();
         else if (k === "h" || k === "H") openScores();
         else if (k === "Escape") quit();
@@ -2826,7 +3001,7 @@ function App() {
       window.removeEventListener("keyup", onUp);
       window.removeEventListener("blur", onBlur);
     };
-  }, [startLevel, seedWord, startGame, quit, openReplay, closeReplay,
+  }, [startLevel, seedWord, mode, startGame, quit, openReplay, closeReplay,
       seekTo, stepBy, playFrom, pausePlayback, setSpeed, resumeHere,
       showScores, openScores, closeScores]);
 
@@ -2838,8 +3013,10 @@ function App() {
   if (showScores) {
     return html`<div class="app scores-view">
       <${ScoresScreen} store=${store} seed=${g ? g.seedWord : seedWord}
+        nextSeed=${seedWord} level=${g ? g.startLevel : startLevel}
+        mode=${g ? g.mode : mode}
         startLevel=${startLevel} running=${!!(g && !g.over)}
-        onPlay=${playSeed} onClose=${closeScores} />
+        onPlay=${playSeed} onPlayLevel=${playLevel} onClose=${closeScores} />
     </div>`;
   }
 
@@ -2867,9 +3044,7 @@ function App() {
       </div>
 
       <aside class="panel right">
-        <div class="box">
-          <h2>Punkte</h2><p class="big">${view.score}</p>
-        </div>
+        <${ScoreBox} game=${view} />
         <div class="box row">
           <div><h2>Level</h2><p class="big">${view.level}</p></div>
           <div><h2>Reihen</h2><p class="big">${view.lines}</p></div>
@@ -2887,17 +3062,25 @@ function App() {
     return html`<div class="app intro-view">
       <div class="stage intro">
         <${StartScreen} level=${startLevel} onLevel=${setStartLevel}
+          mode=${mode} onMode=${setMode}
           seed=${seedWord} onSeed=${setSeedWord}
-          summary=${TetrisScores.summaryFor(store, seedWord)}
+          summary=${mode === TetrisEngine.FOREVER
+            ? TetrisScores.foreverSummaryFor(store, startLevel)
+            : TetrisScores.summaryFor(store, seedWord)}
           onScores=${openScores}
-          onStart=${() => startGame(startLevel, seedWord)} />
+          onStart=${() => startGame(startLevel, seedWord, mode)} />
       </div>
     </div>`;
   }
 
   /* Nach dem Spielende zeigt die Einblendung, wo diese Partie unter den bisherigen
-     mit demselben Merkwort steht. */
-  const sum = g.over ? TetrisScores.summaryFor(store, g.seedWord) : null;
+     steht — klassisch unter denen desselben Merkworts, endlos unter denen
+     desselben Levels. */
+  const forever = g.mode === TetrisEngine.FOREVER;
+  const sum = g.over
+    ? (forever ? TetrisScores.foreverSummaryFor(store, g.startLevel)
+               : TetrisScores.summaryFor(store, g.seedWord))
+    : null;
   const lastEntry = lastRef.current;
   const isRecord = !!(sum && lastEntry && sum.best === lastEntry);
   const rank = sum && lastEntry ? sum.entries.indexOf(lastEntry) + 1 : 0;
@@ -2919,12 +3102,18 @@ function App() {
         <p class="hint">Taste R · Taste H</p></div>`}
       ${g.over && html`<div class="overlay small">
         <h1>Game Over</h1>
-        <p class="lead">${g.score} Punkte, ${g.lines} Reihen</p>
-        ${isRecord && sum.plays > 1 && html`<p class="record">Neuer Bestwert für dieses Wort!</p>`}
+        ${forever
+          ? html`<p class="lead">${TetrisScores.formatDuration(g.elapsed)} durchgehalten
+              auf Level ${g.startLevel} · ${g.score} Punkte, ${g.lines} Reihen</p>`
+          : html`<p class="lead">${g.score} Punkte, ${g.lines} Reihen</p>`}
+        ${isRecord && sum.plays > 1 && html`<p class="record">
+          ${forever ? "Neue Bestzeit für Level " + g.startLevel + "!" : "Neuer Bestwert für dieses Wort!"}</p>`}
         ${rank > 1 && html`<p class="hint">
-          Platz ${rank} von ${sum.plays} · Bestwert ${sum.best.score}</p>`}
+          Platz ${rank} von ${sum.plays} · ${forever
+            ? "Bestzeit " + TetrisScores.formatDuration(sum.best.duration)
+            : "Bestwert " + sum.best.score}</p>`}
         <p class="hint seed-hint">Merkwort <b class="seed-word">${g.seedWord}</b></p>
-        <button class="start" onClick=${() => startGame(g.startLevel, g.seedWord)}>Noch einmal</button>
+        <button class="start" onClick=${() => startGame(g.startLevel, g.seedWord, g.mode)}>Noch einmal</button>
         <button class="start small" disabled=${!tapeRef.current.length}
           onClick=${openReplay}>Aufzeichnung ansehen</button>
         <button class="start small" onClick=${openScores}>Bestenliste</button>
@@ -2932,9 +3121,7 @@ function App() {
     </div>
 
     <aside class="panel right">
-      <div class="box">
-        <h2>Punkte</h2><p class="big">${g.score}</p>
-      </div>
+      <${ScoreBox} game=${g} />
       <div class="box row">
         <div><h2>Level</h2><p class="big">${g.level}</p></div>
         <div><h2>Reihen</h2><p class="big">${g.lines}</p></div>
@@ -2946,6 +3133,7 @@ function App() {
       <div class="box">
         <h2>Merkwort</h2>
         <p class="seed-word">${g.seedWord}</p>
+        ${forever && html`<p class="mode-line">∞ Endlos · Level ${g.startLevel} bleibt</p>`}
       </div>
       <div class="box keys">
         <h2>Tasten</h2>

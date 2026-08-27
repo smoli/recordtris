@@ -21,13 +21,14 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
   eines aussprechbaren Wortes.
 - `src/pieces.js` — die sieben Steine mit ihren vier Drehlagen, die Falltempo-Tabelle
   und die Punktetabelle.
-- `src/engine.js` — Spielfeld, Kollision, Einrasten, Reihenauflösung, Level.
+- `src/engine.js` — Spielfeld, Kollision, Einrasten, Reihenauflösung, Level, Spielart.
   Ein einfacher Zustandsobjekt-Baum, der von außen verändert wird; dazu das kurze
   Ereignisband `fx` für die Bildschau und die
   Momentaufnahme (`snapshot`) und ihre Umkehrung (`fromSnapshot`).
 - `src/replay.js` — das Band der Aufzeichnung und der Abspielkopf.
 - `src/highscores.js` — die Bestenliste: Lesen und Schreiben der Datei, das Bilden
-  der Einträge und ihre Gruppierung nach dem Merkwort.
+  der Einträge und ihre Gruppierung — klassisch nach dem Merkwort, endlos nach dem
+  festen Level.
 - `src/gameui.js` — die Ansichten des Spiels: Leinwand des Feldes, Vorschau,
   Statistik, Startbild.
 - `src/replayui.js` — die Bedienleiste der Wiedergabe.
@@ -68,6 +69,23 @@ steht danach im Feld und in der Seitenspalte, kann also nachträglich notiert we
 Seite nach oben, mittig. Die Tabelle der Bilder pro Feld (48 bei Level 0 bis 1 ab
 Level 29) stammt aus dem Original, ebenso die Punkte 40/100/300/1200 mal (Level + 1).
 Ein Level dauert zehn Reihen; das Startlevel ist frei wählbar (0–9).
+
+**Zwei Spielarten, eine Regel.** Neben dem klassischen Spiel gibt es das Endlosspiel:
+Das Level bleibt dort, wo es begann — die Steine fallen von der ersten Sekunde an so
+schnell wie am Ende, und es zählt nicht der Punktestand, sondern die durchgehaltene
+Zeit. Umgesetzt ist das als ein einziges Feld `mode` im Spielstand ("classic" oder
+"forever"), das genau eine Zeile der Regel schaltet: das Hochzählen des Levels nach
+je zehn Reihen. Alles andere — Steinfolge, Punkte, Aufzeichnung, Wiedereinstieg —
+bleibt Wort für Wort dasselbe. Ein neuer Spielmodus, der nichts verzweigt außer dem,
+was er wirklich ändert.
+
+Das Merkwort behält seinen Sinn: Es bestimmt auch im Endlosspiel die Steinfolge, ist
+dort aber nicht die Aufgabe — die Aufgabe ist das Level. Weil die Zeit dort das
+Ergebnis ist, muss die Uhr auch dann weiterlaufen, wenn sich am Spielstand gerade
+nichts ändert; der Bildtakt stößt darum bei jeder neuen Sekunde ein Neuzeichnen an,
+ohne dafür ein Bild aufzuzeichnen. Da das Level nie steigt, bleibt im Endlosspiel
+auch die Farbe des Levels stehen und die Druckwelle des Levelaufstiegs aus — beides
+fällt von selbst weg, ohne Sonderfall in der Bildschau.
 
 **Bewusste Abweichungen.** Drehungen dürfen um bis zu zwei Spalten ausweichen, wenn
 sie sonst an einer Wand scheitern würden — das Original kennt das nicht, ohne es
@@ -161,7 +179,21 @@ Zusammengefasst wird beim Anzeigen: gruppiert nach dem normalisierten Merkwort, 
 es bestimmt die Steinfolge, also die Aufgabe. Voreingestellt zeigt jede Zeile den
 besten Wert dieses Wortes und die Zahl der Partien; die einzelnen Partien mit allen
 Zahlen stehen daneben. Wer dieselbe Aufgabe zehnmal spielt, sieht daran seinen
-Fortschritt. Die Liste wird beim Öffnen der App gelesen und nach jeder beendeten
+Fortschritt.
+
+**Jede Spielart hat ihre eigene Liste.** Endlospartien sind mit klassischen nicht
+vergleichbar — ein Punktestand aus einer Partie, in der das Level nie steigt, sagt
+etwas anderes. Darum trägt jeder Eintrag seine Spielart, und die Ansicht hat zwei
+Register: Klassisch gruppiert nach dem Merkwort und ordnet nach Punkten, Endlos
+gruppiert nach dem festen Level und ordnet nach der durchgehaltenen Zeit. Es bleibt
+dabei eine einzige Datei mit einer einzigen flachen Liste; getrennt wird erst beim
+Anzeigen. Einträge aus früheren Fassungen der App haben kein Feld für die Spielart —
+sie gelten als klassisch, die alte Liste bleibt also unverändert lesbar. Die
+Endlosliste ist nach Level geordnet, nicht nach Bestwert: Level 9 zehn Sekunden
+durchzuhalten ist mehr wert als Level 0 zehn Minuten, und das kann nur der Anwender
+gewichten.
+
+Die Liste wird beim Öffnen der App gelesen und nach jeder beendeten
 Partie geschrieben; fehlt der Datenordner, lebt sie nur in dieser Sitzung weiter und
 sagt das auch. Eine Partie, die aus der Aufzeichnung heraus fortgesetzt wurde, trägt
 den Vermerk des Wiedereinstiegs — ihr Ergebnis ist mit einem durchgespielten nicht

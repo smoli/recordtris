@@ -63,6 +63,17 @@
 .hint.tight { margin: 0; }
 .hint.warn { color: var(--c-L); }
 
+/* Die beiden Spielarten stehen nebeneinander und tragen denselben Knopf wie
+   die Level darunter. */
+.modes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  width: 100%;
+  max-width: clamp(200px, calc(var(--cell) * 7), 330px);
+  margin-bottom: 10px;
+}
+
 .levels {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

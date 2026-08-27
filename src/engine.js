@@ -5,6 +5,8 @@ const TetrisEngine = (function () {
   const COLS = 10;
   const ROWS = 20;
   const CLEAR_MS = 220; // Dauer des Aufblitzens voller Reihen
+  const CLASSIC = "classic"; // das Level steigt alle zehn Reihen
+  const FOREVER = "forever"; // das Level bleibt fest, es zählt die durchgehaltene Zeit
 
   function emptyBoard() {
     return Array.from({ length: ROWS }, () => new Array(COLS).fill(null));
@@ -49,12 +51,15 @@ const TetrisEngine = (function () {
   }
 
   /* Das Merkwort bestimmt den Startwert des Schieberegisters: dasselbe Wort
-     spielt dieselbe Steinfolge. Fehlt es, entsteht eines zufällig. */
-  function create(startLevel, seedWord) {
+     spielt dieselbe Steinfolge. Fehlt es, entsteht eines zufällig.
+     Die Spielart ist "classic" (das Level steigt alle zehn Reihen) oder "forever"
+     (das Level bleibt, wo es begann — es zählt allein, wie lange man durchhält). */
+  function create(startLevel, seedWord, mode) {
     const stats = {};
     TetrisPieces.TYPES.forEach((t) => { stats[t] = 0; });
     const word = TetrisSeed.normalize(seedWord) ? TetrisSeed.sanitizeInput(seedWord) : TetrisSeed.randomWord();
     const state = {
+      mode: mode === FOREVER ? FOREVER : CLASSIC,
       seedWord: word,
       rng: NesRng.create(TetrisSeed.toRegister(word)),
       board: emptyBoard(),
@@ -201,7 +206,8 @@ const TetrisEngine = (function () {
     state.lines += rows.length;
     state.clears[rows.length]++;
     state.score += TetrisPieces.LINE_SCORE[rows.length] * (state.level + 1);
-    state.level = state.startLevel + Math.floor(state.lines / 10);
+    // Im Endlosspiel bleibt das Level, wo es begann — das Tempo ist die Aufgabe.
+    if (state.mode !== FOREVER) state.level = state.startLevel + Math.floor(state.lines / 10);
     spawn(state);
   }
 
@@ -237,6 +243,7 @@ const TetrisEngine = (function () {
   function snapshot(state) {
     return {
       t: state.elapsed,
+      mode: state.mode,
       board: boardToText(state.board),
       piece: state.piece
         ? { type: state.piece.type, rot: state.piece.rot, x: state.piece.x, y: state.piece.y }
@@ -261,6 +268,7 @@ const TetrisEngine = (function () {
   // Aus einer Momentaufnahme wieder ein lebendiges Spiel — laufbereit, nicht pausiert.
   function fromSnapshot(snap) {
     return {
+      mode: snap.mode === FOREVER ? FOREVER : CLASSIC,
       seedWord: snap.seedWord,
       rng: NesRng.restore(snap.rng),
       board: boardFromText(snap.board),
@@ -286,6 +294,7 @@ const TetrisEngine = (function () {
 
   return {
     COLS: COLS, ROWS: ROWS,
+    CLASSIC: CLASSIC, FOREVER: FOREVER,
     create: create, update: update,
     move: move, rotate: rotate, softDrop: softDrop, hardDrop: hardDrop,
     dropDistance: dropDistance, togglePause: togglePause,

@@ -9,9 +9,20 @@ ein Stein die Oberkante, ist das Spiel vorbei.
 
 ## Anfangen
 
-Beim Start wählst du das **Startlevel** (0 bis 9). Je höher, desto schneller fallen
-die Steine von Anfang an — und desto mehr Punkte bringt jede Reihe. Dann auf
-**Spiel starten** klicken oder Enter drücken.
+Beim Start wählst du zuerst die **Spielart**:
+
+- **Klassisch** — wie gewohnt: Alle zehn Reihen steigt das Level, die Steine fallen
+  immer schneller. Es zählen die **Punkte**.
+- **∞ Endlos** — das Level bleibt für die ganze Partie da, wo du es einstellst. Die
+  Steine fallen von der ersten Sekunde an so schnell wie im Endspurt, und schneller
+  werden sie nicht mehr. Es zählt allein, **wie lange du durchhältst**.
+
+Die Taste **M** wechselt zwischen den beiden.
+
+Darunter wählst du das **Level** (0 bis 9) — klassisch ist das das Startlevel, endlos
+das feste Tempo für die ganze Partie. Je höher, desto schneller fallen die Steine —
+und desto mehr Punkte bringt jede Reihe. Dann auf **Spiel starten** klicken oder Enter
+drücken.
 
 Darunter steht das **Merkwort**. Es bestimmt, welche Steine kommen: Mit demselben
 Wort fällt jedes Mal dieselbe Folge — gut, um eine Partie zu wiederholen, bis sie
@@ -22,7 +33,12 @@ sechzehn Zeichen. Groß- und Kleinschreibung macht keinen Unterschied.
 
 Während des Spiels steht das Wort rechts in der Spalte, nach dem Spielende auch in
 der Einblendung — du kannst es dir also noch notieren, wenn die Partie gut lief.
-**Noch einmal** und Enter starten dieselbe Folge erneut.
+**Noch einmal** und Enter starten dieselbe Folge erneut, in derselben Spielart.
+
+Im Endlosspiel gilt das Merkwort genauso — auch dort kommen mit demselben Wort
+dieselben Steine. Gewertet wird dort aber nicht das Wort, sondern das Level: Rechts
+oben steht statt der Punkte die **Zeit**, die du schon durchgehalten hast, und unter
+dem Merkwort der Vermerk, dass das Level stehen bleibt.
 
 Wenn die Tasten nicht reagieren, einmal ins Spielfeld klicken.
 
@@ -37,6 +53,7 @@ Wenn die Tasten nicht reagieren, einmal ins Spielfeld klicken.
 | Leertaste | sofort ganz nach unten fallen lassen |
 | P | Pause und weiter |
 | R | in der Pause oder nach dem Spielende: Aufzeichnung ansehen |
+| M | auf dem Startbildschirm: Spielart wechseln (klassisch / endlos) |
 | H | Bestenliste öffnen (auf dem Startbildschirm, in der Pause, nach dem Spielende) |
 | Esc | Spiel beenden, zurück zum Startbildschirm |
 | Enter | nach dem Spielende noch einmal dieselbe Steinfolge; in der Bestenliste das gewählte Wort spielen |
@@ -84,6 +101,12 @@ Jede Partie, die mit *Game Over* endet, wird von selbst festgehalten — du muss
 tun. Der Knopf **Bestenliste** (oder die Taste **H**) zeigt sie: auf dem
 Startbildschirm, in der Pause und nach dem Spielende.
 
+Oben stehen zwei Register, denn die beiden Spielarten messen Verschiedenes und sind
+darum getrennt: **Klassisch · Punkte** und **∞ Endlos · Zeit**. Geöffnet ist zunächst
+das der Spielart, aus der du kommst.
+
+### Klassisch
+
 Links steht jedes Merkwort, das du je gespielt hast, mit seinem **besten Punktestand**
 und der Zahl der Partien; die stärksten Wörter stehen oben. Ein Klick auf ein Wort
 zeigt rechts alle Partien dazu, die beste zuerst, und zu jeder:
@@ -107,6 +130,22 @@ Startbildschirm gewählt hast. Öffnest du die Liste aus der **Pause** heraus, w
 Hinweis darauf hin, dass die laufende Partie dabei verworfen wird — dort gibt es
 absichtlich keine Enter-Abkürzung.
 
+### ∞ Endlos
+
+Hier steht links jedes **Level**, auf dem du endlos gespielt hast, mit deiner
+**Bestzeit** und der Zahl der Partien — nach Level geordnet, von 0 aufwärts. Ein Klick
+zeigt rechts alle Partien dieses Levels, die längste zuerst; obenan steht bei jeder die
+durchgehaltene Zeit, daneben Punkte, Reihen und das Merkwort, mit dem sie lief.
+
+Der Knopf **▶ Endlos auf Level N** startet sofort eine neue Endlospartie auf genau
+diesem Level; darunter steht, mit welchem Merkwort — das ist das, was auf dem
+Startbildschirm im Feld steht. Auch hier genügt **Enter**, solange keine laufende
+Partie daran hängt.
+
+Ein Vergleich über die Level hinweg ist absichtlich nicht vorgegeben: Zehn Sekunden
+auf Level 9 sind mehr wert als zehn Minuten auf Level 0 — was dir mehr gilt, weißt
+nur du.
+
 Eine Partie, die du über *Hier weiterspielen* aus der Aufzeichnung fortgesetzt hast,
 wird ebenfalls eingetragen, aber mit dem Vermerk **↻ mit Wiedereinstieg gespielt** —
 sie ist mit einer durchgespielten Partie nicht ganz vergleichbar.
@@ -120,8 +159,11 @@ die Liste das oben an — sie gilt dann nur für die laufende Sitzung.
 - **Punkte** — eine Reihe zählt 40, zwei 100, drei 300, vier auf einmal 1200 —
   jeweils mal Level plus eins. Jedes Feld, das du selbst tiefer schiebst oder
   fallen lässt, gibt einen Punkt dazu.
+- **Zeit** — nur im Endlosspiel: Sie steht dort an der Stelle der Punkte, weil sie
+  das Ergebnis ist; die Punkte stehen klein darunter.
 - **Level** und **Reihen** — alle zehn Reihen steigt das Level, die Steine fallen
-  schneller.
+  schneller. Im Endlosspiel bleibt das Level stehen — und damit auch die Farbe der
+  Oberfläche.
 - **Nächster** — der Stein, der als Nächstes kommt.
 - **Statistik** links — wie oft jede Steinsorte bisher kam.
 

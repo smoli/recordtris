@@ -17,6 +17,7 @@ function App() {
   const lastRef = useRef(null);   // der Eintrag der eben beendeten Partie
   const savedRef = useRef(false); // ist die laufende Partie schon eingetragen?
   const [startLevel, setStartLevel] = useState(0);
+  const [mode, setMode] = useState(TetrisEngine.CLASSIC); // Klassisch oder Endlos
   const [seedWord, setSeedWord] = useState(() => TetrisSeed.randomWord());
   const [showScores, setShowScores] = useState(false);
   const [, bump] = useState(0);
@@ -56,13 +57,13 @@ function App() {
     });
   }, []);
 
-  const startGame = useCallback((lvl, word) => {
+  const startGame = useCallback((lvl, word, m) => {
     heldRef.current = {};
     tapeRef.current = [];
     replayRef.current = null;
     savedRef.current = false;
     lastRef.current = null;
-    gameRef.current = TetrisEngine.create(lvl, word);
+    gameRef.current = TetrisEngine.create(lvl, word, m);
     setSeedWord(gameRef.current.seedWord); // ein gewürfeltes Wort bleibt sichtbar
     bump((v) => v + 1);
   }, []);
@@ -87,15 +88,26 @@ function App() {
     const clean = TetrisSeed.sanitizeInput(word);
     if (!clean) return;
     setSeedWord(clean);
+    setMode(TetrisEngine.CLASSIC);
     setShowScores(false);
-    startGame(startLevel, clean);
+    startGame(startLevel, clean, TetrisEngine.CLASSIC);
   }, [startLevel, startGame]);
+
+  /* Aus der Endlos-Liste heraus dasselbe Level noch einmal: Das Level wird
+     übernommen, das Merkwort bleibt das gewählte. */
+  const playLevel = useCallback((lvl) => {
+    setStartLevel(lvl);
+    setMode(TetrisEngine.FOREVER);
+    setShowScores(false);
+    startGame(lvl, seedWord, TetrisEngine.FOREVER);
+  }, [seedWord, startGame]);
 
   // Bildtakt: Schwerkraft, Tastenwiederholung, Aufzeichnung — oder die Wiedergabe.
   useEffect(() => {
     let raf = 0;
     let last = null;
     let seen = -1;
+    let clockSec = -1; // die zuletzt gezeigte Sekunde der Endlos-Uhr
     const step = (t) => {
       const dt = last === null ? 0 : Math.min(t - last, 200);
       last = t;
@@ -109,8 +121,13 @@ function App() {
         if (g.over && !savedRef.current) { savedRef.current = true; saveResult(g); }
         if (g.version !== seen) {
           seen = g.version;
+          clockSec = Math.round(g.elapsed / 1000);
           if (!g.paused) TetrisReplay.record(tapeRef.current, g);
           bump((v) => v + 1);
+        } else if (g.mode === TetrisEngine.FOREVER && !g.paused && !g.over) {
+          // Die Uhr des Endlosspiels läuft weiter, auch wenn sich sonst nichts regt.
+          const sec = Math.round(g.elapsed / 1000); // wie formatDuration rundet
+          if (sec !== clockSec) { clockSec = sec; bump((v) => v + 1); }
         }
       }
       raf = requestAnimationFrame(step);
@@ -242,12 +259,15 @@ function App() {
       const g = gameRef.current;
 
       if (!g) {
-        if (k === "Enter" || (k === " " && !inField)) startGame(startLevel, seedWord);
+        if (k === "Enter" || (k === " " && !inField)) startGame(startLevel, seedWord, mode);
         else if (!inField && (k === "h" || k === "H")) openScores();
+        else if (!inField && (k === "m" || k === "M")) {
+          setMode(mode === TetrisEngine.FOREVER ? TetrisEngine.CLASSIC : TetrisEngine.FOREVER);
+        }
         return;
       }
       if (g.over) {
-        if (k === "Enter") startGame(g.startLevel, g.seedWord);
+        if (k === "Enter") startGame(g.startLevel, g.seedWord, g.mode);
         else if (k === "r" || k === "R") openReplay();
         else if (k === "h" || k === "H") openScores();
         else if (k === "Escape") quit();
@@ -286,7 +306,7 @@ function App() {
       window.removeEventListener("keyup", onUp);
       window.removeEventListener("blur", onBlur);
     };
-  }, [startLevel, seedWord, startGame, quit, openReplay, closeReplay,
+  }, [startLevel, seedWord, mode, startGame, quit, openReplay, closeReplay,
       seekTo, stepBy, playFrom, pausePlayback, setSpeed, resumeHere,
       showScores, openScores, closeScores]);
 
@@ -298,8 +318,10 @@ function App() {
   if (showScores) {
     return html`<div class="app scores-view">
       <${ScoresScreen} store=${store} seed=${g ? g.seedWord : seedWord}
+        nextSeed=${seedWord} level=${g ? g.startLevel : startLevel}
+        mode=${g ? g.mode : mode}
         startLevel=${startLevel} running=${!!(g && !g.over)}
-        onPlay=${playSeed} onClose=${closeScores} />
+        onPlay=${playSeed} onPlayLevel=${playLevel} onClose=${closeScores} />
     </div>`;
   }
 
@@ -327,9 +349,7 @@ function App() {
       </div>
 
       <aside class="panel right">
-        <div class="box">
-          <h2>Punkte</h2><p class="big">${view.score}</p>
-        </div>
+        <${ScoreBox} game=${view} />
         <div class="box row">
           <div><h2>Level</h2><p class="big">${view.level}</p></div>
           <div><h2>Reihen</h2><p class="big">${view.lines}</p></div>
@@ -347,17 +367,25 @@ function App() {
     return html`<div class="app intro-view">
       <div class="stage intro">
         <${StartScreen} level=${startLevel} onLevel=${setStartLevel}
+          mode=${mode} onMode=${setMode}
           seed=${seedWord} onSeed=${setSeedWord}
-          summary=${TetrisScores.summaryFor(store, seedWord)}
+          summary=${mode === TetrisEngine.FOREVER
+            ? TetrisScores.foreverSummaryFor(store, startLevel)
+            : TetrisScores.summaryFor(store, seedWord)}
           onScores=${openScores}
-          onStart=${() => startGame(startLevel, seedWord)} />
+          onStart=${() => startGame(startLevel, seedWord, mode)} />
       </div>
     </div>`;
   }
 
   /* Nach dem Spielende zeigt die Einblendung, wo diese Partie unter den bisherigen
-     mit demselben Merkwort steht. */
-  const sum = g.over ? TetrisScores.summaryFor(store, g.seedWord) : null;
+     steht — klassisch unter denen desselben Merkworts, endlos unter denen
+     desselben Levels. */
+  const forever = g.mode === TetrisEngine.FOREVER;
+  const sum = g.over
+    ? (forever ? TetrisScores.foreverSummaryFor(store, g.startLevel)
+               : TetrisScores.summaryFor(store, g.seedWord))
+    : null;
   const lastEntry = lastRef.current;
   const isRecord = !!(sum && lastEntry && sum.best === lastEntry);
   const rank = sum && lastEntry ? sum.entries.indexOf(lastEntry) + 1 : 0;
@@ -379,12 +407,18 @@ function App() {
         <p class="hint">Taste R · Taste H</p></div>`}
       ${g.over && html`<div class="overlay small">
         <h1>Game Over</h1>
-        <p class="lead">${g.score} Punkte, ${g.lines} Reihen</p>
-        ${isRecord && sum.plays > 1 && html`<p class="record">Neuer Bestwert für dieses Wort!</p>`}
+        ${forever
+          ? html`<p class="lead">${TetrisScores.formatDuration(g.elapsed)} durchgehalten
+              auf Level ${g.startLevel} · ${g.score} Punkte, ${g.lines} Reihen</p>`
+          : html`<p class="lead">${g.score} Punkte, ${g.lines} Reihen</p>`}
+        ${isRecord && sum.plays > 1 && html`<p class="record">
+          ${forever ? "Neue Bestzeit für Level " + g.startLevel + "!" : "Neuer Bestwert für dieses Wort!"}</p>`}
         ${rank > 1 && html`<p class="hint">
-          Platz ${rank} von ${sum.plays} · Bestwert ${sum.best.score}</p>`}
+          Platz ${rank} von ${sum.plays} · ${forever
+            ? "Bestzeit " + TetrisScores.formatDuration(sum.best.duration)
+            : "Bestwert " + sum.best.score}</p>`}
         <p class="hint seed-hint">Merkwort <b class="seed-word">${g.seedWord}</b></p>
-        <button class="start" onClick=${() => startGame(g.startLevel, g.seedWord)}>Noch einmal</button>
+        <button class="start" onClick=${() => startGame(g.startLevel, g.seedWord, g.mode)}>Noch einmal</button>
         <button class="start small" disabled=${!tapeRef.current.length}
           onClick=${openReplay}>Aufzeichnung ansehen</button>
         <button class="start small" onClick=${openScores}>Bestenliste</button>
@@ -392,9 +426,7 @@ function App() {
     </div>
 
     <aside class="panel right">
-      <div class="box">
-        <h2>Punkte</h2><p class="big">${g.score}</p>
-      </div>
+      <${ScoreBox} game=${g} />
       <div class="box row">
         <div><h2>Level</h2><p class="big">${g.level}</p></div>
         <div><h2>Reihen</h2><p class="big">${g.lines}</p></div>
@@ -406,6 +438,7 @@ function App() {
       <div class="box">
         <h2>Merkwort</h2>
         <p class="seed-word">${g.seedWord}</p>
+        ${forever && html`<p class="mode-line">∞ Endlos · Level ${g.startLevel} bleibt</p>`}
       </div>
       <div class="box keys">
         <h2>Tasten</h2>
