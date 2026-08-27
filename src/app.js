@@ -8,6 +8,21 @@ const DAS_START = 170; // Wartezeit bis zur Wiederholung beim Halten
 const DAS_RATE = 50;   // Abstand der Wiederholungen
 const DROP_RATE = 45;  // Wiederholung beim Halten von Pfeil runter
 
+/* Zwei Fristen für eine gehaltene Taste, von der kein Lebenszeichen mehr kommt:
+   Das System wiederholt jede gehaltene Taste laufend als keydown. Bleibt diese
+   Wiederholung aus, obwohl sie schon einmal kam, ist die Taste in Wahrheit
+   losgelassen und das keyup unterwegs verloren gegangen — dann muss die
+   Wiederholung von selbst enden, sonst liefe der Stein von allein weiter. Kam
+   noch nie eine Wiederholung, gilt die längere Frist als grobe Notbremse. */
+const HELD_STALE_MS = 900;
+const HELD_MAX_MS = 2500;
+
+/* Welche Taste welche Richtung meint. Gelesen wird zuerst die physische Taste
+   (e.code), damit Loslassen auch dann passt, wenn e.key sich zwischendurch
+   ändert — etwa weil eine Zusatztaste dazukam. */
+const DIR_KEYS = { ArrowLeft: "left", ArrowRight: "right", ArrowDown: "down" };
+function dirOf(e) { return DIR_KEYS[e.code] || DIR_KEYS[e.key] || null; }
+
 function App() {
   const gameRef = useRef(null);
   const heldRef = useRef({});
@@ -138,9 +153,22 @@ function App() {
 
   function repeatKeys(g, dt) {
     const held = heldRef.current;
+    // Erst prüfen, ob eine der Tasten nur noch scheinbar gehalten wird.
+    if (stale(held.left, dt)) held.left = null;
+    if (stale(held.right, dt)) held.right = null;
+    if (stale(held.down, dt)) held.down = null;
     tick(held.left, dt, DAS_START, DAS_RATE, () => TetrisEngine.move(g, -1));
     tick(held.right, dt, DAS_START, DAS_RATE, () => TetrisEngine.move(g, 1));
     tick(held.down, dt, DROP_RATE, DROP_RATE, () => TetrisEngine.softDrop(g));
+  }
+
+  /* Ein Eintrag altert, solange kein keydown ihn bestätigt. Überschreitet er seine
+     Frist, gilt die Taste als losgelassen — der Stein bleibt sonst nach einem
+     verlorenen keyup an der Wand kleben und lässt sich nicht mehr zurückholen. */
+  function stale(entry, dt) {
+    if (!entry) return false;
+    entry.idle += dt;
+    return entry.idle > (entry.watched ? HELD_STALE_MS : HELD_MAX_MS);
   }
 
   function tick(entry, dt, first, rate, action) {
@@ -224,7 +252,9 @@ function App() {
   }, []);
 
   useEffect(() => {
-    function press(key) { heldRef.current[key] = { timer: 0, fired: false }; }
+    function press(key) {
+      heldRef.current[key] = { timer: 0, fired: false, idle: 0, watched: false };
+    }
 
     function onDown(e) {
       const k = e.key;
@@ -255,6 +285,22 @@ function App() {
         return;
       }
 
+      /* Das Lebenszeichen der gehaltenen Tasten. Die Wiederholung des Systems gilt
+         immer nur der zuletzt gedrückten Taste: Wer beim Schieben dreht, dessen
+         Pfeiltaste hört auf zu wiederholen, obwohl sie gehalten bleibt. Darum zählt
+         jeder Tastendruck als Lebenszeichen für alle — nur die Taste, die gerade
+         selbst wiederholt, wird überwacht und darf die kurze Frist bekommen.
+         Ausgelöst wird hier nichts; das besorgt der Bildtakt. */
+      const dir = dirOf(e);
+      const held = heldRef.current;
+      for (const name in held) {
+        const entry = held[name];
+        if (!entry) continue;
+        entry.idle = 0;
+        if (name !== dir) entry.watched = false;
+        else if (e.repeat) entry.watched = true;
+      }
+
       if (e.repeat) return;
       const g = gameRef.current;
 
@@ -273,7 +319,8 @@ function App() {
         else if (k === "Escape") quit();
         return;
       }
-      if (k === "p" || k === "P") { TetrisEngine.togglePause(g); return; }
+      // Die Pause gibt auch alle Tasten frei — zweimal P holt eine verhakte zurück.
+      if (k === "p" || k === "P") { heldRef.current = {}; TetrisEngine.togglePause(g); return; }
       if (k === "Escape") { quit(); return; }
       if (g.paused) {
         if (k === "r" || k === "R") openReplay();
@@ -281,30 +328,32 @@ function App() {
         return;
       }
 
-      if (k === "ArrowLeft") { TetrisEngine.move(g, -1); press("left"); }
-      else if (k === "ArrowRight") { TetrisEngine.move(g, 1); press("right"); }
-      else if (k === "ArrowDown") { TetrisEngine.softDrop(g); press("down"); }
+      if (dir === "left") { TetrisEngine.move(g, -1); press("left"); }
+      else if (dir === "right") { TetrisEngine.move(g, 1); press("right"); }
+      else if (dir === "down") { TetrisEngine.softDrop(g); press("down"); }
       else if (k === "a" || k === "A") TetrisEngine.rotate(g, -1);
       else if (k === "d" || k === "D") TetrisEngine.rotate(g, 1);
       else if (k === " ") TetrisEngine.hardDrop(g);
     }
 
     function onUp(e) {
-      const k = e.key;
-      if (k === "ArrowLeft") heldRef.current.left = null;
-      else if (k === "ArrowRight") heldRef.current.right = null;
-      else if (k === "ArrowDown") heldRef.current.down = null;
+      const dir = dirOf(e);
+      if (dir) heldRef.current[dir] = null;
     }
 
     function onBlur() { heldRef.current = {}; }
+    // Ein verdecktes Fenster liefert kein keyup mehr — also alles freigeben.
+    function onHidden() { if (document.hidden) heldRef.current = {}; }
 
     window.addEventListener("keydown", onDown);
     window.addEventListener("keyup", onUp);
     window.addEventListener("blur", onBlur);
+    document.addEventListener("visibilitychange", onHidden);
     return () => {
       window.removeEventListener("keydown", onDown);
       window.removeEventListener("keyup", onUp);
       window.removeEventListener("blur", onBlur);
+      document.removeEventListener("visibilitychange", onHidden);
     };
   }, [startLevel, seedWord, mode, startGame, quit, openReplay, closeReplay,
       seekTo, stepBy, playFrom, pausePlayback, setSpeed, resumeHere,

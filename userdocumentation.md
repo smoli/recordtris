@@ -40,7 +40,10 @@ dieselben Steine. Gewertet wird dort aber nicht das Wort, sondern das Level: Rec
 oben steht statt der Punkte die **Zeit**, die du schon durchgehalten hast, und unter
 dem Merkwort der Vermerk, dass das Level stehen bleibt.
 
-Wenn die Tasten nicht reagieren, einmal ins Spielfeld klicken.
+Wenn die Tasten nicht reagieren, einmal ins Spielfeld klicken. Sollte ein Stein
+einmal von allein weiterwandern, obwohl du nichts drückst: Er hört nach einem
+Augenblick von selbst wieder auf — sofort beendet es, wenn du die betreffende
+Pfeiltaste kurz antippst oder zweimal **P** drückst (Pause und weiter).
 
 ## Tasten
 

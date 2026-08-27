@@ -93,6 +93,21 @@ ist Spielen an der Wand aber unnötig zäh. Dazu kommen ein Schattenriss der
 Landestelle und die Leertaste zum sofortigen Fallenlassen (ein Punkt je Feld);
 beides gibt es im Original ebenfalls nicht.
 
+**Eine gehaltene Taste muss sich selbst bestätigen.** Das Wiederholen von Links,
+Rechts und Runter läuft im Bildtakt weiter, solange ein Eintrag dafür besteht; er
+entsteht beim Drücken und fällt beim Loslassen weg. Geht ein Loslassen verloren —
+das kann es, die App sieht nur die Ereignisse, die sie bekommt —, schiebt sich der
+Stein von allein weiter, und das Spiel ist verdorben. Darum altert jeder Eintrag:
+Jeder Tastendruck setzt sein Alter zurück, auch die Wiederholung des Betriebssystems,
+die eine gehaltene Taste laufend als weiteres Drücken meldet. Bleibt beides aus, gilt
+die Taste als losgelassen. Zwei Fristen, weil die Systemwiederholung immer nur der
+zuletzt gedrückten Taste gilt: Wer beim Schieben dreht, dessen Pfeiltaste hört auf zu
+wiederholen, obwohl sie gehalten bleibt. Nur solange eine Taste selbst wiederholt,
+zählt die kurze Frist; sonst die lange. Erkannt wird die Taste an ihrer Lage
+(`e.code`), nicht an ihrem Zeichen, damit das Loslassen auch dann passt, wenn eine
+Zusatztaste dazwischenkam. Dazu die groben Netze: Verlassen des Fensters, Verdecken
+des Fensters und die Pause geben alle Tasten frei.
+
 **Das Feld ist eine Leinwand, nicht ein Raster aus Kästchen.** Bis auf das Feld
 bleibt die ganze Oberfläche Preact und CSS; das Feld selbst zeichnet ein eigener
 Bildtakt auf ein `<canvas>`. Nur so lassen sich Dinge zeigen, die zwischen zwei
