@@ -202,7 +202,8 @@ Vier Geräusche begleiten das Spiel:
   einer Wand oder am Stapel hängen bleibt und sich nichts bewegt,
 - ein Aufschlag, wenn ein Stein **aufsetzt** — ob er von selbst gelandet ist oder mit
   der Leertaste hinuntergeworfen wurde,
-- ein Klang, wenn **eine bis drei Reihen** fallen,
+- ein Klang, wenn **eine bis drei Reihen** fallen — und zwar einer je Reihe, bei zwei
+  und drei Reihen kurz nacheinander gestaffelt, sodass man sie zählen hört,
 - ein eigener, größerer für den **Tetris**: vier Reihen auf einmal.
 
 Die Taste **S** schaltet den Ton überall an und aus — im Spiel, in der Pause, in der

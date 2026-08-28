@@ -140,7 +140,12 @@ const TetrisFx = (function () {
        Druckwelle und ein Aufblitzen, das mit der Zahl der Reihen wächst. */
     function clearBurst(g, rows) {
       const n = rows.length;
-      TetrisSound.play(n >= 4 ? "tetris" : "rows");
+      /* Vier Reihen haben ihren eigenen Klang, ein einziger Anschlag. Zwei und
+         drei bekommen je Reihe einen — kurz gestaffelt, damit man sie zählen
+         hört, statt sie zu einem Ton zu verschmelzen. */
+      if (n >= 4) TetrisSound.play("tetris");
+      else if (n > 1) TetrisSound.series("rows", n, 110);
+      else TetrisSound.play("rows");
       for (let i = 0; i < n; i++) {
         const r = rows[i];
         bars.push({ row: r, life: 420, max: 420 });

@@ -406,19 +406,42 @@ const TetrisSound = (function () {
     bank.way = "stumm";
   }
 
-  function play(key) {
-    if (muted) return;
-    build();
-    const bank = banks[key];
-    if (!bank) return;
-    const t = now();
-    if (t - bank.last < bank.def.gap) return;
-    bank.last = t;
+  /* Ein Anschlag, ohne Rücksicht auf den Mindestabstand — er ist hier schon
+     entschieden. */
+  function strike(bank) {
+    bank.last = now();
     /* Die Tonmaschine schläft, bis der Anwender etwas tut — der Tastendruck selbst
        weckt sie. In manchem Fensterrahmen darf sie nie erwachen; die Wege, die auf
        sie bauen, kommen dann nie zum Zug, das Element aber schon. */
     if (ctx && ctx.state !== "running") unlock();
     fire(bank, 0);
+  }
+
+  function play(key) {
+    if (muted) return;
+    build();
+    const bank = banks[key];
+    if (!bank) return;
+    if (now() - bank.last < bank.def.gap) return;
+    strike(bank);
+  }
+
+  /* Derselbe Klang mehrmals kurz hintereinander: je Anlass ein Anschlag, um
+     spacing Millisekunden versetzt. So klingen mehrere volle Reihen nicht als
+     ein Ton, sondern gestaffelt — eine je Reihe. Der Mindestabstand gilt dabei
+     nicht, die Folge ist ja gewollt; wer inzwischen abschaltet, hört den Rest
+     nicht mehr. */
+  function series(key, count, spacing) {
+    if (muted) return;
+    build();
+    const bank = banks[key];
+    if (!bank) return;
+    const n = Math.max(1, count | 0);
+    const step = spacing > 0 ? spacing : 110;
+    strike(bank);
+    for (let i = 1; i < n; i++) {
+      setTimeout(function () { if (!muted) strike(bank); }, i * step);
+    }
   }
 
   // Abschalten heißt auch: was gerade klingt, hört auf.
@@ -495,6 +518,7 @@ const TetrisSound = (function () {
 
   return {
     play: play,
+    series: series,
     adopt: adopt,
     adoptUri: adoptUri,
     has: hasRecording,
