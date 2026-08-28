@@ -94,12 +94,12 @@ const TetrisFx = (function () {
     }
 
     /* Die Meldungen der Regel: Schieben, Drehung, Fallenlassen, Einrasten.
-       Sie sind zugleich die Anlässe der Geräusche — das Schieben ist der
-       einzige, den man nur hört und nicht sieht. */
+       Nur zu sehen: Die Klänge dazu hängen in der Regel selbst am Zug, weil sie
+       hier ein Bild zu spät kämen. Das Schieben hat gar kein Bild. */
     function handle(ev) {
-      if (ev.k === "move" || ev.k === "rot") TetrisSound.play("move");
-      else if (ev.k === "lock") TetrisSound.play("drop");
-      if (ev.k === "move") return;
+      if (ev.k === "move") return; // das Schieben hört man nur; zu sehen ist es nicht
+      // Der Ton zum Zug klingt schon in der Regel (engine.js), nicht erst hier.
+
       const hex = P.typeColor(ev.type);
       const cells = TetrisPieces.SHAPES[ev.type] ? TetrisPieces.SHAPES[ev.type][ev.rot] : null;
       if (!cells) return;

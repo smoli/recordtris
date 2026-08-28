@@ -37,8 +37,9 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
 - `src/fxpaint.js` — der Pinselkasten: Farben mischen, Kachel, Schattenriss,
   Hintergrund und Saum zeichnen.
 - `src/fx.js` — die Bildschau des Feldes: eigener Bildtakt, Ereignisse, Teilchen,
-  Erschütterung, Nachglühen. Von hier aus klingen auch die Geräusche.
-- `src/sound.js` — die vier Geräusche: Stimmen je Klang, Mindestabstand, Stummschalter.
+  Erschütterung, Nachglühen. Von hier aus klingt der Reihenschlag.
+- `src/sound.js` — die vier Geräusche: entpackte Klangkörper in der Tonmaschine,
+  Mindestabstand, Rückfall über die Elemente, Stummschalter.
 - `src/style.css` — Grundmaße, Farben, Feld und Seitenspalten.
 - `src/overlay.css` — Startbildschirm, Einblendungen, Knöpfe, Eingabefelder.
 - `src/screens.css` — Wiedergabe und Bestenliste.
@@ -127,20 +128,27 @@ die Bildschau ausliest und leert. Das Band gehört nicht zum Spielstand und steh
 darum weder in der Momentaufnahme noch in der Bestenliste. Das Schieben ist der
 einzige Eintrag ohne Bild: Es meldet sich allein, damit es zu hören ist.
 
-**Der Ton hängt an denselben Anlässen wie das Bild.** Die vier Klänge — Schieben und
+**Der Ton klingt im Augenblick des Zuges.** Die vier Klänge — Schieben und
 Drehen, Aufsetzen, volle Reihen, Tetris — liegen als `<audio>` im Dokument, weil nur
 im Markup der Pfad der Beigabe steht, den das Bündeln durch die eingebettete Fassung
-ersetzt; im JavaScript trüge er nicht. Ausgelöst werden sie an genau der Stelle, an
-der auch die Bildschau ihre Ereignisse bekommt (`fx.js`): So gibt es keine zweite
-Quelle der Wahrheit darüber, was geschehen ist, und kein Ereignis, das man sieht,
-aber nicht hört. Daraus folgt auch, was in der Wiedergabe klingt: die Reihen, die
-sich dem Zustand ansehen lassen — nicht das Schieben und Aufsetzen, die nur die
-laufende Regel meldet.
+ersetzt; im JavaScript trüge er nicht. Gespielt werden sie aber nicht über diese
+Elemente, sondern über die Tonmaschine des Browsers: Aus der eingebetteten
+`data:`-Quelle entstehen beim Laden entpackte Klangkörper (`atob` und
+`decodeAudioData`, ohne Netzzugriff). Ein Anschlag ist danach nur das Starten
+einer Stimme — kein Anlauf, kein Abschneiden. Vorlaufende Stille im Klang wird
+übersprungen: Genau sie hört man sonst als Verzögerung.
 
-Je Klang gibt es einen kleinen Stapel von Kopien des Elements, damit ein Ton den
-vorigen nicht abschneidet, und einen Mindestabstand, damit eine gehaltene Pfeiltaste
-keine Salve auslöst — das Schieben braucht beides, der Tetris keins von beidem. Ein
-Schalter (Taste `S`, dazu ein Knopf auf dem Startbildschirm) stellt alles still; er
+**Ausgelöst wird jeder Klang dort, wo sein Anlass entsteht.** Was die Regel meldet —
+Schieben, Drehen, Aufsetzen —, klingt in `engine.js`, noch im selben Tastendruck: Das
+Ereignisband wird erst im nächsten Bild gelesen, und ein Klang, der ein Bild später
+kommt, klingt nach dem Zug statt mit ihm. Volle Reihen sieht man dem Zustand an; sie
+klingen in der Bildschau (`fx.js`) und sind darum das Einzige, was auch in der
+Wiedergabe zu hören ist. Ein Mindestabstand je Klang hält die Salve einer gehaltenen
+Taste ab — er liegt unter der Wiederholrate, damit kein wirklicher Zug stumm bleibt.
+Der Stapel von Kopien der Elemente bleibt der Rückfall, falls das Entpacken nicht
+gelingt. Die Tonmaschine erwacht mit dem ersten Tastendruck oder Klick — vorher darf
+ohne Zutun des Anwenders nichts klingen; entpackt wird trotzdem schon beim Laden.
+Ein Schalter (Taste `S`, dazu ein Knopf auf dem Startbildschirm) stellt alles still; er
 gehört keiner Ansicht und wird darum vor allen anderen Tasten abgefragt. Wie alles
 außer der Bestenliste lebt er nur für diese Sitzung.
 

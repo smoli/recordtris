@@ -36,6 +36,13 @@ const TetrisEngine = (function () {
      das die Bildschau ausliest und danach leert. Es gehört nicht zum Spielstand und
      steht deshalb auch nicht in der Momentaufnahme. */
   function emit(state, ev) {
+    /* Der Ton hängt nicht am Band, sondern hier: Das Band wird erst im nächsten
+       Bild gelesen, und ein Klang, der ein Bild zu spät kommt, klingt nach dem
+       Tastendruck statt mit ihm. Gehört wird also im Augenblick des Zuges. */
+    if (typeof TetrisSound !== "undefined") {
+      if (ev.k === "move" || ev.k === "rot") TetrisSound.play("move");
+      else if (ev.k === "lock") TetrisSound.play("drop");
+    }
     if (state.fx && state.fx.length < 48) state.fx.push(ev);
   }
 
