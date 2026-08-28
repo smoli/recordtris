@@ -1,13 +1,15 @@
 /* Die Aufnahmen aus dem Datenordner.
 
-   In diesem Fensterrahmen kommt keine Tondatei von selbst an: Die Quellen der
-   <audio>-Elemente sind Pfade (assets/…), die das Bündeln stehen lässt, und auf
-   Dateien neben der App hat der Rahmen keinen Zugriff. Jedes Element meldet darum
-   "Quelle nicht spielbar (Fehler 4)", und es bleibt bei den eigenen Tönen.
+   Das ist das NETZ, nicht der Regelweg. Im Regelfall liegen die vier Aufnahmen als
+   Beigaben im Ordner assets, und das Bündeln setzt sie ins Dokument (soundassets.js).
+   Nur wenn das einmal nicht geschieht, steht an ihrer Stelle ein Pfad — und ein
+   Pfad führt in diesem Fensterrahmen nirgendwohin: Das Element meldet dann "Quelle
+   nicht spielbar (Fehler 4)", und es bliebe bei den eigenen Tönen.
 
-   Es gibt genau einen Weg, auf dem die Bytes einer Aufnahme dennoch in die
+   Dann gibt es genau einen Weg, auf dem die Bytes einer Aufnahme dennoch in die
    laufende App gelangen: das Dateisystem des Workspace (morphosFS). Von dort
    gelesen, werden sie in sound.js entpackt und ersetzen, was im Dokument steht.
+   Was der App beiliegt, wird dabei NICHT ersetzt (siehe done()).
 
    Gesucht wird beim Start, ohne Zutun — in dieser Ordnung:
      1. die Merkliste zuletzt von Hand gewählter Dateien (tetris-sounds.json),

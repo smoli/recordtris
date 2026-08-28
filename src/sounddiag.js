@@ -78,7 +78,7 @@ function SoundAssetsBlock() {
       })}
     </ul>
     <p class="diag-hint">Beim Bündeln setzt Morphos an der Stelle einer Beigabe die
-      Aufnahme selbst ein — im Markup wie im CSS. Steht hier
+      Aufnahme selbst ein — hier am <i>source</i> des Klang-Elements. Steht hier
       <i>nicht eingebettet</i>, ist der Pfad stehen geblieben; dann hilft nur der
       Weg über den Datenordner darunter.</p>
     <button class="diag-again"
@@ -167,7 +167,7 @@ function SoundFilesBlock({ onDone }) {
     </div>
     <p class="diag-hint">Der Notweg, falls oben etwas <i>nicht eingebettet</i>
       ist: dieselben vier Dateien aus dem Ordner <b>assets</b> von Hand hereingeben
-      — <i>move-and-turn</i>, <i>drop-sound</i>, <i>row-completed-sound</i>,
+      — <i>move-and-turn-shorter</i>, <i>drop-sound</i>, <i>row-completed-sound</i>,
       <i>tetris-sound</i>. Wähle sie alle auf einmal; welcher Klang gemeint ist,
       verrät der Name. ${r.fs
         ? html`Danach liegen sie gesichert in <b>${r.dir}</b> im Datenordner und

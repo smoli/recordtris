@@ -40,9 +40,8 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
   Erschütterung, Nachglühen. Von hier aus klingt der Reihenschlag.
 - `src/sound.js` — die vier Geräusche: drei Wege zum Klang, Mindestabstand,
   Stummschalter, Selbstauskunft für die Diagnose.
-- `src/soundassets.js` — die vier Beigaben aus `assets`: an den drei Stellen im
-  Dokument ablesen, wo das Bündeln sie eingesetzt haben kann, und an `sound.js`
-  übergeben.
+- `src/soundassets.js` — die vier Beigaben aus `assets`: an der Stelle im Dokument
+  ablesen, an der das Bündeln sie eingesetzt hat, und an `sound.js` übergeben.
 - `src/soundfiles.js` — das Netz darunter: im Datenordner suchen oder vom Anwender
   entgegennehmen, in Bytes verwandeln, an `sound.js` übergeben und sichern.
 - `src/sounddiag.js` — die Ton-Diagnose (Taste `T`): legt offen, was jeder Klang
@@ -52,8 +51,6 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
 - `src/overlay.css` — Startbildschirm, Einblendungen, Knöpfe, Eingabefelder.
 - `src/screens.css` — Wiedergabe und Bestenliste.
 - `src/diag.css` — die Ton-Diagnose.
-- `src/sounds.css` — kein Aussehen, sondern ein Transportweg: die vier Aufnahmen als
-  `url(…)` am Wurzelelement, dazu das Verstecken der Träger-Elemente.
 
 Der Spielzustand liegt bewusst nicht in einem Preact-State, sondern in einer Ref:
 Der Bildtakt (`requestAnimationFrame`) schreibt ihn fort und stößt ein Neuzeichnen
@@ -142,19 +139,21 @@ einzige Eintrag ohne Bild: Es meldet sich allein, damit es zu hören ist.
 **Der Ton klingt im Augenblick des Zuges.** Die vier Klänge — Schieben und
 Drehen, Aufsetzen, volle Reihen, Tetris — liegen als `<audio>` im Dokument.
 
-**Die Aufnahmen sind die vier Beigaben aus dem Ordner `assets`.** Beim Bündeln setzt
+**Die Aufnahmen sind die vier Beigaben aus dem Ordner `assets`** — `move-and-turn-shorter.wav`,
+`drop-sound.mp3`, `row-completed-sound.mp3`, `tetris-sound.mp3`. Beim Bündeln setzt
 Morphos an der Stelle einer Beigabe ihre `data:`-Quelle ein — die App selbst kann die
 Datei nicht laden, denn im Fensterrahmen führt ein Pfad nirgendwohin, und ihr Blick
 reicht nur in den Datenordner des Workspace. Alles hängt also daran, dass das Bündeln
-die Stelle erkennt, an der der Pfad steht, und welche Stellen das sind, ist von außen
-nicht zu sehen: Ein `<audio src="assets/…">` hat es nachweislich stehen lassen.
+die Stelle erkennt, an der der Pfad steht.
 
-Derselbe Pfad steht deshalb an **drei** Stellen, die jede für sich in Frage kommt: als
-`url(…)` in `sounds.css` (`--snd-move` und Geschwister), als `<source>` im `<audio>` und
-als verstecktes `<img class="snd-carrier">`. `soundassets.js` liest beim Laden alle drei
-ab und nimmt für jeden Klang die erste, aus der eine `data:`-Quelle geworden ist; was
-ein Pfad geblieben ist, wird übergangen. `TetrisSound.adoptUri()` hängt sie in die
-Elemente und entpackt sie zugleich für die Tonmaschine.
+Welche Stelle das ist, war zunächst von außen nicht zu sehen; darum stand derselbe Pfad
+eine Zeit lang an drei Stellen zugleich. Am gebauten Dokument ist es inzwischen
+abgelesen: Das **`src` eines `<source>` im `<audio>`** trägt. Die beiden Ausweichwege —
+eine `url(…)`-Stilregel und ein verstecktes `<img>` — sind wieder entfernt, denn sie
+legten jede Aufnahme ein zweites und drittes Mal ins Dokument. `soundassets.js` liest
+die Quelle beim Laden ab; was ein Pfad geblieben wäre, würde übergangen.
+`TetrisSound.adoptUri()` hängt sie in die Elemente und entpackt sie zugleich für die
+Tonmaschine.
 
 **Darunter liegt ein Netz für den Fall, dass keine Stelle trägt:** zwei Wege, auf denen
 die Bytes einer Aufnahme sonst noch in die laufende App gelangen; beide enden bei
@@ -213,9 +212,9 @@ Klang, ob sein Element im Dokument steht, ob seine Quelle eingebettet wurde, was
 Entpacken ergab, welcher Weg zuletzt getragen hat und woran der letzte Versuch
 scheiterte. Die Ton-Diagnose (`sounddiag.js`, Taste `T`) zeigt das und spielt jeden
 Klang auf Knopfdruck — einmal die ganze Kette, einmal nur den eigenen Ton. Darunter
-stehen die beiden Herkünfte: erst die Beigaben (`soundassets.js`) mit der Stelle, an
-der jede gefunden wurde, oder dem Vermerk *nicht eingebettet* — daran ist abzulesen,
-welche Schreibweise das Bündeln erkennt. Dann, als Netz, die Aufnahmen aus dem
+stehen die beiden Herkünfte: erst die Beigaben (`soundassets.js`) mit Dateiname, Größe
+und dem Vermerk *übernommen* oder *nicht eingebettet* — daran ist abzulesen, ob das
+Bündeln die Aufnahmen eingesetzt hat. Dann, als Netz, die Aufnahmen aus dem
 Datenordner (`soundfiles.js`); dort kommen sie auch herein — ein Feld
 zum Fallenlassen, ein Knopf zum Wählen aller vier auf einmal, je Zeile einer für
 einen einzelnen Klang und einer zum erneuten Suchen im Datenordner. Der Klick

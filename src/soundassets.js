@@ -1,29 +1,30 @@
 /* Die vier Aufnahmen aus dem Ordner assets — auf dem Weg ins Spiel.
 
-   Die Dateien liegen als Beigaben neben der App. Wo ihr Pfad im Markup oder im CSS
-   steht, setzt das Bündeln ihre data:-Quelle ein; die App selbst kann sie nicht
-   laden, denn Pfade führen im Fensterrahmen nirgendwohin. Alles hängt also daran,
-   dass das Bündeln die Stelle erkennt, an der der Pfad steht.
+   Die Dateien liegen als Beigaben neben der App. Wo ihr Pfad im Markup steht,
+   setzt das Bündeln ihre data:-Quelle ein; die App selbst kann sie nicht laden,
+   denn Pfade führen im Fensterrahmen nirgendwohin. Alles hängt also daran, dass
+   das Bündeln die Stelle erkennt, an der der Pfad steht.
 
-   Genau das ist bisher nicht geschehen: Im gebündelten Dokument stand der Pfad
-   eines <audio src="assets/…"> unverändert da. Deshalb liegt derselbe Pfad jetzt an
-   DREI Stellen, die jede für sich in Frage kommt:
-     1. als url(…) im CSS   (sounds.css, --snd-move und Geschwister),
-     2. als <source> im <audio>,
-     3. als <img> ohne Bild — eine Quelle ist eine Quelle, gleich an welchem Tag.
-   Diese Datei liest alle drei ab und nimmt für jeden Klang die erste, aus der eine
-   data:-Quelle geworden ist. Was ein Pfad geblieben ist, wird übergangen.
+   Welche Stelle das ist, ist inzwischen erwiesen: das src eines <source> im
+   <audio> (index.html). Im gebauten Dokument steht dort eine data:-Quelle. Die
+   beiden Ausweichwege von früher — eine Stilregel url(…) und ein verstecktes
+   Bildelement — sind damit überflüssig und wieder entfernt; sie hätten jede
+   Aufnahme ein zweites und drittes Mal ins Dokument gelegt.
 
-   Sie läuft beim Laden, noch vor der Suche im Datenordner (soundfiles.js). Was hier
-   ankommt, gilt: Die Beigabe ist die Aufnahme, die der Anwender gemeint hat.
+   Diese Datei liest die Quelle ab und reicht sie mit adoptUri() an sound.js
+   weiter. Was ein Pfad geblieben ist, wird übergangen.
 
-   Was jeder Weg ergeben hat, gibt report() preis — die Ton-Diagnose (Taste T) zeigt
-   es. Trägt keiner, bleibt alles wie zuvor: Die App sucht im Datenordner weiter und
-   klingt notfalls mit ihren eigenen Tönen. */
+   Sie läuft beim Laden, noch vor der Suche im Datenordner (soundfiles.js). Was
+   hier ankommt, gilt: Die Beigabe ist die Aufnahme, die der Anwender gemeint hat —
+   eine ältere Fassung im Datenordner überschreibt sie nicht.
+
+   Was dabei herauskam, gibt report() preis — die Ton-Diagnose (Taste T) zeigt es.
+   Trägt der Weg nicht, bleibt alles wie zuvor: Die App sucht im Datenordner
+   weiter und klingt notfalls mit ihren eigenen Tönen. */
 const TetrisSoundAssets = (function () {
   // Klang -> Dateiname der Beigabe. Nur zum Anzeigen; gefunden wird über die Stelle.
   const FILES = {
-    move: "move-and-turn.mp3",
+    move: "move-and-turn-shorter.wav",
     drop: "drop-sound.mp3",
     rows: "row-completed-sound.mp3",
     tetris: "tetris-sound.mp3"
@@ -32,38 +33,14 @@ const TetrisSoundAssets = (function () {
   const state = {}; // key -> { way, kb, state }
   let note = "noch nicht gelesen";
 
-  // --- Die drei Stellen ---
+  // --- Die Stelle ---
 
-  /* Aus einer Stilregel: url("data:…") oder url(data:…). Der Browser gibt den Wert
-     so zurück, wie er im Bündel steht — nur die Anführungszeichen sind seine. */
-  function fromCss(key) {
-    let raw;
-    try {
-      raw = getComputedStyle(document.documentElement)
-        .getPropertyValue("--snd-" + key);
-    } catch (e) { return ""; }
-    if (!raw) return "";
-    const m = /^\s*url\(\s*(['"]?)([\s\S]*?)\1\s*\)\s*$/.exec(raw);
-    return m ? m[2] : "";
-  }
-
-  function attrOf(el) {
+  /* Die Quelle steht am <source> im <audio>, nicht am Element selbst — das ist die
+     Schreibweise, an der das Bündeln eine Beigabe erkennt. */
+  function fromSource(key) {
+    const el = document.querySelector("#snd-" + key + " source");
     return el ? (el.getAttribute("src") || "") : "";
   }
-
-  function fromSource(key) {
-    return attrOf(document.querySelector('#snd-' + key + ' source'));
-  }
-
-  function fromCarrier(key) {
-    return attrOf(document.querySelector('.snd-carrier[data-snd="' + key + '"]'));
-  }
-
-  const WAYS = [
-    { name: "Stilregel", get: fromCss },
-    { name: "Quelle im Klang", get: fromSource },
-    { name: "verstecktes Element", get: fromCarrier }
-  ];
 
   // --- Übernehmen ---
 
@@ -73,18 +50,15 @@ const TetrisSoundAssets = (function () {
   }
 
   function takeOne(key) {
-    let last = null; // der letzte Weg, an dem überhaupt eine Quelle stand
-    for (let i = 0; i < WAYS.length; i++) {
-      const uri = WAYS[i].get(key);
-      if (!uri || uri.slice(0, 5) !== "data:") continue;
-      const ok = TetrisSound.adoptUri(key, uri, FILES[key]);
-      last = state[key] = { way: WAYS[i].name, kb: kbOf(uri),
-                            state: ok ? "übernommen" : "abgewiesen" };
-      if (ok) return true;
+    const uri = fromSource(key);
+    if (!uri || uri.slice(0, 5) !== "data:") {
+      state[key] = { way: "", kb: 0, state: "nicht eingebettet" };
+      return false;
     }
-    // Stand nirgends eine Quelle, bleibt es dabei; sonst hat der Vermerk Vorrang.
-    if (!last) state[key] = { way: "", kb: 0, state: "nicht eingebettet" };
-    return false;
+    const ok = TetrisSound.adoptUri(key, uri, FILES[key]);
+    state[key] = { way: "Quelle im Klang", kb: kbOf(uri),
+                   state: ok ? "übernommen" : "abgewiesen" };
+    return ok;
   }
 
   /* Einmal alles durchsehen. Läuft beim Laden von selbst; die Diagnose darf es
@@ -103,8 +77,8 @@ const TetrisSoundAssets = (function () {
     return { note: note, files: FILES, found: state };
   }
 
-  /* Gelesen wird, sobald das Dokument steht: Vorher gibt es weder die Elemente noch
-     die Stilregel. */
+  /* Gelesen wird, sobald das Dokument steht: Vorher gibt es die Elemente noch
+     nicht. */
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", read);
   } else {

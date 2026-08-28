@@ -9,7 +9,6 @@
 <link rel="stylesheet" href="overlay.css">
 <link rel="stylesheet" href="screens.css">
 <link rel="stylesheet" href="diag.css">
-<link rel="stylesheet" href="sounds.css">
 </head>
 <body>
 <div id="app"></div>
@@ -17,21 +16,15 @@
      jeder Ansicht. --><div id="diag"></div>
 
 <!-- Die vier Klänge des Spiels. Ihre Quelle ist die jeweilige Beigabe aus dem
-     Ordner assets; das Bündeln setzt an ihrer Stelle die Aufnahme selbst ein.
-     Abgespielt wird über sound.js. -->
-<audio id="snd-move" preload="auto"><source src="assets/move-and-turn.mp3" type="audio/mpeg"></audio>
+     Ordner assets: Das Bündeln setzt am src eines <source> die Aufnahme selbst
+     ein — das ist erwiesen, im gebauten Dokument steht dort eine data:-Quelle.
+     Deshalb steht der Pfad nur noch HIER und nicht mehr an zwei weiteren Stellen:
+     jede Aufnahme einmal im Dokument statt dreimal.
+     Gelesen wird sie von soundassets.js, abgespielt über sound.js. -->
+<audio id="snd-move" preload="auto"><source src="assets/move-and-turn-shorter.wav" type="audio/wav"></audio>
 <audio id="snd-drop" preload="auto"><source src="assets/drop-sound.mp3" type="audio/mpeg"></audio>
 <audio id="snd-rows" preload="auto"><source src="assets/row-completed-sound.mp3" type="audio/mpeg"></audio>
 <audio id="snd-tetris" preload="auto"><source src="assets/tetris-sound.mp3" type="audio/mpeg"></audio>
-
-<!-- Dieselben vier Aufnahmen ein zweites Mal — als Träger ihrer Quelle, nicht als
-     Bild. Sie zeigen nichts und nehmen nichts ein (.snd-carrier); gelesen werden
-     sie von soundassets.js, falls das Bündeln die Stelle oben nicht erkennt. Der
-     dritte Weg steht als url(…) in sounds.css. -->
-<img class="snd-carrier" data-snd="move" alt="" src="assets/move-and-turn.mp3">
-<img class="snd-carrier" data-snd="drop" alt="" src="assets/drop-sound.mp3">
-<img class="snd-carrier" data-snd="rows" alt="" src="assets/row-completed-sound.mp3">
-<img class="snd-carrier" data-snd="tetris" alt="" src="assets/tetris-sound.mp3">
 
 <script src="rng.js"></script>
 <script src="seed.js"></script>
