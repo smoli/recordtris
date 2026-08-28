@@ -9,20 +9,29 @@
 <link rel="stylesheet" href="overlay.css">
 <link rel="stylesheet" href="screens.css">
 <link rel="stylesheet" href="diag.css">
+<link rel="stylesheet" href="sounds.css">
 </head>
 <body>
 <div id="app"></div>
 <!-- Die Ton-Diagnose (Taste T) hängt an einer eigenen Wurzel und liegt damit über
      jeder Ansicht. --><div id="diag"></div>
 
-<!-- Die vier Klänge des Spiels. Ihre Pfade führen im Fensterrahmen der App
-     nirgendwohin; die Aufnahmen kommen über den Datenordner (soundfiles.js) und
-     werden dort in diese Elemente eingehängt. Sie hängen hier, damit es sie gibt
-     und ihre Quelle im Markup steht; abgespielt wird über sound.js. -->
-<audio id="snd-move" src="assets/move-and-turn.mp3" preload="auto"></audio>
-<audio id="snd-drop" src="assets/drop-sound.mp3" preload="auto"></audio>
-<audio id="snd-rows" src="assets/row-completed-sound.mp3" preload="auto"></audio>
-<audio id="snd-tetris" src="assets/tetris-sound.mp3" preload="auto"></audio>
+<!-- Die vier Klänge des Spiels. Ihre Quelle ist die jeweilige Beigabe aus dem
+     Ordner assets; das Bündeln setzt an ihrer Stelle die Aufnahme selbst ein.
+     Abgespielt wird über sound.js. -->
+<audio id="snd-move" preload="auto"><source src="assets/move-and-turn.mp3" type="audio/mpeg"></audio>
+<audio id="snd-drop" preload="auto"><source src="assets/drop-sound.mp3" type="audio/mpeg"></audio>
+<audio id="snd-rows" preload="auto"><source src="assets/row-completed-sound.mp3" type="audio/mpeg"></audio>
+<audio id="snd-tetris" preload="auto"><source src="assets/tetris-sound.mp3" type="audio/mpeg"></audio>
+
+<!-- Dieselben vier Aufnahmen ein zweites Mal — als Träger ihrer Quelle, nicht als
+     Bild. Sie zeigen nichts und nehmen nichts ein (.snd-carrier); gelesen werden
+     sie von soundassets.js, falls das Bündeln die Stelle oben nicht erkennt. Der
+     dritte Weg steht als url(…) in sounds.css. -->
+<img class="snd-carrier" data-snd="move" alt="" src="assets/move-and-turn.mp3">
+<img class="snd-carrier" data-snd="drop" alt="" src="assets/drop-sound.mp3">
+<img class="snd-carrier" data-snd="rows" alt="" src="assets/row-completed-sound.mp3">
+<img class="snd-carrier" data-snd="tetris" alt="" src="assets/tetris-sound.mp3">
 
 <script src="rng.js"></script>
 <script src="seed.js"></script>
@@ -33,6 +42,7 @@
 <script src="analysis.js"></script>
 <script src="fxpaint.js"></script>
 <script src="sound.js"></script>
+<script src="soundassets.js"></script>
 <script src="soundfiles.js"></script>
 <script src="fx.js"></script>
 <script src="gameui.js"></script>

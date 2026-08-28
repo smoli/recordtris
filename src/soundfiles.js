@@ -141,8 +141,13 @@ const TetrisSoundFiles = (function () {
 
   // --- Lesen und übergeben ---
 
+  /* Erledigt ist ein Klang auch dann, wenn seine Aufnahme schon anderswoher kommt:
+     Die Beigabe aus dem Ordner assets (soundassets.js) ist die, die der Anwender
+     gemeint hat — der Datenordner soll sie nicht stillschweigend ersetzen. Seine
+     bewusste Wahl im Dateidialog (intakeAs) geht weiterhin vor. */
   function done(key) {
-    return !!(found[key] && found[key].ok);
+    if (found[key] && found[key].ok) return true;
+    return !!(TetrisSound.has && TetrisSound.has(key));
   }
 
   async function take(key, name, path) {
@@ -215,9 +220,17 @@ const TetrisSoundFiles = (function () {
     await fromPicks();
     await fromDir(DIR);
     await fromDir("");
+    /* Gezählt wird nur, was HIER gefunden wurde — was der App beiliegt, ist nicht
+       das Verdienst des Datenordners. */
     let n = 0;
-    for (const key in NAMES) if (done(key)) n++;
-    note = n ? n + " von 4 Aufnahmen übernommen" : "keine Aufnahme gefunden";
+    let beigelegt = 0;
+    for (const key in NAMES) {
+      if (found[key] && found[key].ok) n++;
+      else if (TetrisSound.has && TetrisSound.has(key)) beigelegt++;
+    }
+    note = n ? n + " von 4 Aufnahmen aus dem Datenordner"
+      : beigelegt ? "nichts nötig — die Aufnahmen liegen der App bei"
+      : "keine Aufnahme gefunden";
     return report();
   }
 

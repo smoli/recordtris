@@ -1,11 +1,12 @@
 /* Die Geräusche des Spiels.
 
-   Die vier Klänge liegen als <audio> im Dokument. Ihre Quellen sind Pfade
-   (assets/…) — und Pfade führen in diesem Fensterrahmen nirgendwohin: Das Bündeln
-   lässt sie stehen, und der Rahmen lässt keinen Dateizugriff zu. Jedes Element
-   meldet darum "Quelle nicht spielbar". Die Aufnahmen kommen deshalb über das
-   Dateisystem des Workspace in die App (soundfiles.js) und werden hier mit adopt()
-   übernommen: Sie werden entpackt UND als data:-Quelle in die Elemente gehängt.
+   Die vier Klänge liegen als <audio> im Dokument. Ihre Quelle ist die jeweilige
+   Beigabe aus dem Ordner assets: Beim Bündeln setzt Morphos an deren Stelle die
+   Aufnahme selbst ein, soundassets.js liest sie dort ab und reicht sie mit
+   adoptUri() herein. Bleibt eine Stelle ein Pfad, führt sie in diesem
+   Fensterrahmen nirgendwohin — dann greift der zweite Weg: Aufnahmen aus dem
+   Dateisystem des Workspace (soundfiles.js), die adopt() übernimmt. Beide enden
+   gleich: Die Aufnahme wird entpackt UND als data:-Quelle in die Elemente gehängt.
 
    Gehört wird über drei Wege. Jeder Anschlag geht den ersten, der wirklich trägt:
      1. das <audio>-Element (bzw. eine seiner Kopien) — der Weg, der immer ging;
@@ -135,6 +136,18 @@ const TetrisSound = (function () {
     return 0;
   }
 
+  /* Die Quelle eines Klangs im Dokument. Sie steht nicht am Element selbst,
+     sondern an seinem <source>-Kind — das ist die Schreibweise, an der das Bündeln
+     eine Beigabe erkennt. Ein eigenes src hat trotzdem Vorrang: Es entsteht später
+     beim Übernehmen einer Aufnahme und ist dann das Gültige. */
+  function srcOf(el) {
+    if (!el) return "";
+    const own = el.getAttribute("src");
+    if (own) return own;
+    const s = el.querySelector ? el.querySelector("source") : null;
+    return (s && s.getAttribute("src")) || "";
+  }
+
   function decodeInto(bank, src) {
     const buffer = bytesOf(src);
     if (!buffer) {
@@ -167,9 +180,9 @@ const TetrisSound = (function () {
 
   // --- Eine Aufnahme von außen ---
 
-  /* Die Bytes einer Datei aus dem Datenordner (soundfiles.js). Sie sind der einzige
-     Weg, auf dem eine Aufnahme in diesem Fensterrahmen überhaupt ankommt: Die
-     Quellen im Dokument sind Pfade, und Pfade führen hier nirgendwohin.
+  /* Die Bytes einer Datei aus dem Datenordner (soundfiles.js) — das Netz für den
+     Fall, dass das Bündeln die Beigabe nicht ins Dokument gesetzt hat und dort
+     bloß ein Pfad steht, der hier nirgendwohin führt.
 
      Beide Wege werden damit gangbar — der Klangkörper in der Tonmaschine (dafür
      wird entpackt) und das Element (dafür wird die Datei zur data:-Quelle). */
@@ -201,10 +214,40 @@ const TetrisSound = (function () {
     let uri;
     try { uri = "data:" + (mime || "audio/mpeg") + ";base64," + btoa(bin); }
     catch (e) { return; }
+    setVoiceSrc(bank, uri);
+  }
+
+  /* Eine fertige data:-Quelle allen Stimmen geben. Ein neues src löscht den Fehler
+     des Elements — der alte Pfad ist damit vergessen. */
+  function setVoiceSrc(bank, uri) {
     for (let i = 0; i < bank.voices.length; i++) {
       const v = bank.voices[i];
       try { v.src = uri; v.volume = bank.def.vol; v.load(); } catch (e) {}
     }
+  }
+
+  /* Eine Aufnahme, die schon als data:-Quelle vorliegt — so kommen die Beigaben
+     aus dem Ordner assets herein (soundassets.js): Das Bündeln hat sie an ihrer
+     Stelle im Dokument eingesetzt, gelesen werden sie dort einfach ab. Der Umweg
+     über btoa entfällt damit; entpackt wird trotzdem, damit auch die Tonmaschine
+     ihren Klangkörper hat. */
+  function adoptUri(key, uri, label) {
+    build();
+    const bank = banks[key];
+    if (!bank || !uri || uri.slice(0, 5) !== "data:") return false;
+    const buffer = bytesOf(uri);
+    if (!buffer) return false;
+    bank.file = label || "Beigabe";
+    bank.note = "";
+    openCtx();
+    setVoiceSrc(bank, uri);
+    decodeBuffer(bank, buffer, "Beigabe");
+    return true;
+  }
+
+  // Liegt für diesen Klang schon eine Aufnahme? Dann sucht soundfiles.js keine mehr.
+  function hasRecording(key) {
+    return !!(banks[key] && banks[key].file);
   }
 
   // --- Der Aufbau ---
@@ -238,7 +281,7 @@ const TetrisSound = (function () {
         bank.voices.push(v);
       }
       bank.note = "";
-      decodeInto(bank, el.getAttribute("src") || el.src);
+      decodeInto(bank, srcOf(el));
     }
     if (ctx) addWatchers();
   }
@@ -409,7 +452,7 @@ const TetrisSound = (function () {
       const def = DEFS[key];
       const bank = banks[key] || null;
       const el = document.getElementById(def.id);
-      const src = el ? (el.getAttribute("src") || el.src || "") : "";
+      const src = srcOf(el);
       const embedded = src.slice(0, 5) === "data:";
       sounds.push({
         key: key,
@@ -453,6 +496,8 @@ const TetrisSound = (function () {
   return {
     play: play,
     adopt: adopt,
+    adoptUri: adoptUri,
+    has: hasRecording,
     setMuted: setMuted,
     report: report,
     test: test

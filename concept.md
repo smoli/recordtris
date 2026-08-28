@@ -40,7 +40,10 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
   Erschütterung, Nachglühen. Von hier aus klingt der Reihenschlag.
 - `src/sound.js` — die vier Geräusche: drei Wege zum Klang, Mindestabstand,
   Stummschalter, Selbstauskunft für die Diagnose.
-- `src/soundfiles.js` — die Aufnahmen: im Datenordner suchen oder vom Anwender
+- `src/soundassets.js` — die vier Beigaben aus `assets`: an den drei Stellen im
+  Dokument ablesen, wo das Bündeln sie eingesetzt haben kann, und an `sound.js`
+  übergeben.
+- `src/soundfiles.js` — das Netz darunter: im Datenordner suchen oder vom Anwender
   entgegennehmen, in Bytes verwandeln, an `sound.js` übergeben und sichern.
 - `src/sounddiag.js` — die Ton-Diagnose (Taste `T`): legt offen, was jeder Klang
   gerade tut, spielt ihn auf Knopfdruck und nimmt Aufnahmen entgegen — gewählt oder
@@ -49,6 +52,8 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
 - `src/overlay.css` — Startbildschirm, Einblendungen, Knöpfe, Eingabefelder.
 - `src/screens.css` — Wiedergabe und Bestenliste.
 - `src/diag.css` — die Ton-Diagnose.
+- `src/sounds.css` — kein Aussehen, sondern ein Transportweg: die vier Aufnahmen als
+  `url(…)` am Wurzelelement, dazu das Verstecken der Träger-Elemente.
 
 Der Spielzustand liegt bewusst nicht in einem Preact-State, sondern in einer Ref:
 Der Bildtakt (`requestAnimationFrame`) schreibt ihn fort und stößt ein Neuzeichnen
@@ -137,14 +142,26 @@ einzige Eintrag ohne Bild: Es meldet sich allein, damit es zu hören ist.
 **Der Ton klingt im Augenblick des Zuges.** Die vier Klänge — Schieben und
 Drehen, Aufsetzen, volle Reihen, Tetris — liegen als `<audio>` im Dokument.
 
-**Die Aufnahmen kommen nicht über das Dokument, sondern über den Anwender.** Die Quellen
-der Elemente sind Pfade (`assets/…`), und das Bündeln lässt sie stehen: Es bettet
-Stil und Skript ein, keine Medien. Im Fensterrahmen der App führt ein Pfad
-nirgendwohin — jedes Element meldet "Quelle nicht spielbar" (Fehler 4). Damit bleibt
-die App den Ordner neben sich nicht sieht: Ihr Blick reicht nur in den Datenordner des
-Workspace. Es bleiben zwei Wege, auf denen die Bytes einer Aufnahme in die laufende App
-gelangen; beide enden bei `TetrisSound.adopt()`, das die Bytes entpackt UND zugleich als
-`data:`-Quelle in die Elemente hängt.
+**Die Aufnahmen sind die vier Beigaben aus dem Ordner `assets`.** Beim Bündeln setzt
+Morphos an der Stelle einer Beigabe ihre `data:`-Quelle ein — die App selbst kann die
+Datei nicht laden, denn im Fensterrahmen führt ein Pfad nirgendwohin, und ihr Blick
+reicht nur in den Datenordner des Workspace. Alles hängt also daran, dass das Bündeln
+die Stelle erkennt, an der der Pfad steht, und welche Stellen das sind, ist von außen
+nicht zu sehen: Ein `<audio src="assets/…">` hat es nachweislich stehen lassen.
+
+Derselbe Pfad steht deshalb an **drei** Stellen, die jede für sich in Frage kommt: als
+`url(…)` in `sounds.css` (`--snd-move` und Geschwister), als `<source>` im `<audio>` und
+als verstecktes `<img class="snd-carrier">`. `soundassets.js` liest beim Laden alle drei
+ab und nimmt für jeden Klang die erste, aus der eine `data:`-Quelle geworden ist; was
+ein Pfad geblieben ist, wird übergangen. `TetrisSound.adoptUri()` hängt sie in die
+Elemente und entpackt sie zugleich für die Tonmaschine.
+
+**Darunter liegt ein Netz für den Fall, dass keine Stelle trägt:** zwei Wege, auf denen
+die Bytes einer Aufnahme sonst noch in die laufende App gelangen; beide enden bei
+`TetrisSound.adopt()`, das die Bytes entpackt UND zugleich als `data:`-Quelle in die
+Elemente hängt. Was schon als Beigabe da ist, rühren sie nicht an — `TetrisSound.has()`
+sagt ihnen, wo nichts mehr zu tun ist. Nur die ausdrückliche Wahl des Anwenders geht
+weiterhin vor.
 
 *Der eine Weg ist der Anwender selbst.* Er wählt die Dateien im Dateidialog des Browsers
 (`<input type="file">`) oder lässt sie über dem Fenster fallen — dabei kommen echte Bytes
@@ -196,7 +213,10 @@ Klang, ob sein Element im Dokument steht, ob seine Quelle eingebettet wurde, was
 Entpacken ergab, welcher Weg zuletzt getragen hat und woran der letzte Versuch
 scheiterte. Die Ton-Diagnose (`sounddiag.js`, Taste `T`) zeigt das und spielt jeden
 Klang auf Knopfdruck — einmal die ganze Kette, einmal nur den eigenen Ton. Darunter
-steht, welche Aufnahmen `soundfiles.js` hat; dort kommen sie auch herein — ein Feld
+stehen die beiden Herkünfte: erst die Beigaben (`soundassets.js`) mit der Stelle, an
+der jede gefunden wurde, oder dem Vermerk *nicht eingebettet* — daran ist abzulesen,
+welche Schreibweise das Bündeln erkennt. Dann, als Netz, die Aufnahmen aus dem
+Datenordner (`soundfiles.js`); dort kommen sie auch herein — ein Feld
 zum Fallenlassen, ein Knopf zum Wählen aller vier auf einmal, je Zeile einer für
 einen einzelnen Klang und einer zum erneuten Suchen im Datenordner. Der Klick
 ist dabei die stärkste Zustimmung des Anwenders, die der Browser kennt: Was auf

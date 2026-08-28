@@ -10,10 +10,11 @@
    Anwenders, die der Browser kennt. Was auf Knopfdruck stumm bleibt, bleibt nicht
    wegen fehlender Zustimmung stumm.
 
-   Darunter steht, was soundfiles.js an Aufnahmen hat — und dort kommen sie auch
-   herein: Die vier Dateien im Ordner assets neben der App erreicht die App nicht
-   von sich aus, wohl aber der Anwender. Er wählt sie im Dateidialog oder lässt sie
-   über dem Fenster fallen; gesichert werden sie danach im Datenordner.
+   Darunter stehen die beiden Wege, auf denen eine Aufnahme in die App kommt: die
+   Beigaben aus dem Ordner assets, die das Bündeln einsetzt (soundassets.js), und
+   als Netz darunter der Datenordner (soundfiles.js). Dort kommen Dateien auch
+   herein — der Anwender wählt sie im Dateidialog oder lässt sie über dem Fenster
+   fallen; gesichert werden sie danach im Datenordner.
 
    Sie hängt an einer eigenen Wurzel (#diag) und liegt damit über jeder Ansicht,
    ohne dass eine davon etwas von ihr wissen muss. */
@@ -46,6 +47,43 @@ function SoundDiagRow({ s }) {
       <button onClick=${() => TetrisSound.test(s.key, "tone")}>▶ Ton</button>
     </td>
   </tr>`;
+}
+
+/* Die Beigaben (soundassets.js): was das Bündeln an ihrer Stelle eingesetzt hat.
+
+   Das ist der Weg, der ohne Zutun des Anwenders trägt. Steht hier überall
+   „übernommen“, braucht es den Block darunter gar nicht — er ist dann nur noch das
+   Netz für den Fall, dass eine Aufnahme nicht eingebettet wurde. */
+function SoundAssetsBlock() {
+  const r = TetrisSoundAssets.report();
+  const keys = ["move", "drop", "rows", "tetris"];
+  return html`<div class="diag-files">
+    <h3>Beigaben aus assets <span>${r.note}</span></h3>
+    <ul>
+      ${keys.map((k) => {
+        const f = r.found[k];
+        const good = !!f && f.state === "übernommen";
+        const bits = [r.files[k]];
+        if (f) {
+          if (f.kb) bits.push(f.kb + " KB");
+          if (f.way) bits.push(f.way);
+          bits.push(f.state);
+        } else {
+          bits.push("noch nicht gelesen");
+        }
+        return html`<li key=${k} class=${good ? "ok" : f ? "bad" : ""}>
+          <b>${DIAG_NAMES[k]}</b>
+          <span>${bits.join(" · ")}</span>
+        </li>`;
+      })}
+    </ul>
+    <p class="diag-hint">Beim Bündeln setzt Morphos an der Stelle einer Beigabe die
+      Aufnahme selbst ein — im Markup wie im CSS. Steht hier
+      <i>nicht eingebettet</i>, ist der Pfad stehen geblieben; dann hilft nur der
+      Weg über den Datenordner darunter.</p>
+    <button class="diag-again"
+      onClick=${() => TetrisSoundAssets.read()}>Noch einmal lesen</button>
+  </div>`;
 }
 
 /* Die Aufnahmen (soundfiles.js): was übernommen wurde, was fehlt und woran es lag.
@@ -111,7 +149,8 @@ function SoundFilesBlock({ onDone }) {
   }
 
   return html`<div class="diag-files">
-    <h3>Aufnahmen <span>${busy === "alle" ? "wird übernommen …" : r.note}</span></h3>
+    <h3>Aufnahmen aus dem Datenordner
+      <span>${busy === "alle" ? "wird übernommen …" : r.note}</span></h3>
     <div class=${"diag-drop" + (over ? " over" : "")}
       onDragOver=${(e) => { e.preventDefault(); setOver(true); }}
       onDragLeave=${(e) => {
@@ -126,9 +165,10 @@ function SoundFilesBlock({ onDone }) {
           onChange=${(e) => takeMany(filesOf(e))} />
       </label>
     </div>
-    <p class="diag-hint">Die vier Dateien liegen im Ordner <b>assets</b> neben der
-      App: <i>move-and-turn</i>, <i>drop-sound</i>, <i>row-completed-sound</i>,
-      <i>tetris-sound</i>. Wähle sie alle auf einmal — welcher Klang gemeint ist,
+    <p class="diag-hint">Der Notweg, falls oben etwas <i>nicht eingebettet</i>
+      ist: dieselben vier Dateien aus dem Ordner <b>assets</b> von Hand hereingeben
+      — <i>move-and-turn</i>, <i>drop-sound</i>, <i>row-completed-sound</i>,
+      <i>tetris-sound</i>. Wähle sie alle auf einmal; welcher Klang gemeint ist,
       verrät der Name. ${r.fs
         ? html`Danach liegen sie gesichert in <b>${r.dir}</b> im Datenordner und
             klingen bei jedem Start von selbst.`
@@ -227,6 +267,7 @@ function SoundDiag() {
           ${r.sounds.map((s) => html`<${SoundDiagRow} key=${s.key} s=${s} />`)}
         </tbody>
       </table>
+      <${SoundAssetsBlock} />
       <${SoundFilesBlock} onDone=${() => bump((v) => v + 1)} />
       <p class="diag-hint">Ein Klang geht drei Wege, bis einer trägt:
         <b>Element</b> → <b>Tonmaschine</b> → <b>eigener Ton</b>. Liegt eine

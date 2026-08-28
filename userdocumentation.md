@@ -238,13 +238,13 @@ Aufnahmen etwas nicht stimmt.
 
 ### Die Aufnahmen zum Klingen bringen
 
-Die vier Aufnahmen liegen im Ordner **assets** neben der App — aber das Fenster, in
-dem das Spiel läuft, sieht diesen Ordner nicht. Solange sie nicht angekommen sind,
-meldet jede Zeile der Diagnose **Quelle nicht spielbar (Fehler 4)**, und es klingen
-die einfachen Töne.
+Die vier Aufnahmen aus dem Ordner **assets** sind fest in die App eingebaut — du musst
+dafür nichts tun. In der Ton-Diagnose steht unter der Tafel der Block **Beigaben aus
+assets**; dort sollte bei allen vier Zeilen **übernommen** stehen.
 
-Du kannst sie dem Spiel geben. Öffne mit **T** die Ton-Diagnose; unter der Tafel liegt
-das Feld **Aufnahmen hierher ziehen**:
+Steht dort **nicht eingebettet**, ist die Aufnahme beim Bauen der App nicht mitgekommen
+und es klingen die einfachen Töne. Dann kannst du sie dem Spiel von Hand geben. Der
+Block darunter, **Aufnahmen aus dem Datenordner**, ist genau dafür da:
 
 - **Zieh die vier Dateien aus dem Ordner `assets` ins Fenster.** Irgendwohin — das
   Feld musst du nicht treffen, das Spiel nimmt sie überall entgegen und klappt die
@@ -270,7 +270,7 @@ Datenordner suchen** klicken. Steht bei einer Datei dann **als Text zerfallen** 
 überstanden — hereingezogene Dateien haben dieses Problem nicht. Sonst hilft derselbe
 Klang als **base64** in einer Textdatei (`.txt`).
 
-Findet sich nichts und gibst du nichts herein, ändert sich nichts: Das Spiel klingt
+Kommt auf keinem dieser Wege eine Aufnahme an, ändert sich nichts: Das Spiel klingt
 mit seinen eigenen Tönen weiter.
 
 ## Das Besondere
