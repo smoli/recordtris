@@ -1,0 +1,7 @@
+{
+  "moveandturn": "assets/move-and-turn.mp3",
+  "drop": "assets/drop-sound.mp3",
+  "rows": "assets/row-completed-sound.mp3",
+  "tetris": "assets/tetris-sound.mp3"
+
+}
