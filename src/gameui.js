@@ -60,7 +60,8 @@ function Stats({ stats }) {
 // Der Schriftzug zerfällt in Buchstaben, damit jeder für sich leuchten kann.
 const TITLE_LETTERS = ["T", "E", "T", "R", "I", "S"];
 
-function StartScreen({ level, onLevel, mode, onMode, seed, onSeed, summary, onScores, onStart }) {
+function StartScreen({ level, onLevel, mode, onMode, seed, onSeed, summary, onScores,
+                       muted, onSound, onStart }) {
   const levels = [];
   for (let i = 0; i <= 9; i++) levels.push(i);
   const forever = mode === TetrisEngine.FOREVER;
@@ -102,7 +103,10 @@ function StartScreen({ level, onLevel, mode, onMode, seed, onSeed, summary, onSc
               ${summary.plays === 1 ? "1 Partie" : summary.plays + " Partien"}</p>`
           : html`<p class="hint seed-hint">Dasselbe Wort spielt dieselbe Steinfolge.</p>`)}
     <button class="start" onClick=${onStart}>Spiel starten</button>
-    <button class="start small" onClick=${onScores}>Bestenliste</button>
-    <p class="hint">Enter startet · M wechselt die Spielart · H zeigt die Bestenliste</p>
+    <div class="start-row">
+      <button class="start small" onClick=${onScores}>Bestenliste</button>
+      <button class="start small" onClick=${onSound}>${muted ? "🔇 Ton aus" : "🔊 Ton an"}</button>
+    </div>
+    <p class="hint">Enter startet · M wechselt die Spielart · H zeigt die Bestenliste · S schaltet den Ton</p>
   </div>`;
 }

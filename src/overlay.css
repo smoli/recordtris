@@ -189,6 +189,14 @@
   font-size: clamp(12px, calc(var(--cell) * 0.38), 16px);
 }
 
+/* Zwei kleine Knöpfe nebeneinander — Bestenliste und Ton auf dem Startbild. */
+.start-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
 .start:disabled, .rb:disabled {
   opacity: .35;
   cursor: default;

@@ -48,6 +48,7 @@ function ReplayKeys() {
     <p><kbd>Leer</kbd> abspielen · <kbd>B</kbd> rückwärts</p>
     <p><kbd>1</kbd>…<kbd>5</kbd> Tempo</p>
     <p><kbd>Enter</kbd> hier weiterspielen</p>
+    <p><kbd>S</kbd> Ton an/aus</p>
     <p><kbd>Esc</kbd> zurück</p>
   </div>`;
 }

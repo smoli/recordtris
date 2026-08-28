@@ -35,6 +35,7 @@ function App() {
   const [mode, setMode] = useState(TetrisEngine.CLASSIC); // Klassisch oder Endlos
   const [seedWord, setSeedWord] = useState(() => TetrisSeed.randomWord());
   const [showScores, setShowScores] = useState(false);
+  const [muted, setMuted] = useState(false); // der Ton, an einer Stelle geschaltet
   const [, bump] = useState(0);
 
   // Die Bestenliste kommt aus der Datei — einmal beim Öffnen der App.
@@ -91,6 +92,11 @@ function App() {
     savedRef.current = false;
     lastRef.current = null;
     bump((v) => v + 1);
+  }, []);
+
+  // Der Ton lässt sich überall abschalten — die Anzeige folgt dem Modul.
+  const toggleSound = useCallback(() => {
+    setMuted((m) => { TetrisSound.setMuted(!m); return !m; });
   }, []);
 
   const openScores = useCallback(() => setShowScores(true), []);
@@ -256,11 +262,37 @@ function App() {
       heldRef.current[key] = { timer: 0, fired: false, idle: 0, watched: false };
     }
 
+    /* Das Lebenszeichen der gehaltenen Tasten. Die Wiederholung des Systems gilt
+       immer nur der zuletzt gedrückten Taste: Wer beim Schieben dreht, dessen
+       Pfeiltaste hört auf zu wiederholen, obwohl sie gehalten bleibt. Darum zählt
+       jeder Tastendruck als Lebenszeichen für alle — nur die Taste, die gerade
+       selbst wiederholt, wird überwacht und darf die kurze Frist bekommen.
+       Ausgelöst wird hier nichts; das besorgt der Bildtakt. */
+    function keepAlive(e, dir) {
+      const held = heldRef.current;
+      for (const name in held) {
+        const entry = held[name];
+        if (!entry) continue;
+        entry.idle = 0;
+        if (name !== dir) entry.watched = false;
+        else if (e.repeat) entry.watched = true;
+      }
+    }
+
     function onDown(e) {
       const k = e.key;
       // Im Eingabefeld gehören die Tasten dem Anwender, nicht dem Spiel.
       const inField = e.target && e.target.tagName === "INPUT";
       if (!inField && (k === " " || k.indexOf("Arrow") === 0)) e.preventDefault();
+
+      /* Der Ton gehört keiner Ansicht — er lässt sich immer und überall schalten.
+         Auch dieser Druck ist ein Lebenszeichen für die gehaltenen Tasten: Wer
+         beim Schieben den Ton abschaltet, soll weiterschieben. */
+      if (!inField && (k === "s" || k === "S")) {
+        keepAlive(e, null);
+        if (!e.repeat) toggleSound();
+        return;
+      }
 
       // Die Bestenliste liegt über allem: sie kennt nur das Schließen.
       if (showScores) {
@@ -285,21 +317,8 @@ function App() {
         return;
       }
 
-      /* Das Lebenszeichen der gehaltenen Tasten. Die Wiederholung des Systems gilt
-         immer nur der zuletzt gedrückten Taste: Wer beim Schieben dreht, dessen
-         Pfeiltaste hört auf zu wiederholen, obwohl sie gehalten bleibt. Darum zählt
-         jeder Tastendruck als Lebenszeichen für alle — nur die Taste, die gerade
-         selbst wiederholt, wird überwacht und darf die kurze Frist bekommen.
-         Ausgelöst wird hier nichts; das besorgt der Bildtakt. */
       const dir = dirOf(e);
-      const held = heldRef.current;
-      for (const name in held) {
-        const entry = held[name];
-        if (!entry) continue;
-        entry.idle = 0;
-        if (name !== dir) entry.watched = false;
-        else if (e.repeat) entry.watched = true;
-      }
+      keepAlive(e, dir);
 
       if (e.repeat) return;
       const g = gameRef.current;
@@ -357,7 +376,7 @@ function App() {
     };
   }, [startLevel, seedWord, mode, startGame, quit, openReplay, closeReplay,
       seekTo, stepBy, playFrom, pausePlayback, setSpeed, resumeHere,
-      showScores, openScores, closeScores]);
+      showScores, openScores, closeScores, toggleSound]);
 
   const g = gameRef.current;
   const rp = replayRef.current;
@@ -421,7 +440,7 @@ function App() {
           summary=${mode === TetrisEngine.FOREVER
             ? TetrisScores.foreverSummaryFor(store, startLevel)
             : TetrisScores.summaryFor(store, seedWord)}
-          onScores=${openScores}
+          onScores=${openScores} muted=${muted} onSound=${toggleSound}
           onStart=${() => startGame(startLevel, seedWord, mode)} />
       </div>
     </div>`;
@@ -496,6 +515,7 @@ function App() {
         <p><kbd>↓</kbd> ein Feld tiefer</p>
         <p><kbd>Leer</kbd> fallen lassen</p>
         <p><kbd>P</kbd> Pause · <kbd>Esc</kbd> Ende</p>
+        <p><kbd>S</kbd> Ton ${muted ? "aus" : "an"}</p>
         <p><kbd>R</kbd> Aufzeichnung (in Pause)</p>
         <p><kbd>H</kbd> Bestenliste (in Pause)</p>
       </div>

@@ -104,6 +104,7 @@ const TetrisEngine = (function () {
     const p = state.piece;
     if (collides(state.board, p.type, p.rot, p.x + dx, p.y)) return false;
     p.x += dx;
+    emit(state, { k: "move", type: p.type, rot: p.rot, x: p.x, y: p.y, dx: dx });
     state.version++;
     return true;
   }

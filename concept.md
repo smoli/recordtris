@@ -37,7 +37,8 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
 - `src/fxpaint.js` — der Pinselkasten: Farben mischen, Kachel, Schattenriss,
   Hintergrund und Saum zeichnen.
 - `src/fx.js` — die Bildschau des Feldes: eigener Bildtakt, Ereignisse, Teilchen,
-  Erschütterung, Nachglühen.
+  Erschütterung, Nachglühen. Von hier aus klingen auch die Geräusche.
+- `src/sound.js` — die vier Geräusche: Stimmen je Klang, Mindestabstand, Stummschalter.
 - `src/style.css` — Grundmaße, Farben, Feld und Seitenspalten.
 - `src/overlay.css` — Startbildschirm, Einblendungen, Knöpfe, Eingabefelder.
 - `src/screens.css` — Wiedergabe und Bestenliste.
@@ -120,10 +121,28 @@ Bildschau liest ihn, verändert ihn nie.
 **Woher die Bildschau weiß, was geschehen ist.** Zweierlei. Was man dem Zustand
 ansieht — volle Reihen, Level, Punkte, Spielende —, erkennt sie am Vergleich mit
 dem vorigen Bild; das wirkt deshalb auch in der Wiedergabe, die ja nur
-Momentaufnahmen zeigt. Was man ihm nicht ansieht — Drehung, Fallenlassen,
+Momentaufnahmen zeigt. Was man ihm nicht ansieht — Schieben, Drehung, Fallenlassen,
 Einrasten —, meldet die Regel selbst über ein kurzes Ereignisband `state.fx`, das
 die Bildschau ausliest und leert. Das Band gehört nicht zum Spielstand und steht
-darum weder in der Momentaufnahme noch in der Bestenliste.
+darum weder in der Momentaufnahme noch in der Bestenliste. Das Schieben ist der
+einzige Eintrag ohne Bild: Es meldet sich allein, damit es zu hören ist.
+
+**Der Ton hängt an denselben Anlässen wie das Bild.** Die vier Klänge — Schieben und
+Drehen, Aufsetzen, volle Reihen, Tetris — liegen als `<audio>` im Dokument, weil nur
+im Markup der Pfad der Beigabe steht, den das Bündeln durch die eingebettete Fassung
+ersetzt; im JavaScript trüge er nicht. Ausgelöst werden sie an genau der Stelle, an
+der auch die Bildschau ihre Ereignisse bekommt (`fx.js`): So gibt es keine zweite
+Quelle der Wahrheit darüber, was geschehen ist, und kein Ereignis, das man sieht,
+aber nicht hört. Daraus folgt auch, was in der Wiedergabe klingt: die Reihen, die
+sich dem Zustand ansehen lassen — nicht das Schieben und Aufsetzen, die nur die
+laufende Regel meldet.
+
+Je Klang gibt es einen kleinen Stapel von Kopien des Elements, damit ein Ton den
+vorigen nicht abschneidet, und einen Mindestabstand, damit eine gehaltene Pfeiltaste
+keine Salve auslöst — das Schieben braucht beides, der Tetris keins von beidem. Ein
+Schalter (Taste `S`, dazu ein Knopf auf dem Startbildschirm) stellt alles still; er
+gehört keiner Ansicht und wird darum vor allen anderen Tasten abgefragt. Wie alles
+außer der Bestenliste lebt er nur für diese Sitzung.
 
 **Das Glühen entsteht durch ein zweites, grobes Bild.** Jede Szene wird zweimal
 gezeichnet: fein auf das sichtbare Bild und grob auf eine Fläche von einem Drittel

@@ -55,6 +55,7 @@ Pfeiltaste kurz antippst oder zweimal **P** drückst (Pause und weiter).
 | ↓ | einen Schritt tiefer, gibt einen Punkt |
 | Leertaste | sofort ganz nach unten fallen lassen |
 | P | Pause und weiter |
+| S | Ton an- und ausschalten (überall) |
 | R | in der Pause oder nach dem Spielende: Aufzeichnung ansehen |
 | M | auf dem Startbildschirm: Spielart wechseln (klassisch / endlos) |
 | H | Bestenliste öffnen (auf dem Startbildschirm, in der Pause, nach dem Spielende) |
@@ -84,6 +85,7 @@ Unter dem Feld liegt die Bedienleiste:
 | B | rückwärts abspielen |
 | 1 … 5 | Tempo ¼×, ½×, 1×, 2×, 4× |
 | Enter | hier weiterspielen |
+| S | Ton an- und ausschalten |
 | Esc | zurück zum Spiel |
 
 ### Hier weiterspielen
@@ -190,6 +192,27 @@ Zierde:
 
 Die Wiedergabe zeigt dieselben Bilder; die Aufblitzer der Reihen, die Punktezahlen
 und die Levelwechsel laufen dort mit.
+
+## Ton
+
+Vier Geräusche begleiten das Spiel:
+
+- ein kurzer Klang beim **Verschieben und Drehen** — er bleibt aus, wenn der Stein an
+  einer Wand oder am Stapel hängen bleibt und sich nichts bewegt,
+- ein Aufschlag, wenn ein Stein **aufsetzt** — ob er von selbst gelandet ist oder mit
+  der Leertaste hinuntergeworfen wurde,
+- ein Klang, wenn **eine bis drei Reihen** fallen,
+- ein eigener, größerer für den **Tetris**: vier Reihen auf einmal.
+
+Die Taste **S** schaltet den Ton überall an und aus — im Spiel, in der Pause, in der
+Wiedergabe und in der Bestenliste. Auf dem Startbildschirm gibt es dafür auch den Knopf
+**🔊 Ton an**, und während des Spiels steht in der Tastenhilfe rechts, wie er gerade
+steht. Die Einstellung gilt für die laufende Sitzung; beim nächsten Öffnen ist der Ton
+wieder an.
+
+In der **Wiedergabe** klingen die Reihen mit, das Verschieben, Drehen und Aufsetzen
+dagegen nicht: Aufgezeichnet werden Bilder, keine Handgriffe. Beim Zurückspulen bleibt
+es ganz still.
 
 ## Das Besondere
 
