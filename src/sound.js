@@ -2,12 +2,17 @@
    nur im Markup der Pfad der Beigabe steht, den das Bündeln durch die eingebettete
    Fassung ersetzt.
 
-   Gespielt werden sie aber nicht über diese Elemente, sondern über die Tonmaschine
+   Gespielt wird bevorzugt nicht über diese Elemente, sondern über die Tonmaschine
    des Browsers: Die eingebettete Fassung ist eine data:-Quelle, aus ihr entstehen
    beim Laden entpackte Klangkörper. Ein Anschlag ist danach nur noch das Starten
-   einer Stimme — ohne Anlauf, ohne Abschneiden, ohne Stapel von Kopien. Das
-   Element selbst bleibt als Rückfall, solange (oder falls) das Entpacken nicht
-   fertig wird.
+   einer Stimme — ohne Anlauf, ohne Abschneiden, ohne Stapel von Kopien.
+
+   Bevorzugt heißt: nur solange die Tonmaschine nachweislich läuft. Sie schläft, bis
+   der Anwender etwas tut, und in manchem Fensterrahmen darf sie überhaupt nie
+   erwachen — dann käme aus ihr nichts, und alles bliebe still. Deshalb entscheidet
+   jeder Anschlag neu: läuft sie und ist der Klang entpackt, klingt er über sie;
+   sonst über das Element. Weist auch das Element ab, springt die Tonmaschine ein.
+   Beide Wege fangen einander auf.
 
    Vorlaufende Stille im Klang wird übersprungen: Manche Aufnahme beginnt erst ein
    paar Millisekunden nach ihrem Anfang zu klingen, und genau das hört man als
@@ -35,6 +40,9 @@ const TetrisSound = (function () {
   let ctx = null;        // die Tonmaschine
   let master = null;     // der gemeinsame Regler — über ihn läuft die Stummschaltung
   let live = [];         // was gerade klingt; nur damit Stummschalten es abbrechen kann
+  let dead = false;      // die Tonmaschine läuft zwar, bringt aber nichts hervor
+  let probeT = 0;        // Wanduhr des letzten Anschlags über die Tonmaschine
+  let probeC = 0;        // ihr Uhrenstand dabei
 
   function now() {
     return typeof performance !== "undefined" && performance.now
@@ -133,12 +141,13 @@ const TetrisSound = (function () {
      um zu klingen. */
   function build() {
     if (built) return;
-    built = true;
     openCtx();
+    let found = 0;
     for (const key in DEFS) {
       const def = DEFS[key];
       const el = document.getElementById(def.id);
       if (!el) continue;
+      found++;
       const voices = [];
       for (let i = 0; i < def.voices; i++) {
         const v = i === 0 ? el : el.cloneNode(true);
@@ -152,6 +161,11 @@ const TetrisSound = (function () {
       banks[key] = bank;
       if (ctx) decodeInto(bank, el.getAttribute("src") || el.src);
     }
+    /* Fertig ist der Aufbau erst, wenn die Elemente wirklich im Dokument standen.
+       Stand er zu früh — noch bevor sie da waren —, wird beim nächsten Anschlag
+       noch einmal gesucht, statt für immer stumm zu bleiben. */
+    if (!found) return;
+    built = true;
     if (ctx) addWatchers();
   }
 
@@ -171,14 +185,33 @@ const TetrisSound = (function () {
     try { src.start(0, bank.skip); } catch (e) { try { src.start(0); } catch (e2) {} }
   }
 
-  // Der Rückfall über das Element.
+  /* Der Rückfall über das Element. Weist es den Anschlag ab — weil noch kein Zutun
+     des Anwenders vorlag oder die Quelle nicht spielbar ist —, springt die
+     Tonmaschine ein, sofern sie läuft. So fängt jeder der beiden Wege den anderen
+     auf, statt dass es still bleibt. */
   function playElement(bank) {
     const v = bank.voices[bank.at];
     bank.at = (bank.at + 1) % bank.voices.length;
     try { v.currentTime = 0; } catch (e) { /* noch nicht bereit — dann von vorn */ }
-    const p = v.play();
-    // Ohne Zutun des Anwenders darf nichts klingen; das ist kein Fehler.
-    if (p && p.catch) p.catch(function () {});
+    let p;
+    try { p = v.play(); } catch (e) { rescue(bank); return; }
+    if (p && p.catch) p.catch(function () { rescue(bank); });
+  }
+
+  function rescue(bank) {
+    if (muted) return;
+    if (ctx && bank.buf && ctx.state === "running" && !dead) playBuffered(bank);
+  }
+
+  /* Läuft sie wirklich? Eine laufende Tonmaschine lässt ihre Uhr weiterlaufen.
+     Steht die Uhr, obwohl zwischen zwei Anschlägen Zeit vergangen ist, kommt aus
+     ihr nichts heraus — dann übernehmen dauerhaft wieder die Elemente. */
+  function stalled(t) {
+    if (dead) return true;
+    const c = ctx.currentTime;
+    if (!probeT || c > probeC) { probeT = t; probeC = c; return false; }
+    if (t - probeT > 300) { dead = true; return true; }
+    return false;
   }
 
   function play(key) {
@@ -189,10 +222,12 @@ const TetrisSound = (function () {
     const t = now();
     if (t - bank.last < bank.gap) return;
     bank.last = t;
-    if (ctx && bank.buf) {
-      /* Angehalten heißt: der Anschlag steht schon bereit und klingt in dem
-         Augenblick, in dem die Maschine anläuft — der Tastendruck selbst weckt sie. */
-      if (ctx.state !== "running") unlock();
+    /* Die Tonmaschine schläft, bis der Anwender etwas tut — der Tastendruck selbst
+       weckt sie. In manchem Fensterrahmen darf sie nie erwachen. Gespielt wird über
+       sie deshalb nur, solange sie nachweislich läuft; sonst klingt es über die
+       Elemente, so wie es das immer getan hat. */
+    if (ctx && ctx.state !== "running") unlock();
+    if (ctx && bank.buf && ctx.state === "running" && !stalled(t)) {
       playBuffered(bank);
       return;
     }
