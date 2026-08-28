@@ -1431,7 +1431,7 @@ const TetrisEngine = (function () {
        Tastendruck statt mit ihm. Gehört wird also im Augenblick des Zuges. */
     if (typeof TetrisSound !== "undefined") {
       if (ev.k === "move" || ev.k === "rot") TetrisSound.play("move");
-      else if (ev.k === "lock") TetrisSound.play("drop");
+      else if (ev.k === "drop") TetrisSound.play("drop");
     }
     if (state.fx && state.fx.length < 48) state.fx.push(ev);
   }
