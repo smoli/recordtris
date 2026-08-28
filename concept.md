@@ -40,10 +40,11 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
   Erschütterung, Nachglühen. Von hier aus klingt der Reihenschlag.
 - `src/sound.js` — die vier Geräusche: drei Wege zum Klang, Mindestabstand,
   Stummschalter, Selbstauskunft für die Diagnose.
-- `src/soundfiles.js` — die Aufnahmen aus dem Datenordner: suchen, lesen, in Bytes
-  verwandeln und an `sound.js` übergeben.
+- `src/soundfiles.js` — die Aufnahmen: im Datenordner suchen oder vom Anwender
+  entgegennehmen, in Bytes verwandeln, an `sound.js` übergeben und sichern.
 - `src/sounddiag.js` — die Ton-Diagnose (Taste `T`): legt offen, was jeder Klang
-  gerade tut, spielt ihn auf Knopfdruck und lässt Aufnahmen wählen.
+  gerade tut, spielt ihn auf Knopfdruck und nimmt Aufnahmen entgegen — gewählt oder
+  über dem Fenster fallen gelassen.
 - `src/style.css` — Grundmaße, Farben, Feld und Seitenspalten.
 - `src/overlay.css` — Startbildschirm, Einblendungen, Knöpfe, Eingabefelder.
 - `src/screens.css` — Wiedergabe und Bestenliste.
@@ -136,22 +137,38 @@ einzige Eintrag ohne Bild: Es meldet sich allein, damit es zu hören ist.
 **Der Ton klingt im Augenblick des Zuges.** Die vier Klänge — Schieben und
 Drehen, Aufsetzen, volle Reihen, Tetris — liegen als `<audio>` im Dokument.
 
-**Die Aufnahmen kommen über den Datenordner, nicht über das Dokument.** Die Quellen
+**Die Aufnahmen kommen nicht über das Dokument, sondern über den Anwender.** Die Quellen
 der Elemente sind Pfade (`assets/…`), und das Bündeln lässt sie stehen: Es bettet
 Stil und Skript ein, keine Medien. Im Fensterrahmen der App führt ein Pfad
 nirgendwohin — jedes Element meldet "Quelle nicht spielbar" (Fehler 4). Damit bleibt
-genau ein Weg, auf dem die Bytes einer Aufnahme in die laufende App gelangen: das
-Dateisystem des Workspace. `soundfiles.js` sucht beim Start in der Merkliste
-`tetris-sounds.json`, im Ordner `tetris-sounds/` und im Datenordner selbst; welcher
-Klang gemeint ist, verrät der Dateiname, welche Tonform vorliegt, verraten die ersten
-Bytes. Gelesen werden beide Formen — die Bytes der Tondatei selbst, sofern das
-Dateisystem sie unversehrt durchreicht, und dieselbe Aufnahme als base64 in einer
-Textdatei; die zweite trägt immer, weil Text unterwegs nichts verliert.
-`TetrisSound.adopt()` nimmt die Bytes an und macht beide Wege gangbar: Es entpackt
-sie für die Tonmaschine und hängt sie zugleich als `data:`-Quelle in die Elemente.
-Eine von Hand gewählte Datei wird in der Merkliste vermerkt und klingt beim nächsten
-Start von selbst. Findet sich nichts, bleibt es bei den eigenen Tönen — der
-Datenordner ist keine Bedingung, sondern eine Möglichkeit.
+die App den Ordner neben sich nicht sieht: Ihr Blick reicht nur in den Datenordner des
+Workspace. Es bleiben zwei Wege, auf denen die Bytes einer Aufnahme in die laufende App
+gelangen; beide enden bei `TetrisSound.adopt()`, das die Bytes entpackt UND zugleich als
+`data:`-Quelle in die Elemente hängt.
+
+*Der eine Weg ist der Anwender selbst.* Er wählt die Dateien im Dateidialog des Browsers
+(`<input type="file">`) oder lässt sie über dem Fenster fallen — dabei kommen echte Bytes
+an, kein Pfad, und der Umweg über ein Dateisystem entfällt ganz. Das Fallenlassen gilt im
+ganzen Fenster, nicht nur über der Diagnose; sie geht dabei von selbst auf und zeigt, was
+daraus wurde. Zwei Formen: `intake()` erkennt am Dateinamen, welcher Klang gemeint ist —
+der Weg für alle vier auf einmal; `intakeAs()` setzt den Klang fest — der Weg für die
+Wahl in einer einzelnen Zeile, gleich wie die Datei heißt. Was hereinkommt, wird zugleich
+als base64 nach `tetris-sounds/<klang>.txt` gesichert und in der Merkliste
+`tetris-sounds.json` mit seinem ursprünglichen Namen vermerkt: Einmal hereingeholt,
+bleibt es.
+
+*Der andere Weg ist die Suche im Datenordner.* `soundfiles.js` sieht beim Start ohne
+Zutun in der Merkliste `tetris-sounds.json`, im Ordner `tetris-sounds/` und im
+Datenordner selbst nach; welcher Klang gemeint ist, verrät der Dateiname, welche Tonform
+vorliegt, verraten die ersten Bytes. Gelesen werden beide Formen — die Bytes der
+Tondatei selbst, sofern das Dateisystem sie unversehrt durchreicht, und dieselbe
+Aufnahme als base64 in einer Textdatei; die zweite trägt immer, weil Text unterwegs
+nichts verliert. Genau darum wird auch das Gesicherte als base64 abgelegt, und der
+gesicherte Dateiname ist der Klang selbst (`move.txt`): So findet die Suche ihn wieder,
+auch wenn die Merkliste verloren geht.
+
+Findet sich nichts und reicht niemand etwas herein, bleibt es bei den eigenen Tönen —
+der Datenordner ist keine Bedingung, sondern eine Möglichkeit.
 
 **Ein Klang geht drei Wege, bis einer trägt.** Weil sich von außen nicht feststellen
 lässt, welcher Weg in einem gegebenen Fensterrahmen wirklich zum Lautsprecher führt,
@@ -179,8 +196,9 @@ Klang, ob sein Element im Dokument steht, ob seine Quelle eingebettet wurde, was
 Entpacken ergab, welcher Weg zuletzt getragen hat und woran der letzte Versuch
 scheiterte. Die Ton-Diagnose (`sounddiag.js`, Taste `T`) zeigt das und spielt jeden
 Klang auf Knopfdruck — einmal die ganze Kette, einmal nur den eigenen Ton. Darunter
-steht, was `soundfiles.js` im Datenordner gefunden hat, samt Knopf zum Wählen einer
-Datei und zum erneuten Suchen. Der Klick
+steht, welche Aufnahmen `soundfiles.js` hat; dort kommen sie auch herein — ein Feld
+zum Fallenlassen, ein Knopf zum Wählen aller vier auf einmal, je Zeile einer für
+einen einzelnen Klang und einer zum erneuten Suchen im Datenordner. Der Klick
 ist dabei die stärkste Zustimmung des Anwenders, die der Browser kennt: Was auf
 Knopfdruck stumm bleibt, bleibt nicht wegen fehlender Zustimmung stumm. Sie hängt an
 einer eigenen Preact-Wurzel (`#diag`) und liegt damit über jeder Ansicht, ohne dass

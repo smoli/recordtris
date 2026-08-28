@@ -21,12 +21,19 @@
      - eine Textdatei mit derselben Aufnahme in base64 (auch als data:-Zeile) —
        der Weg, der immer trägt, weil Text unterwegs nichts verliert.
 
+   Dateien, die WOANDERS liegen — etwa im Ordner assets neben der App —, kann die
+   App nicht von sich aus lesen: Der Datenordner ist alles, was sie sieht. Herein
+   kommen sie über den Anwender, der sie im Dateidialog wählt oder über dem Fenster
+   fallen lässt (intake/intakeAs). Was so ankommt, klingt auf der Stelle UND wird
+   als base64 in tetris-sounds/ gesichert — die Suche findet es beim nächsten Start
+   von selbst.
+
    Findet sich nichts, bleibt alles, wie es war: Die App klingt mit ihren eigenen
    Tönen weiter. Was gefunden wurde, gibt report() preis; die Ton-Diagnose
-   (Taste T) zeigt es und lässt Dateien von Hand wählen. */
+   (Taste T) zeigt es und nimmt Dateien entgegen. */
 const TetrisSoundFiles = (function () {
   const DIR = "tetris-sounds";
-  const LIST = "tetris-sounds.json"; // die von Hand gewählten Dateien
+  const LIST = "tetris-sounds.json"; // die Merkliste: Klang -> gesicherte Datei
 
   // Woran ein Klang in einem Dateinamen zu erkennen ist — ohne Endung, klein
   // geschrieben, ohne Trennzeichen. Erst genau, dann als Teil des Namens.
@@ -185,8 +192,15 @@ const TetrisSoundFiles = (function () {
     if (!map || typeof map !== "object") return;
     picks = map;
     for (const key in map) {
-      if (!NAMES[key] || done(key) || typeof map[key] !== "string") continue;
-      await take(key, nameOf(map[key]), map[key]);
+      if (!NAMES[key] || done(key)) continue;
+      const entry = map[key];
+      /* Zwei Formen: früher stand hier nur der Pfad, heute steht daneben auch der
+         Name der Datei, aus der die gesicherte Fassung entstanden ist. */
+      const path = typeof entry === "string" ? entry
+        : entry && typeof entry.path === "string" ? entry.path : "";
+      if (!path) continue;
+      const name = entry && typeof entry.name === "string" ? entry.name : nameOf(path);
+      await take(key, name, path);
     }
   }
 
@@ -207,30 +221,101 @@ const TetrisSoundFiles = (function () {
     return report();
   }
 
-  /* Eine Aufnahme von Hand wählen. Der Dialog zeigt den Datenordner; der gewählte
-     Pfad wird gemerkt, damit dieselbe Datei beim nächsten Start von selbst klingt. */
-  async function pick(key) {
-    const fs = window.morphosFS;
-    if (!NAMES[key] || !fs || !fs.openFile) return false;
-    let path;
-    try {
-      path = await fs.openFile({
-        title: "Aufnahme wählen",
-        extensions: ["mp3", "wav", "ogg", "m4a", "b64", "txt"]
-      });
-    } catch (e) { return false; }
-    if (!path) return false;
-    const ok = await take(key, nameOf(path), path);
-    if (ok) await remember(key, path);
-    return ok;
+  // --- Aufnahmen von außen hereinholen ---
+
+  /* Die vier Aufnahmen liegen im Ordner assets neben der App. Dorthin reicht der
+     Arm der App nicht: Sie sieht nur den Datenordner. Der Anwender aber kann sie
+     ihr geben — im Dateidialog des Browsers oder indem er sie über dem Fenster
+     fallen lässt. Von dort kommen echte Bytes an, kein Pfad; damit ist der Umweg
+     über das Dateisystem gar nicht nötig.
+
+     Gesichert wird trotzdem: Was hereinkommt, wandert als base64 nach
+     tetris-sounds/<klang>.txt. Beim nächsten Start findet die Suche es dort von
+     selbst wieder — einmal hereingeholt, bleibt es. */
+
+  function readBytes(file) {
+    return new Promise(function (resolve) {
+      let r;
+      try { r = new FileReader(); } catch (e) { resolve(null); return; }
+      r.onload = function () { resolve(r.result || null); };
+      r.onerror = function () { resolve(null); };
+      try { r.readAsArrayBuffer(file); } catch (e) { resolve(null); }
+    });
   }
 
-  async function remember(key, path) {
+  // Bytes als Zeichen — in Häppchen, sonst sprengt der Aufruf den Stapel.
+  function latin1(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let s = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return s;
+  }
+
+  /* In den Datenordner sichern. Der Name ist der Klang selbst — er trifft die
+     Namenserkennung immer, gleich wie die Datei ursprünglich hieß. Wie sie hieß,
+     merkt sich daneben die Merkliste, damit die Diagnose es weiter zeigen kann. */
+  async function store(key, name, b64) {
     const fs = window.morphosFS;
-    if (!fs || !fs.writeFile) return;
+    if (!fs || !fs.writeFile) return "";
+    const path = DIR + "/" + key + ".txt";
+    if (fs.mkdir) { try { await fs.mkdir(DIR); } catch (e) { /* gibt es schon */ } }
+    try { await fs.writeFile(path, b64); } catch (e) { return ""; }
     if (!picks) picks = {};
-    picks[key] = path;
+    picks[key] = { path: path, name: name };
     try { await fs.writeFile(LIST, JSON.stringify(picks, null, 1)); } catch (e) {}
+    return path;
+  }
+
+  /* Eine hereingereichte Datei für einen bestimmten Klang übernehmen. */
+  async function intakeAs(key, file) {
+    if (!NAMES[key] || !file) return false;
+    const name = file.name || "Datei";
+    const f = found[key] = { name: name, path: "", how: "", kb: 0,
+                             ok: false, state: "wird gelesen" };
+    let buffer = await readBytes(file);
+    if (!buffer || !buffer.byteLength) { f.state = "nicht lesbar"; return false; }
+    let how = "Datei";
+    /* Auch eine Textdatei mit base64 darf hereingereicht werden — dann steckt die
+       Aufnahme in ihren Zeichen, nicht in ihren Bytes. */
+    if (!sniff(buffer)) {
+      const r = bytesOf(latin1(buffer));
+      if (r.buf && sniff(r.buf)) { buffer = r.buf; how = r.how; }
+    }
+    let b64;
+    // Vor dem Übernehmen: das Entpacken frisst den Puffer auf.
+    try { b64 = btoa(latin1(buffer)); } catch (e) { b64 = ""; }
+    f.how = how;
+    f.kb = Math.round(buffer.byteLength / 1024 * 10) / 10;
+    const kind = sniff(buffer) || MIME[extOf(name)] || "audio/mpeg";
+    f.ok = TetrisSound.adopt(key, buffer, kind, name);
+    if (!f.ok) { f.state = "abgewiesen"; return false; }
+    f.path = b64 ? await store(key, name, b64) : "";
+    f.state = f.path ? "übernommen und gesichert" : "übernommen (nur diese Sitzung)";
+    return true;
+  }
+
+  /* Mehrere Dateien auf einmal — welcher Klang gemeint ist, verrät der Name. Das
+     ist der Weg für das Fallenlassen und für die Wahl aller vier auf einmal. */
+  async function intake(files) {
+    const list = files ? Array.prototype.slice.call(files) : [];
+    let taken = 0;
+    let missed = 0;
+    for (let i = 0; i < list.length; i++) {
+      const file = list[i];
+      if (!file || !file.name) continue;
+      const key = keyOf(file.name);
+      if (!key) { missed++; continue; }
+      if (await intakeAs(key, file)) taken++; else missed++;
+    }
+    note = taken
+      ? taken + (taken === 1 ? " Aufnahme übernommen" : " Aufnahmen übernommen")
+          + (missed ? ", " + missed + " nicht zugeordnet" : "")
+      : list.length
+        ? "keine der " + list.length + " Dateien ließ sich zuordnen"
+        : "keine Datei dabei";
+    return report();
   }
 
   // Nur Ablesen, kein Eingriff — für die Ton-Diagnose.
@@ -253,7 +338,8 @@ const TetrisSoundFiles = (function () {
 
   return {
     scan: scan,
-    pick: pick,
+    intake: intake,
+    intakeAs: intakeAs,
     report: report,
     dir: DIR
   };

@@ -238,28 +238,40 @@ Aufnahmen etwas nicht stimmt.
 
 ### Die Aufnahmen zum Klingen bringen
 
-Das Fenster, in dem das Spiel läuft, lässt keine Tondateien herein: Die vier
-Aufnahmen, die zur App gehören, kommen dort nicht an — jede Zeile der Diagnose meldet
-dann **Quelle nicht spielbar (Fehler 4)**, und es klingen die einfachen Töne.
+Die vier Aufnahmen liegen im Ordner **assets** neben der App — aber das Fenster, in
+dem das Spiel läuft, sieht diesen Ordner nicht. Solange sie nicht angekommen sind,
+meldet jede Zeile der Diagnose **Quelle nicht spielbar (Fehler 4)**, und es klingen
+die einfachen Töne.
 
-Es gibt einen Weg hinein, und der führt über den **Datenordner** — denselben Ordner,
-in dem auch Bestenliste und Aufzeichnungen liegen. Unten in der Ton-Diagnose steht,
-was dort gefunden wurde. Zwei Möglichkeiten:
+Du kannst sie dem Spiel geben. Öffne mit **T** die Ton-Diagnose; unter der Tafel liegt
+das Feld **Aufnahmen hierher ziehen**:
 
-- Lege die vier Dateien in den Unterordner **tetris-sounds** (oder direkt in den
-  Datenordner). Erkannt werden sie am Namen: Er muss *move*, *drop*, *row* oder
-  *tetris* enthalten — die Originalnamen passen also schon.
-- Oder klicke in der Diagnose bei einem Klang auf **Datei wählen** und such sie dir
-  aus. Diese Wahl bleibt gemerkt: Beim nächsten Öffnen klingt dieselbe Datei wieder.
+- **Zieh die vier Dateien aus dem Ordner `assets` ins Fenster.** Irgendwohin — das
+  Feld musst du nicht treffen, das Spiel nimmt sie überall entgegen und klappt die
+  Diagnose dabei von selbst auf.
+- Oder klicke auf **Dateien wählen …**, geh in den Ordner `assets` und markiere alle
+  vier auf einmal.
+- Für einen einzelnen Klang gibt es in seiner Zeile ebenfalls **Datei wählen** — dann
+  gilt die gewählte Datei genau diesem Klang, gleich wie sie heißt.
 
-Beides wirkt sofort — der nächste Zug klingt schon mit der Aufnahme. Steht bei einer
-Datei **als Text zerfallen** oder **keine Tonform erkennbar**, hat sie den Weg durch
-den Datenordner nicht heil überstanden. Dann hilft derselbe Klang als **base64** in
-einer Textdatei (`.txt`): Diese Form kommt immer unversehrt an, und das Spiel erkennt
-sie von selbst.
+Bei mehreren Dateien auf einmal verrät der Name, welcher Klang gemeint ist: Er muss
+*move*, *drop*, *row* oder *tetris* enthalten — die Originalnamen passen also schon.
 
-Findet sich nichts, ändert sich nichts: Das Spiel klingt mit seinen eigenen Tönen
-weiter.
+Das wirkt sofort: Der nächste Zug klingt schon mit der Aufnahme. Und es bleibt — die
+Aufnahmen werden im **Datenordner** unter **tetris-sounds** gesichert und klingen bei
+jedem weiteren Start von selbst, ohne dass du etwas tun musst. Ist kein Datenordner
+eingerichtet, gelten sie nur für diese Sitzung; die Zeile sagt dann **übernommen (nur
+diese Sitzung)**.
+
+Wer die Dateien lieber selbst ablegt, kann das auch: in den Unterordner
+**tetris-sounds** des Datenordners oder direkt hinein, danach in der Diagnose auf **Im
+Datenordner suchen** klicken. Steht bei einer Datei dann **als Text zerfallen** oder
+**keine Tonform erkennbar**, hat sie den Weg durch den Datenordner nicht heil
+überstanden — hereingezogene Dateien haben dieses Problem nicht. Sonst hilft derselbe
+Klang als **base64** in einer Textdatei (`.txt`).
+
+Findet sich nichts und gibst du nichts herein, ändert sich nichts: Das Spiel klingt
+mit seinen eigenen Tönen weiter.
 
 ## Das Besondere
 
@@ -271,10 +283,11 @@ Unterschied schnell — und sollte flacher stapeln.
 
 ## Grenzen
 
-Gespeichert werden nur die Ergebnisse der Partien, nicht die Partien selbst: Die
-Aufzeichnung gehört zur laufenden Partie und lässt sich nicht ablegen. Aus der
-Bestenliste lässt sich nichts löschen. Ein Ergebnis wird nur eingetragen, wenn die
-Partie mit *Game Over* endet — brichst du mit Esc ab, zählt sie nicht.
+Festgehalten wird eine ganze Partie nur dann, wenn sie mit *Game Over* endet —
+brichst du mit Esc ab oder startest neu, ist ihre Aufzeichnung weg. Aus der
+Bestenliste lässt sich nichts löschen.
+Wer eine Partie über *Hier weiterspielen* fortsetzt, überschreibt ihren Verlauf ab
+dieser Stelle.
 
-Ein neues Spiel oder Esc zum Startbildschirm verwirft die Aufzeichnung. Weitergeben
+Weitergeben
 lässt sich aber das Merkwort — damit spielt jemand anderes dieselbe Steinfolge.

@@ -1115,6 +1115,43 @@ kbd {
 .diag-files button:hover { background: rgba(110, 168, 255, .26); }
 .diag-files button[disabled] { opacity: .5; cursor: default; }
 
+/* Der Platz, an dem Aufnahmen hereinkommen: fallen lassen oder wählen. */
+.diag-drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding: 14px 12px;
+  border: 1px dashed rgba(110, 168, 255, .40);
+  border-radius: 10px;
+  background: rgba(110, 168, 255, .05);
+  transition: background .12s, border-color .12s;
+}
+.diag-drop.over {
+  border-color: var(--accent);
+  background: rgba(110, 168, 255, .18);
+}
+.diag-drop b { color: var(--ink); font-weight: 600; }
+
+/* Ein Dateifeld sieht in jedem Rahmen anders aus; sichtbar ist darum allein seine
+   Beschriftung — das Feld selbst bleibt verborgen und wird über sie ausgelöst. */
+.diag-take {
+  display: inline-block;
+  background: rgba(110, 168, 255, .13);
+  color: var(--ink);
+  border: 1px solid rgba(110, 168, 255, .32);
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.diag-take:hover { background: rgba(110, 168, 255, .26); }
+.diag-take.busy { opacity: .5; cursor: default; }
+.diag-take input { display: none; }
+
 .diag-hint {
   margin: 10px 0 0;
   color: var(--dim);
@@ -2872,12 +2909,19 @@ const TetrisSound = (function () {
      - eine Textdatei mit derselben Aufnahme in base64 (auch als data:-Zeile) —
        der Weg, der immer trägt, weil Text unterwegs nichts verliert.
 
+   Dateien, die WOANDERS liegen — etwa im Ordner assets neben der App —, kann die
+   App nicht von sich aus lesen: Der Datenordner ist alles, was sie sieht. Herein
+   kommen sie über den Anwender, der sie im Dateidialog wählt oder über dem Fenster
+   fallen lässt (intake/intakeAs). Was so ankommt, klingt auf der Stelle UND wird
+   als base64 in tetris-sounds/ gesichert — die Suche findet es beim nächsten Start
+   von selbst.
+
    Findet sich nichts, bleibt alles, wie es war: Die App klingt mit ihren eigenen
    Tönen weiter. Was gefunden wurde, gibt report() preis; die Ton-Diagnose
-   (Taste T) zeigt es und lässt Dateien von Hand wählen. */
+   (Taste T) zeigt es und nimmt Dateien entgegen. */
 const TetrisSoundFiles = (function () {
   const DIR = "tetris-sounds";
-  const LIST = "tetris-sounds.json"; // die von Hand gewählten Dateien
+  const LIST = "tetris-sounds.json"; // die Merkliste: Klang -> gesicherte Datei
 
   // Woran ein Klang in einem Dateinamen zu erkennen ist — ohne Endung, klein
   // geschrieben, ohne Trennzeichen. Erst genau, dann als Teil des Namens.
@@ -3036,8 +3080,15 @@ const TetrisSoundFiles = (function () {
     if (!map || typeof map !== "object") return;
     picks = map;
     for (const key in map) {
-      if (!NAMES[key] || done(key) || typeof map[key] !== "string") continue;
-      await take(key, nameOf(map[key]), map[key]);
+      if (!NAMES[key] || done(key)) continue;
+      const entry = map[key];
+      /* Zwei Formen: früher stand hier nur der Pfad, heute steht daneben auch der
+         Name der Datei, aus der die gesicherte Fassung entstanden ist. */
+      const path = typeof entry === "string" ? entry
+        : entry && typeof entry.path === "string" ? entry.path : "";
+      if (!path) continue;
+      const name = entry && typeof entry.name === "string" ? entry.name : nameOf(path);
+      await take(key, name, path);
     }
   }
 
@@ -3058,30 +3109,101 @@ const TetrisSoundFiles = (function () {
     return report();
   }
 
-  /* Eine Aufnahme von Hand wählen. Der Dialog zeigt den Datenordner; der gewählte
-     Pfad wird gemerkt, damit dieselbe Datei beim nächsten Start von selbst klingt. */
-  async function pick(key) {
-    const fs = window.morphosFS;
-    if (!NAMES[key] || !fs || !fs.openFile) return false;
-    let path;
-    try {
-      path = await fs.openFile({
-        title: "Aufnahme wählen",
-        extensions: ["mp3", "wav", "ogg", "m4a", "b64", "txt"]
-      });
-    } catch (e) { return false; }
-    if (!path) return false;
-    const ok = await take(key, nameOf(path), path);
-    if (ok) await remember(key, path);
-    return ok;
+  // --- Aufnahmen von außen hereinholen ---
+
+  /* Die vier Aufnahmen liegen im Ordner assets neben der App. Dorthin reicht der
+     Arm der App nicht: Sie sieht nur den Datenordner. Der Anwender aber kann sie
+     ihr geben — im Dateidialog des Browsers oder indem er sie über dem Fenster
+     fallen lässt. Von dort kommen echte Bytes an, kein Pfad; damit ist der Umweg
+     über das Dateisystem gar nicht nötig.
+
+     Gesichert wird trotzdem: Was hereinkommt, wandert als base64 nach
+     tetris-sounds/<klang>.txt. Beim nächsten Start findet die Suche es dort von
+     selbst wieder — einmal hereingeholt, bleibt es. */
+
+  function readBytes(file) {
+    return new Promise(function (resolve) {
+      let r;
+      try { r = new FileReader(); } catch (e) { resolve(null); return; }
+      r.onload = function () { resolve(r.result || null); };
+      r.onerror = function () { resolve(null); };
+      try { r.readAsArrayBuffer(file); } catch (e) { resolve(null); }
+    });
   }
 
-  async function remember(key, path) {
+  // Bytes als Zeichen — in Häppchen, sonst sprengt der Aufruf den Stapel.
+  function latin1(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let s = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return s;
+  }
+
+  /* In den Datenordner sichern. Der Name ist der Klang selbst — er trifft die
+     Namenserkennung immer, gleich wie die Datei ursprünglich hieß. Wie sie hieß,
+     merkt sich daneben die Merkliste, damit die Diagnose es weiter zeigen kann. */
+  async function store(key, name, b64) {
     const fs = window.morphosFS;
-    if (!fs || !fs.writeFile) return;
+    if (!fs || !fs.writeFile) return "";
+    const path = DIR + "/" + key + ".txt";
+    if (fs.mkdir) { try { await fs.mkdir(DIR); } catch (e) { /* gibt es schon */ } }
+    try { await fs.writeFile(path, b64); } catch (e) { return ""; }
     if (!picks) picks = {};
-    picks[key] = path;
+    picks[key] = { path: path, name: name };
     try { await fs.writeFile(LIST, JSON.stringify(picks, null, 1)); } catch (e) {}
+    return path;
+  }
+
+  /* Eine hereingereichte Datei für einen bestimmten Klang übernehmen. */
+  async function intakeAs(key, file) {
+    if (!NAMES[key] || !file) return false;
+    const name = file.name || "Datei";
+    const f = found[key] = { name: name, path: "", how: "", kb: 0,
+                             ok: false, state: "wird gelesen" };
+    let buffer = await readBytes(file);
+    if (!buffer || !buffer.byteLength) { f.state = "nicht lesbar"; return false; }
+    let how = "Datei";
+    /* Auch eine Textdatei mit base64 darf hereingereicht werden — dann steckt die
+       Aufnahme in ihren Zeichen, nicht in ihren Bytes. */
+    if (!sniff(buffer)) {
+      const r = bytesOf(latin1(buffer));
+      if (r.buf && sniff(r.buf)) { buffer = r.buf; how = r.how; }
+    }
+    let b64;
+    // Vor dem Übernehmen: das Entpacken frisst den Puffer auf.
+    try { b64 = btoa(latin1(buffer)); } catch (e) { b64 = ""; }
+    f.how = how;
+    f.kb = Math.round(buffer.byteLength / 1024 * 10) / 10;
+    const kind = sniff(buffer) || MIME[extOf(name)] || "audio/mpeg";
+    f.ok = TetrisSound.adopt(key, buffer, kind, name);
+    if (!f.ok) { f.state = "abgewiesen"; return false; }
+    f.path = b64 ? await store(key, name, b64) : "";
+    f.state = f.path ? "übernommen und gesichert" : "übernommen (nur diese Sitzung)";
+    return true;
+  }
+
+  /* Mehrere Dateien auf einmal — welcher Klang gemeint ist, verrät der Name. Das
+     ist der Weg für das Fallenlassen und für die Wahl aller vier auf einmal. */
+  async function intake(files) {
+    const list = files ? Array.prototype.slice.call(files) : [];
+    let taken = 0;
+    let missed = 0;
+    for (let i = 0; i < list.length; i++) {
+      const file = list[i];
+      if (!file || !file.name) continue;
+      const key = keyOf(file.name);
+      if (!key) { missed++; continue; }
+      if (await intakeAs(key, file)) taken++; else missed++;
+    }
+    note = taken
+      ? taken + (taken === 1 ? " Aufnahme übernommen" : " Aufnahmen übernommen")
+          + (missed ? ", " + missed + " nicht zugeordnet" : "")
+      : list.length
+        ? "keine der " + list.length + " Dateien ließ sich zuordnen"
+        : "keine Datei dabei";
+    return report();
   }
 
   // Nur Ablesen, kein Eingriff — für die Ton-Diagnose.
@@ -3104,7 +3226,8 @@ const TetrisSoundFiles = (function () {
 
   return {
     scan: scan,
-    pick: pick,
+    intake: intake,
+    intakeAs: intakeAs,
     report: report,
     dir: DIR
   };
@@ -4779,9 +4902,10 @@ render(html`<${App} />`, document.getElementById("app"));
    Anwenders, die der Browser kennt. Was auf Knopfdruck stumm bleibt, bleibt nicht
    wegen fehlender Zustimmung stumm.
 
-   Darunter steht, was soundfiles.js im Datenordner gefunden hat — der einzige Weg,
-   auf dem eine Aufnahme in diesem Fensterrahmen überhaupt in die App gelangt. Dort
-   lässt sich für jeden Klang auch eine Datei von Hand wählen.
+   Darunter steht, was soundfiles.js an Aufnahmen hat — und dort kommen sie auch
+   herein: Die vier Dateien im Ordner assets neben der App erreicht die App nicht
+   von sich aus, wohl aber der Anwender. Er wählt sie im Dateidialog oder lässt sie
+   über dem Fenster fallen; gesichert werden sie danach im Datenordner.
 
    Sie hängt an einer eigenen Wurzel (#diag) und liegt damit über jeder Ansicht,
    ohne dass eine davon etwas von ihr wissen muss. */
@@ -4816,12 +4940,20 @@ function SoundDiagRow({ s }) {
   </tr>`;
 }
 
-/* Die Aufnahmen aus dem Datenordner (soundfiles.js): was gefunden wurde, was fehlt
-   und woran es lag. Von hier aus lässt sich für jeden Klang eine Datei wählen — das
-   ist zugleich der einzige Weg, auf dem eine Aufnahme überhaupt in die App gelangt. */
-// Was von einer gefundenen Datei zu sagen ist — nur, was auch dasteht.
+/* Die Aufnahmen (soundfiles.js): was übernommen wurde, was fehlt und woran es lag.
+
+   Von hier aus kommen die Dateien auch herein. Die vier Aufnahmen liegen im Ordner
+   assets neben der App — dorthin reicht der Arm der App nicht, sie sieht nur den
+   Datenordner. Der Anwender aber kann sie ihr geben: im Dateidialog des Browsers
+   oder indem er sie über dem Fenster fallen lässt. Was so ankommt, klingt sofort
+   und wird zugleich im Datenordner gesichert. */
+
+// Womit der Dateidialog aufmacht — Tonformen und die base64-Textfassung.
+const DIAG_ACCEPT = "audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.webm,.txt,.b64";
+
+// Was von einer Aufnahme zu sagen ist — nur, was auch dasteht.
 function fileLine(f) {
-  if (!f) return "keine Datei gefunden";
+  if (!f) return "noch keine Aufnahme";
   const bits = [f.name];
   if (f.kb) bits.push(f.kb + " KB");
   if (f.how) bits.push(f.how);
@@ -4829,28 +4961,71 @@ function fileLine(f) {
   return bits.join(" · ");
 }
 
-function SoundFilesBlock() {
+/* Aus dem Ereignis eines Dateifelds die Dateien holen. Kopiert wird sofort in ein
+   Feld: Das Zurücksetzen des Felds leert seine Liste, und die Übernahme läuft
+   danach noch eine Weile weiter. */
+function filesOf(e) {
+  const list = Array.prototype.slice.call(e.target.files || []);
+  e.target.value = "";
+  return list;
+}
+
+function SoundFilesBlock({ onDone }) {
   const { useState } = preactHooks;
   const [busy, setBusy] = useState("");
+  const [over, setOver] = useState(false);
   const r = TetrisSoundFiles.report();
   const keys = ["move", "drop", "rows", "tetris"];
 
-  async function choose(key) {
+  async function takeOne(key, file) {
+    if (!file) return;
     setBusy(key);
-    try { await TetrisSoundFiles.pick(key); } finally { setBusy(""); }
+    try { await TetrisSoundFiles.intakeAs(key, file); }
+    catch (err) { /* der Vermerk der Aufnahme sagt es */ }
+    finally { setBusy(""); onDone(); }
+  }
+
+  async function takeMany(list) {
+    if (!list.length) return;
+    setBusy("alle");
+    try { await TetrisSoundFiles.intake(list); }
+    catch (err) { /* der Vermerk sagt es */ }
+    finally { setBusy(""); onDone(); }
+  }
+
+  /* Das Fallenlassen hier drin ist dasselbe wie überall im Fenster — nur bleibt es
+     hier stehen, damit es nicht zweimal übernommen wird. */
+  function onDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setOver(false);
+    takeMany(Array.prototype.slice.call((e.dataTransfer && e.dataTransfer.files) || []));
   }
 
   return html`<div class="diag-files">
-    <h3>Aufnahmen aus dem Datenordner <span>${r.note}</span></h3>
-    ${!r.fs
-      ? html`<p class="diag-hint">Es ist kein Datenordner festgelegt — ohne ihn
-          bleibt es bei den eigenen Tönen.</p>`
-      : html`<p class="diag-hint">Tondateien neben der App sind hier nicht
-          erreichbar; nur der Datenordner führt hinein. Lege die vier Aufnahmen in
-          <b>${r.dir}</b> oder in den Datenordner selbst — erkannt werden sie am
-          Namen (<i>move</i>, <i>drop</i>, <i>row</i>, <i>tetris</i>). Kommt eine
-          Datei <i>als Text zerfallen</i> an, trägt dieselbe Aufnahme als
-          <b>base64</b> in einer <b>.txt</b> ganz sicher.</p>`}
+    <h3>Aufnahmen <span>${busy === "alle" ? "wird übernommen …" : r.note}</span></h3>
+    <div class=${"diag-drop" + (over ? " over" : "")}
+      onDragOver=${(e) => { e.preventDefault(); setOver(true); }}
+      onDragLeave=${(e) => {
+        // Der Wechsel auf ein Kind meldet sich auch als Verlassen — er zählt nicht.
+        if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget)) return;
+        setOver(false);
+      }}
+      onDrop=${onDrop}>
+      <b>Aufnahmen hierher ziehen</b>
+      <label class="diag-take">Dateien wählen …
+        <input type="file" multiple accept=${DIAG_ACCEPT}
+          onChange=${(e) => takeMany(filesOf(e))} />
+      </label>
+    </div>
+    <p class="diag-hint">Die vier Dateien liegen im Ordner <b>assets</b> neben der
+      App: <i>move-and-turn</i>, <i>drop-sound</i>, <i>row-completed-sound</i>,
+      <i>tetris-sound</i>. Wähle sie alle auf einmal — welcher Klang gemeint ist,
+      verrät der Name. ${r.fs
+        ? html`Danach liegen sie gesichert in <b>${r.dir}</b> im Datenordner und
+            klingen bei jedem Start von selbst.`
+        : html`<b>Es ist kein Datenordner festgelegt</b> — sie klingen dann nur in
+            dieser Sitzung und müssen beim nächsten Start erneut gewählt werden.`}</p>
     <ul>
       ${keys.map((k) => {
         const f = r.files[k];
@@ -4858,12 +5033,16 @@ function SoundFilesBlock() {
         return html`<li key=${k} class=${good ? "ok" : f ? "bad" : ""}>
           <b>${DIAG_NAMES[k]}</b>
           <span>${fileLine(f)}</span>
-          <button disabled=${busy === k} onClick=${() => choose(k)}>
-            ${busy === k ? "…" : "Datei wählen"}</button>
+          <label class=${"diag-take" + (busy === k ? " busy" : "")}>
+            ${busy === k ? "…" : "Datei wählen"}
+            <input type="file" accept=${DIAG_ACCEPT}
+              onChange=${(e) => takeOne(k, filesOf(e)[0])} />
+          </label>
         </li>`;
       })}
     </ul>
-    <button class="diag-again" onClick=${() => TetrisSoundFiles.scan().catch(() => {})}>Erneut
+    <button class="diag-again"
+      onClick=${() => TetrisSoundFiles.scan().then(onDone, () => {})}>Im Datenordner
       suchen</button>
   </div>`;
 }
@@ -4884,6 +5063,31 @@ function SoundDiag() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  /* Aufnahmen darf man überall über dem Fenster fallen lassen, nicht nur hier: Die
+     Tafel geht dann von selbst auf und zeigt, was daraus wurde. Ohne das
+     Abfangen zeigte der Rahmen die Datei bloß an, statt sie zu übernehmen. */
+  useEffect(() => {
+    function hasFiles(e) {
+      const t = e.dataTransfer && e.dataTransfer.types;
+      return !!t && Array.prototype.indexOf.call(t, "Files") >= 0;
+    }
+    function onOver(e) { if (hasFiles(e)) e.preventDefault(); }
+    function onDrop(e) {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      const list = Array.prototype.slice.call(e.dataTransfer.files || []);
+      if (!list.length) return;
+      setOpen(true);
+      TetrisSoundFiles.intake(list).then(() => bump((v) => v + 1), () => {});
+    }
+    window.addEventListener("dragover", onOver);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      window.removeEventListener("dragover", onOver);
+      window.removeEventListener("drop", onDrop);
+    };
   }, []);
 
   // Solange sie offen ist, liest sie sich viermal je Sekunde neu ab.
@@ -4915,7 +5119,7 @@ function SoundDiag() {
           ${r.sounds.map((s) => html`<${SoundDiagRow} key=${s.key} s=${s} />`)}
         </tbody>
       </table>
-      <${SoundFilesBlock} />
+      <${SoundFilesBlock} onDone=${() => bump((v) => v + 1)} />
       <p class="diag-hint">Ein Klang geht drei Wege, bis einer trägt:
         <b>Element</b> → <b>Tonmaschine</b> → <b>eigener Ton</b>. Liegt eine
         Aufnahme aus dem Datenordner bereit, klingt sie zuerst. Steht in
