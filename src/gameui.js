@@ -32,6 +32,21 @@ function Preview({ type }) {
   return html`<div class="preview" style=${"grid-template-columns: repeat(" + n + ", var(--mini))"}>${grid}</div>`;
 }
 
+/* Die Kopfkarte der rechten Spalte: klassisch zählen die Punkte, im Endlosspiel
+   die durchgehaltene Zeit — sie ist dort das Ergebnis. */
+function ScoreBox({ game }) {
+  if (game.mode === TetrisEngine.FOREVER) {
+    return html`<div class="box">
+      <h2>Zeit</h2>
+      <p class="big">${TetrisScores.formatDuration(game.elapsed)}</p>
+      <p class="mode-line">${game.score} Punkte</p>
+    </div>`;
+  }
+  return html`<div class="box">
+    <h2>Punkte</h2><p class="big">${game.score}</p>
+  </div>`;
+}
+
 function Stats({ stats }) {
   return html`<div class="stats">
     ${TetrisPieces.TYPES.map((t) => html`
@@ -109,14 +124,25 @@ function GameScreen({ game, summary, isRecord, rank, canReplay, onRestart, onRep
 // Der Schriftzug zerfällt in Buchstaben, damit jeder für sich leuchten kann.
 const TITLE_LETTERS = ["T", "E", "T", "R", "I", "S"];
 
-function StartScreen({ level, onLevel, seed, onSeed, summary, onScores, onStart }) {
+function StartScreen({ level, onLevel, mode, onMode, seed, onSeed, summary, onScores,
+                       muted, onSound, onStart }) {
   const levels = [];
   for (let i = 0; i <= 9; i++) levels.push(i);
+  const forever = mode === TetrisEngine.FOREVER;
   return html`<div class="overlay">
     <h1 class="title">${TITLE_LETTERS.map((ch, i) => html`
       <span class="tl" key=${i} style=${"--i:" + i}>${ch}</span>`)}</h1>
-    <p class="lead">Steine ziehen wie im Original — mit dem Zufallsverfahren des NES.</p>
-    <p class="label">Startlevel</p>
+    <p class="lead">${forever
+      ? "Endlos: Das Level bleibt, wo es beginnt. Es zählt, wie lange du durchhältst."
+      : "Steine ziehen wie im Original — mit dem Zufallsverfahren des NES."}</p>
+    <p class="label">Spielart</p>
+    <div class="modes">
+      <button class=${"lvl" + (forever ? "" : " on")}
+        onClick=${() => onMode(TetrisEngine.CLASSIC)}>Klassisch</button>
+      <button class=${"lvl" + (forever ? " on" : "")}
+        onClick=${() => onMode(TetrisEngine.FOREVER)}>∞ Endlos</button>
+    </div>
+    <p class="label">${forever ? "Festes Level" : "Startlevel"}</p>
     <div class="levels">
       ${levels.map((i) => html`
         <button key=${i} class=${"lvl" + (i === level ? " on" : "")}
@@ -130,12 +156,21 @@ function StartScreen({ level, onLevel, seed, onSeed, summary, onScores, onStart 
       <button class="dice" title="Neues Wort würfeln"
         onClick=${() => onSeed(TetrisSeed.randomWord())}>🎲</button>
     </div>
-    ${summary
-      ? html`<p class="hint seed-hint">Bestwert <b>${summary.best.score}</b> aus
-          ${summary.plays === 1 ? "1 Partie" : summary.plays + " Partien"}</p>`
-      : html`<p class="hint seed-hint">Dasselbe Wort spielt dieselbe Steinfolge.</p>`}
+    ${forever
+      ? (summary
+          ? html`<p class="hint seed-hint">Bestzeit auf Level ${level}
+              <b>${TetrisScores.formatDuration(summary.best.duration)}</b> aus
+              ${summary.plays === 1 ? "1 Partie" : summary.plays + " Partien"}</p>`
+          : html`<p class="hint seed-hint">Level ${level} — noch keine Partie durchgehalten.</p>`)
+      : (summary
+          ? html`<p class="hint seed-hint">Bestwert <b>${summary.best.score}</b> aus
+              ${summary.plays === 1 ? "1 Partie" : summary.plays + " Partien"}</p>`
+          : html`<p class="hint seed-hint">Dasselbe Wort spielt dieselbe Steinfolge.</p>`)}
     <button class="start" onClick=${onStart}>Spiel starten</button>
-    <button class="start small" onClick=${onScores}>Bestenliste</button>
-    <p class="hint">Enter startet · H zeigt die Bestenliste</p>
+    <div class="start-row">
+      <button class="start small" onClick=${onScores}>Bestenliste</button>
+      <button class="start small" onClick=${onSound}>${muted ? "🔇 Ton aus" : "🔊 Ton an"}</button>
+    </div>
+    <p class="hint">Enter startet · M wechselt die Spielart · H zeigt die Bestenliste · S schaltet den Ton</p>
   </div>`;
 }

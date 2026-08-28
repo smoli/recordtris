@@ -63,6 +63,17 @@
 .hint.tight { margin: 0; }
 .hint.warn { color: var(--c-L); }
 
+/* Die beiden Spielarten stehen nebeneinander und tragen denselben Knopf wie
+   die Level darunter. */
+.modes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  width: 100%;
+  max-width: clamp(200px, calc(var(--cell) * 7), 330px);
+  margin-bottom: 10px;
+}
+
 .levels {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -176,6 +187,14 @@
 .start.small {
   padding: clamp(6px, calc(var(--cell) * 0.2), 10px) clamp(14px, calc(var(--cell) * 0.5), 24px);
   font-size: clamp(12px, calc(var(--cell) * 0.38), 16px);
+}
+
+/* Zwei kleine Knöpfe nebeneinander — Bestenliste und Ton auf dem Startbild. */
+.start-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
 }
 
 .start:disabled, .rb:disabled {

@@ -11,6 +11,14 @@
 </head>
 <body>
 <div id="app"></div>
+
+<!-- Die vier Klänge des Spiels. Sie hängen nur hier, damit ihre Quelle im Markup
+     steht; abgespielt werden sie über sound.js. -->
+<audio id="snd-move" src="assets/move-and-turn.mp3" preload="auto"></audio>
+<audio id="snd-drop" src="assets/drop-sound.mp3" preload="auto"></audio>
+<audio id="snd-rows" src="assets/row-completed-sound.mp3" preload="auto"></audio>
+<audio id="snd-tetris" src="assets/tetris-sound.mp3" preload="auto"></audio>
+
 <script src="rng.js"></script>
 <script src="seed.js"></script>
 <script src="pieces.js"></script>
@@ -19,6 +27,7 @@
 <script src="archive.js"></script>
 <script src="analysis.js"></script>
 <script src="fxpaint.js"></script>
+<script src="sound.js"></script>
 <script src="fx.js"></script>
 <script src="gameui.js"></script>
 <script src="statsui.js"></script>

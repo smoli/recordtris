@@ -93,8 +93,13 @@ const TetrisFx = (function () {
       return Math.max(0, Math.min(1, g.dropTimer / iv));
     }
 
-    /* Die Meldungen der Regel: Drehung, Fallenlassen, Einrasten. */
+    /* Die Meldungen der Regel: Schieben, Drehung, Fallenlassen, Einrasten.
+       Sie sind zugleich die Anlässe der Geräusche — das Schieben ist der
+       einzige, den man nur hört und nicht sieht. */
     function handle(ev) {
+      if (ev.k === "move" || ev.k === "rot") TetrisSound.play("move");
+      else if (ev.k === "lock") TetrisSound.play("drop");
+      if (ev.k === "move") return;
       const hex = P.typeColor(ev.type);
       const cells = TetrisPieces.SHAPES[ev.type] ? TetrisPieces.SHAPES[ev.type][ev.rot] : null;
       if (!cells) return;
@@ -135,6 +140,7 @@ const TetrisFx = (function () {
        Druckwelle und ein Aufblitzen, das mit der Zahl der Reihen wächst. */
     function clearBurst(g, rows) {
       const n = rows.length;
+      TetrisSound.play(n >= 4 ? "tetris" : "rows");
       for (let i = 0; i < n; i++) {
         const r = rows[i];
         bars.push({ row: r, life: 420, max: 420 });

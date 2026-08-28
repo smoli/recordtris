@@ -134,7 +134,7 @@ body::after {
 /* Der Startbildschirm braucht mehr Platz als ein schmales Feld hergibt. */
 .stage.intro {
   min-width: 320px;
-  min-height: 430px;
+  min-height: 480px; /* Spielart, Level, Merkwort und die Knöpfe wollen Platz */
 }
 
 .board {
@@ -269,6 +269,15 @@ kbd {
   color: var(--glow);
   text-shadow: 0 0 16px color-mix(in srgb, var(--glow) 60%, transparent);
   overflow-wrap: anywhere;
+}
+
+/* Die Nebenzeile der Karten: im Endlosspiel die Punkte unter der Uhr und der
+   Vermerk, dass das Level dort stehen bleibt. */
+.mode-line {
+  margin: 3px 0 0;
+  font-size: clamp(10px, calc(var(--cell) * 0.34), 13px);
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Wer die Bewegung nicht mag, bekommt sie nicht. */

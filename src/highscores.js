@@ -1,8 +1,9 @@
 /* Die Bestenliste: gespielte Partien als JSON-Datei im Datenordner.
    Jede beendete Partie wird als ein Eintrag festgehalten — mit Zeitpunkt, Punkten,
-   Reihen, den Reihenschlägen 1 bis 4 und der Steinstatistik. Gruppiert wird nach dem
-   Merkwort, denn es bestimmt die Steinfolge: dieselbe Partie, mehrfach gespielt.
-   Dazu der Verweis auf die ganze Partie im Archiv (Feld `game`, siehe archive.js).
+   Reihen, den Reihenschlägen 1 bis 4 und der Steinstatistik. Klassische Partien
+   werden nach dem Merkwort gruppiert, denn es bestimmt die Steinfolge: dieselbe
+   Partie, mehrfach gespielt. Endlospartien nach ihrem festen Level, und sie zählen
+   nicht die Punkte, sondern die durchgehaltene Zeit.
    Fehlt der Datenordner, lebt die Liste nur in dieser Sitzung weiter. */
 const TetrisScores = (function () {
   const FILE = "tetris-highscores.json";
@@ -27,6 +28,8 @@ const TetrisScores = (function () {
     });
     return {
       seed: seed,
+      // Ältere Dateien kennen die Spielart noch nicht — sie sind klassisch.
+      mode: raw.mode === TetrisEngine.FOREVER ? TetrisEngine.FOREVER : TetrisEngine.CLASSIC,
       date: typeof raw.date === "string" ? raw.date : "",
       score: num(raw.score),
       lines: num(raw.lines),
@@ -35,9 +38,7 @@ const TetrisScores = (function () {
       duration: num(raw.duration),
       clears: clears,
       pieces: pieces,
-      resumed: !!raw.resumed,
-      // Dateiname der ganzen Partie im Archiv — "" bei Partien ohne Aufzeichnung.
-      game: typeof raw.game === "string" ? raw.game : ""
+      resumed: !!raw.resumed
     };
   }
 
@@ -52,6 +53,7 @@ const TetrisScores = (function () {
     TetrisPieces.TYPES.forEach((t) => { pieces[t] = state.stats[t] || 0; });
     return {
       seed: state.seedWord,
+      mode: state.mode === TetrisEngine.FOREVER ? TetrisEngine.FOREVER : TetrisEngine.CLASSIC,
       date: new Date().toISOString(),
       score: state.score,
       lines: state.lines,
@@ -60,8 +62,7 @@ const TetrisScores = (function () {
       duration: Math.round(state.elapsed),
       clears: state.clears.slice(1, 5),
       pieces: pieces,
-      resumed: !!state.resumed,
-      game: "" // wird nachgetragen, sobald das Band im Archiv liegt
+      resumed: !!state.resumed
     };
   }
 
@@ -109,10 +110,22 @@ const TetrisScores = (function () {
     return String(b.date).localeCompare(String(a.date));
   }
 
+  /* Im Endlosspiel zählt, wie lange man durchgehalten hat; bei gleicher Zeit
+     entscheiden die Punkte. */
+  function byDuration(a, b) {
+    if (b.duration !== a.duration) return b.duration - a.duration;
+    if (b.score !== a.score) return b.score - a.score;
+    return String(b.date).localeCompare(String(a.date));
+  }
+
+  function isForever(e) { return e.mode === TetrisEngine.FOREVER; }
+
   // Eine Zeile je Merkwort: der beste Wert, wie oft gespielt, wann zuletzt.
+  // Nur klassische Partien — im Endlosspiel ist nicht das Wort die Aufgabe.
   function bySeed(store) {
     const map = {};
     store.entries.forEach((e) => {
+      if (isForever(e)) return;
       const k = keyOf(e.seed);
       if (!k) return;
       if (!map[k]) map[k] = { key: k, seed: k, plays: 0, entries: [], best: null, last: "" };
@@ -132,9 +145,38 @@ const TetrisScores = (function () {
   function summaryFor(store, seed) {
     const k = keyOf(seed);
     if (!k) return null;
-    const list = store.entries.filter((e) => keyOf(e.seed) === k).sort(byScore);
+    const list = store.entries.filter((e) => !isForever(e) && keyOf(e.seed) === k).sort(byScore);
     if (!list.length) return null;
     return { key: k, seed: k, plays: list.length, entries: list, best: list[0] };
+  }
+
+  /* Das Endlosspiel hat je Level seine eigene Liste: Eine Zeile je gespieltem
+     Level, die längste Partie oben. Gruppiert wird nach dem festen Startlevel. */
+  function byLevel(store) {
+    const map = {};
+    store.entries.forEach((e) => {
+      if (!isForever(e)) return;
+      const k = String(e.startLevel);
+      if (!map[k]) map[k] = { key: k, level: e.startLevel, plays: 0, entries: [], best: null, last: "" };
+      const g = map[k];
+      g.plays++;
+      g.entries.push(e);
+      if (!g.best || byDuration(e, g.best) < 0) g.best = e;
+      if (String(e.date) > g.last) g.last = String(e.date);
+    });
+    const out = Object.keys(map).map((k) => map[k]);
+    out.forEach((g) => g.entries.sort(byDuration));
+    out.sort((a, b) => a.level - b.level); // nach Level geordnet, nicht nach Bestwert
+    return out;
+  }
+
+  // Alles, was über ein einzelnes Endlos-Level bekannt ist — oder null.
+  function foreverSummaryFor(store, level) {
+    const list = store.entries
+      .filter((e) => isForever(e) && e.startLevel === level)
+      .sort(byDuration);
+    if (!list.length) return null;
+    return { key: String(level), level: level, plays: list.length, entries: list, best: list[0] };
   }
 
   // "17.08.2026, 14:32" — leer, wenn der Zeitpunkt fehlt oder unlesbar ist.
@@ -162,7 +204,9 @@ const TetrisScores = (function () {
     add: add,
     save: save,
     bySeed: bySeed,
+    byLevel: byLevel,
     summaryFor: summaryFor,
+    foreverSummaryFor: foreverSummaryFor,
     formatDate: formatDate,
     formatDuration: formatDuration
   };

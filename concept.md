@@ -21,27 +21,24 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
   eines aussprechbaren Wortes.
 - `src/pieces.js` — die sieben Steine mit ihren vier Drehlagen, die Falltempo-Tabelle
   und die Punktetabelle.
-- `src/engine.js` — Spielfeld, Kollision, Einrasten, Reihenauflösung, Level.
+- `src/engine.js` — Spielfeld, Kollision, Einrasten, Reihenauflösung, Level, Spielart.
   Ein einfacher Zustandsobjekt-Baum, der von außen verändert wird; dazu das kurze
   Ereignisband `fx` für die Bildschau und die
   Momentaufnahme (`snapshot`) und ihre Umkehrung (`fromSnapshot`).
 - `src/replay.js` — das Band der Aufzeichnung und der Abspielkopf.
 - `src/highscores.js` — die Bestenliste: Lesen und Schreiben der Datei, das Bilden
-  der Einträge und ihre Gruppierung nach dem Merkwort.
-- `src/archive.js` — das Archiv: eine Datei je gespielter Partie, das Verdichten des
-  Bandes und der Weg zurück zu ihm.
-- `src/analysis.js` — was aus einem ganzen Band ablesbar ist: Tempo, Ausbeute, Stapel,
-  Züge, Durststrecken und die Kurven über die Spielzeit.
+  der Einträge und ihre Gruppierung — klassisch nach dem Merkwort, endlos nach dem
+  festen Level.
 - `src/gameui.js` — die Ansichten des Spiels: Leinwand des Feldes, Vorschau,
-  Statistik, Startbild und die Ansicht der laufenden Partie samt Einblendungen.
-- `src/replayui.js` — die Ansicht der Wiedergabe und ihre Bedienleiste.
+  Statistik, Startbild.
+- `src/replayui.js` — die Bedienleiste der Wiedergabe.
 - `src/scoresui.js` — die Ansicht der Bestenliste.
-- `src/statsui.js` — die Auswertung einer archivierten Partie: Zahlen und Kurven.
 - `src/app.js` — Zustand, Tastensteuerung, Bildtakt, Aufzeichnung, Eintrag ins Ergebnis.
 - `src/fxpaint.js` — der Pinselkasten: Farben mischen, Kachel, Schattenriss,
   Hintergrund und Saum zeichnen.
 - `src/fx.js` — die Bildschau des Feldes: eigener Bildtakt, Ereignisse, Teilchen,
-  Erschütterung, Nachglühen.
+  Erschütterung, Nachglühen. Von hier aus klingen auch die Geräusche.
+- `src/sound.js` — die vier Geräusche: Stimmen je Klang, Mindestabstand, Stummschalter.
 - `src/style.css` — Grundmaße, Farben, Feld und Seitenspalten.
 - `src/overlay.css` — Startbildschirm, Einblendungen, Knöpfe, Eingabefelder.
 - `src/screens.css` — Wiedergabe und Bestenliste.
@@ -69,22 +66,48 @@ Ziffern entfällt; "Grün!" und "gruen" sind also dieselbe Partie. Wer keines ei
 bekommt ein gewürfeltes aus Silben (Anlaut plus Kern, zwei oder drei Silben) — es
 steht danach im Feld und in der Seitenspalte, kann also nachträglich notiert werden.
 
-Der Rückweg zum Startbildschirm würfelt neu — aber nur nach einer durchgespielten
-Partie: Sie ist eine erledigte Aufgabe, die nächste soll eine neue sein; wer das Wort
-behalten will, findet es in der Bestenliste und startet es von dort. Ein Abbruch
-mitten im Spiel lässt das Wort dagegen stehen, denn wer aufgibt, versucht meist
-dieselbe Folge noch einmal.
-
 **Startlagen und Falltempo wie im Original.** Die Steine erscheinen mit der flachen
 Seite nach oben, mittig. Die Tabelle der Bilder pro Feld (48 bei Level 0 bis 1 ab
 Level 29) stammt aus dem Original, ebenso die Punkte 40/100/300/1200 mal (Level + 1).
 Ein Level dauert zehn Reihen; das Startlevel ist frei wählbar (0–9).
+
+**Zwei Spielarten, eine Regel.** Neben dem klassischen Spiel gibt es das Endlosspiel:
+Das Level bleibt dort, wo es begann — die Steine fallen von der ersten Sekunde an so
+schnell wie am Ende, und es zählt nicht der Punktestand, sondern die durchgehaltene
+Zeit. Umgesetzt ist das als ein einziges Feld `mode` im Spielstand ("classic" oder
+"forever"), das genau eine Zeile der Regel schaltet: das Hochzählen des Levels nach
+je zehn Reihen. Alles andere — Steinfolge, Punkte, Aufzeichnung, Wiedereinstieg —
+bleibt Wort für Wort dasselbe. Ein neuer Spielmodus, der nichts verzweigt außer dem,
+was er wirklich ändert.
+
+Das Merkwort behält seinen Sinn: Es bestimmt auch im Endlosspiel die Steinfolge, ist
+dort aber nicht die Aufgabe — die Aufgabe ist das Level. Weil die Zeit dort das
+Ergebnis ist, muss die Uhr auch dann weiterlaufen, wenn sich am Spielstand gerade
+nichts ändert; der Bildtakt stößt darum bei jeder neuen Sekunde ein Neuzeichnen an,
+ohne dafür ein Bild aufzuzeichnen. Da das Level nie steigt, bleibt im Endlosspiel
+auch die Farbe des Levels stehen und die Druckwelle des Levelaufstiegs aus — beides
+fällt von selbst weg, ohne Sonderfall in der Bildschau.
 
 **Bewusste Abweichungen.** Drehungen dürfen um bis zu zwei Spalten ausweichen, wenn
 sie sonst an einer Wand scheitern würden — das Original kennt das nicht, ohne es
 ist Spielen an der Wand aber unnötig zäh. Dazu kommen ein Schattenriss der
 Landestelle und die Leertaste zum sofortigen Fallenlassen (ein Punkt je Feld);
 beides gibt es im Original ebenfalls nicht.
+
+**Eine gehaltene Taste muss sich selbst bestätigen.** Das Wiederholen von Links,
+Rechts und Runter läuft im Bildtakt weiter, solange ein Eintrag dafür besteht; er
+entsteht beim Drücken und fällt beim Loslassen weg. Geht ein Loslassen verloren —
+das kann es, die App sieht nur die Ereignisse, die sie bekommt —, schiebt sich der
+Stein von allein weiter, und das Spiel ist verdorben. Darum altert jeder Eintrag:
+Jeder Tastendruck setzt sein Alter zurück, auch die Wiederholung des Betriebssystems,
+die eine gehaltene Taste laufend als weiteres Drücken meldet. Bleibt beides aus, gilt
+die Taste als losgelassen. Zwei Fristen, weil die Systemwiederholung immer nur der
+zuletzt gedrückten Taste gilt: Wer beim Schieben dreht, dessen Pfeiltaste hört auf zu
+wiederholen, obwohl sie gehalten bleibt. Nur solange eine Taste selbst wiederholt,
+zählt die kurze Frist; sonst die lange. Erkannt wird die Taste an ihrer Lage
+(`e.code`), nicht an ihrem Zeichen, damit das Loslassen auch dann passt, wenn eine
+Zusatztaste dazwischenkam. Dazu die groben Netze: Verlassen des Fensters, Verdecken
+des Fensters und die Pause geben alle Tasten frei.
 
 **Das Feld ist eine Leinwand, nicht ein Raster aus Kästchen.** Bis auf das Feld
 bleibt die ganze Oberfläche Preact und CSS; das Feld selbst zeichnet ein eigener
@@ -98,10 +121,28 @@ Bildschau liest ihn, verändert ihn nie.
 **Woher die Bildschau weiß, was geschehen ist.** Zweierlei. Was man dem Zustand
 ansieht — volle Reihen, Level, Punkte, Spielende —, erkennt sie am Vergleich mit
 dem vorigen Bild; das wirkt deshalb auch in der Wiedergabe, die ja nur
-Momentaufnahmen zeigt. Was man ihm nicht ansieht — Drehung, Fallenlassen,
+Momentaufnahmen zeigt. Was man ihm nicht ansieht — Schieben, Drehung, Fallenlassen,
 Einrasten —, meldet die Regel selbst über ein kurzes Ereignisband `state.fx`, das
 die Bildschau ausliest und leert. Das Band gehört nicht zum Spielstand und steht
-darum weder in der Momentaufnahme noch in der Bestenliste.
+darum weder in der Momentaufnahme noch in der Bestenliste. Das Schieben ist der
+einzige Eintrag ohne Bild: Es meldet sich allein, damit es zu hören ist.
+
+**Der Ton hängt an denselben Anlässen wie das Bild.** Die vier Klänge — Schieben und
+Drehen, Aufsetzen, volle Reihen, Tetris — liegen als `<audio>` im Dokument, weil nur
+im Markup der Pfad der Beigabe steht, den das Bündeln durch die eingebettete Fassung
+ersetzt; im JavaScript trüge er nicht. Ausgelöst werden sie an genau der Stelle, an
+der auch die Bildschau ihre Ereignisse bekommt (`fx.js`): So gibt es keine zweite
+Quelle der Wahrheit darüber, was geschehen ist, und kein Ereignis, das man sieht,
+aber nicht hört. Daraus folgt auch, was in der Wiedergabe klingt: die Reihen, die
+sich dem Zustand ansehen lassen — nicht das Schieben und Aufsetzen, die nur die
+laufende Regel meldet.
+
+Je Klang gibt es einen kleinen Stapel von Kopien des Elements, damit ein Ton den
+vorigen nicht abschneidet, und einen Mindestabstand, damit eine gehaltene Pfeiltaste
+keine Salve auslöst — das Schieben braucht beides, der Tetris keins von beidem. Ein
+Schalter (Taste `S`, dazu ein Knopf auf dem Startbildschirm) stellt alles still; er
+gehört keiner Ansicht und wird darum vor allen anderen Tasten abgefragt. Wie alles
+außer der Bestenliste lebt er nur für diese Sitzung.
 
 **Das Glühen entsteht durch ein zweites, grobes Bild.** Jede Szene wird zweimal
 gezeichnet: fein auf das sichtbare Bild und grob auf eine Fläche von einem Drittel
@@ -146,8 +187,7 @@ der innere Zustand des Zufallsregisters. Nicht die Tastendrücke werden aufgezei
 sondern die Zustände selbst. Das kostet mehr Platz, ist dafür aber unabhängig davon,
 ob ein Nachspielen exakt dieselben Zeitschritte träfe, und erlaubt das Rückwärtsgehen
 ohne Neuberechnung. Unveränderte Felder teilen sich dieselbe Zeichenkette, und
-wiederholte gleiche Bilder kommen gar nicht erst aufs Band. Am Ende der Partie wandert
-das Band ins Archiv — es lebt damit nicht mehr nur so lange wie sie.
+wiederholte gleiche Bilder kommen gar nicht erst aufs Band.
 
 **Wiedereinstieg statt bloßem Zusehen.** Weil die Momentaufnahme auch den Zufall
 enthält, ist jedes Bild der Wiedergabe ein vollwertiger Spielstand. "Hier
@@ -161,60 +201,38 @@ sich nicht fortsetzen.
 **Die Bestenliste gehört dem Merkwort.** Jede Partie, die mit "Game Over" endet, wird
 als ein Eintrag in `tetris-highscores.json` im Datenordner festgehalten: Zeitpunkt,
 Punkte, Reihen, Level und Startlevel, Spieldauer, wie oft eine, zwei, drei oder vier
-Reihen auf einmal fielen, wie oft jede Steinsorte kam — und der Name der Datei, in der
-das ganze Band dieser Partie liegt. Die Datei ist eine flache Liste aller Partien
-— nicht ein vorgerechnetes Ergebnis —, damit sich jede Sicht
+Reihen auf einmal fielen, und wie oft jede Steinsorte kam. Die Datei ist eine flache
+Liste aller Partien — nicht ein vorgerechnetes Ergebnis —, damit sich jede Sicht
 daraus ableiten lässt und nichts verloren geht. Aus der Liste heraus lässt sich das
 gewählte Wort sofort wieder spielen — die Bestenliste ist damit nicht nur Rückblick,
 sondern der kürzeste Weg zur nächsten Runde derselben Aufgabe. Das Startlevel bleibt
 dabei das auf dem Startbildschirm gewählte; die Enter-Abkürzung gilt nur, wenn keine
-laufende Partie daran hängt. An jeder einzelnen Partie stehen zwei weitere Wege: ihre
-Aufzeichnung ansehen und ihre Auswertung aufklappen. Beide brauchen das Band aus dem
-Archiv; Partien ohne Band — ältere oder solche, deren Ablegen misslang — sagen das an
-Ort und Stelle.
+laufende Partie daran hängt.
 
 Zusammengefasst wird beim Anzeigen: gruppiert nach dem normalisierten Merkwort, denn
 es bestimmt die Steinfolge, also die Aufgabe. Voreingestellt zeigt jede Zeile den
 besten Wert dieses Wortes und die Zahl der Partien; die einzelnen Partien mit allen
 Zahlen stehen daneben. Wer dieselbe Aufgabe zehnmal spielt, sieht daran seinen
-Fortschritt. Die Liste wird beim Öffnen der App gelesen und nach jeder beendeten
+Fortschritt.
+
+**Jede Spielart hat ihre eigene Liste.** Endlospartien sind mit klassischen nicht
+vergleichbar — ein Punktestand aus einer Partie, in der das Level nie steigt, sagt
+etwas anderes. Darum trägt jeder Eintrag seine Spielart, und die Ansicht hat zwei
+Register: Klassisch gruppiert nach dem Merkwort und ordnet nach Punkten, Endlos
+gruppiert nach dem festen Level und ordnet nach der durchgehaltenen Zeit. Es bleibt
+dabei eine einzige Datei mit einer einzigen flachen Liste; getrennt wird erst beim
+Anzeigen. Einträge aus früheren Fassungen der App haben kein Feld für die Spielart —
+sie gelten als klassisch, die alte Liste bleibt also unverändert lesbar. Die
+Endlosliste ist nach Level geordnet, nicht nach Bestwert: Level 9 zehn Sekunden
+durchzuhalten ist mehr wert als Level 0 zehn Minuten, und das kann nur der Anwender
+gewichten.
+
+Die Liste wird beim Öffnen der App gelesen und nach jeder beendeten
 Partie geschrieben; fehlt der Datenordner, lebt sie nur in dieser Sitzung weiter und
 sagt das auch. Eine Partie, die aus der Aufzeichnung heraus fortgesetzt wurde, trägt
 den Vermerk des Wiedereinstiegs — ihr Ergebnis ist mit einem durchgespielten nicht
 vergleichbar.
 
-**Das Archiv: nicht nur das Ergebnis, die Partie.** Eine Zahl allein sagt wenig über
-eine Partie. Darum wird jede beendete Partie ganz behalten: Ihr Band wandert als eigene
-Datei in den Ordner `tetris-games`, und der Eintrag der Bestenliste merkt sich nur den
-Dateinamen. Zwei Dateien statt einer, weil die Liste bei jeder Partie neu geschrieben
-wird, ein Band aber nur einmal — und weil eine Liste, die alle Bänder enthielte, beim
-Öffnen der App vollständig gelesen werden müsste. So wird ein Band erst gelesen, wenn
-es gebraucht wird.
-
-Abgelegt wird verdichtet: Die Feldbilder wiederholen sich über viele Bilder hinweg und
-stehen deshalb nur einmal in einem Verzeichnis, auf das jedes Bild mit einer Nummer
-zeigt; der Rest eines Bildes wird zu einer nackten Zahlenreihe in fester Ordnung, ohne
-Feldnamen. Aus dem Archiv entsteht wieder genau die Momentaufnahme, die die Regel
-selbst schreibt — eine alte Partie lässt sich deshalb nicht nur ansehen, sondern an
-jeder Stelle auch fortsetzen, mit demselben Wiedereinstieg wie in der laufenden Partie.
-Sie legt sich dabei über alles andere und lässt eine laufende Partie unangetastet; erst
-der Wiedereinstieg verwirft sie, und die Bedienleiste warnt dann davor. Misslingt das
-Ablegen oder fehlt der Datenordner, bleibt der Eintrag ohne Band; die Bestenliste sagt
-das an der betroffenen Partie.
-
-**Die Auswertung liest das Band, nicht die Endzahlen.** Was eine Partie ausmacht, steht
-nicht im Ergebnis: wie schnell gespielt wurde, wie hoch der Stapel stand, wie viele
-Löcher er trug, wie oft gedreht und geschoben wurde, wie lang die längste Durststrecke
-ohne lange Stange war. All das wird nicht mitgeschrieben, sondern beim Ansehen aus dem
-Band gerechnet — jede Frage, die später aufkommt, lässt sich damit auch an alten
-Partien noch stellen. Die Zahl der Züge entsteht aus dem Vergleich aufeinanderfolgender
-Bilder: Solange das Feldbild unverändert bleibt und dieselbe Steinsorte fällt, ist es
-derselbe Stein, und jede Änderung von Drehlage oder Spalte war ein Zug. Ein Einrasten
-ändert das Feldbild und beendet die Zählung von selbst. Die Kurven über die Spielzeit
-werden auf höchstens neunzig Stützstellen ausgedünnt, damit auch eine lange Partie
-sofort erscheint.
-
-**Sonst kein Speichern.** Außer der Bestenliste und dem Archiv hält das Spiel keinen
-Zustand über einen Neustart hinaus. Das Band der laufenden Partie lebt nur so lange
-wie sie und wird mit jedem neuen Spiel verworfen — aber erst, nachdem es im Archiv
-liegt.
+**Sonst kein Speichern.** Außer der Bestenliste hält das Spiel keinen Zustand über
+einen Neustart hinaus. Das Band der Aufzeichnung lebt nur so lange wie die Partie und
+wird mit jedem neuen Spiel verworfen.

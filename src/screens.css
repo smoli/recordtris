@@ -144,6 +144,13 @@
 
 .scores-head .rb.wideb { flex: none; padding: 8px 18px; }
 
+/* Die beiden Register der Liste: klassische Partien und Endlospartien. */
+.scores-tabs {
+  display: flex;
+  gap: 6px;
+}
+.scores-tabs .rb { padding: 8px 4px; }
+
 .scores-body {
   flex: 1;
   min-height: 0;

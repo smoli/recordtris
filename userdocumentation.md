@@ -9,9 +9,20 @@ ein Stein die Oberkante, ist das Spiel vorbei.
 
 ## Anfangen
 
-Beim Start wählst du das **Startlevel** (0 bis 9). Je höher, desto schneller fallen
-die Steine von Anfang an — und desto mehr Punkte bringt jede Reihe. Dann auf
-**Spiel starten** klicken oder Enter drücken.
+Beim Start wählst du zuerst die **Spielart**:
+
+- **Klassisch** — wie gewohnt: Alle zehn Reihen steigt das Level, die Steine fallen
+  immer schneller. Es zählen die **Punkte**.
+- **∞ Endlos** — das Level bleibt für die ganze Partie da, wo du es einstellst. Die
+  Steine fallen von der ersten Sekunde an so schnell wie im Endspurt, und schneller
+  werden sie nicht mehr. Es zählt allein, **wie lange du durchhältst**.
+
+Die Taste **M** wechselt zwischen den beiden.
+
+Darunter wählst du das **Level** (0 bis 9) — klassisch ist das das Startlevel, endlos
+das feste Tempo für die ganze Partie. Je höher, desto schneller fallen die Steine —
+und desto mehr Punkte bringt jede Reihe. Dann auf **Spiel starten** klicken oder Enter
+drücken.
 
 Darunter steht das **Merkwort**. Es bestimmt, welche Steine kommen: Mit demselben
 Wort fällt jedes Mal dieselbe Folge — gut, um eine Partie zu wiederholen, bis sie
@@ -22,12 +33,17 @@ sechzehn Zeichen. Groß- und Kleinschreibung macht keinen Unterschied.
 
 Während des Spiels steht das Wort rechts in der Spalte, nach dem Spielende auch in
 der Einblendung — du kannst es dir also noch notieren, wenn die Partie gut lief.
-**Noch einmal** und Enter starten dieselbe Folge erneut. Gehst du nach dem Spielende
-mit **Esc** zurück zum Startbildschirm, steht dort ein neu gewürfeltes Wort — die
-nächste Runde ist also von sich aus eine neue Aufgabe. Willst du das alte Wort doch
-noch, findest du es in der **Bestenliste** und kannst es von dort direkt spielen.
+**Noch einmal** und Enter starten dieselbe Folge erneut, in derselben Spielart.
 
-Wenn die Tasten nicht reagieren, einmal ins Spielfeld klicken.
+Im Endlosspiel gilt das Merkwort genauso — auch dort kommen mit demselben Wort
+dieselben Steine. Gewertet wird dort aber nicht das Wort, sondern das Level: Rechts
+oben steht statt der Punkte die **Zeit**, die du schon durchgehalten hast, und unter
+dem Merkwort der Vermerk, dass das Level stehen bleibt.
+
+Wenn die Tasten nicht reagieren, einmal ins Spielfeld klicken. Sollte ein Stein
+einmal von allein weiterwandern, obwohl du nichts drückst: Er hört nach einem
+Augenblick von selbst wieder auf — sofort beendet es, wenn du die betreffende
+Pfeiltaste kurz antippst oder zweimal **P** drückst (Pause und weiter).
 
 ## Tasten
 
@@ -39,20 +55,18 @@ Wenn die Tasten nicht reagieren, einmal ins Spielfeld klicken.
 | ↓ | einen Schritt tiefer, gibt einen Punkt |
 | Leertaste | sofort ganz nach unten fallen lassen |
 | P | Pause und weiter |
+| S | Ton an- und ausschalten (überall) |
 | R | in der Pause oder nach dem Spielende: Aufzeichnung ansehen |
+| M | auf dem Startbildschirm: Spielart wechseln (klassisch / endlos) |
 | H | Bestenliste öffnen (auf dem Startbildschirm, in der Pause, nach dem Spielende) |
-| Esc | Spiel beenden, zurück zum Startbildschirm (nach dem Spielende mit neuem Merkwort) |
+| Esc | Spiel beenden, zurück zum Startbildschirm |
 | Enter | nach dem Spielende noch einmal dieselbe Steinfolge; in der Bestenliste das gewählte Wort spielen |
 
 Der blasse Umriss unten im Feld zeigt, wo der Stein landen wird.
 
 ## Aufzeichnung und Wiedergabe
 
-Jede Partie wird von der ersten Sekunde an mitgeschrieben — und beim *Game Over*
-vollständig gespeichert. Du kannst sie deshalb nicht nur sofort, sondern auch Wochen
-später noch ansehen; wie, steht weiter unten unter *Alte Partien ansehen*.
-
-In der **Pause** und nach
+Jede Partie wird von der ersten Sekunde an mitgeschrieben. In der **Pause** und nach
 dem **Spielende** führt der Knopf *Aufzeichnung ansehen* (oder die Taste **R**) zur
 Wiedergabe. Das Feld zeigt dann nicht das Spiel, sondern die Aufnahme — Punkte,
 Level, Statistik und Vorschau laufen mit.
@@ -71,7 +85,8 @@ Unter dem Feld liegt die Bedienleiste:
 | B | rückwärts abspielen |
 | 1 … 5 | Tempo ¼×, ½×, 1×, 2×, 4× |
 | Enter | hier weiterspielen |
-| Esc | zurück zum Spiel — bei einer Partie aus dem Archiv zurück zur Bestenliste |
+| S | Ton an- und ausschalten |
+| Esc | zurück zum Spiel |
 
 ### Hier weiterspielen
 
@@ -91,6 +106,12 @@ Jede Partie, die mit *Game Over* endet, wird von selbst festgehalten — du muss
 tun. Der Knopf **Bestenliste** (oder die Taste **H**) zeigt sie: auf dem
 Startbildschirm, in der Pause und nach dem Spielende.
 
+Oben stehen zwei Register, denn die beiden Spielarten messen Verschiedenes und sind
+darum getrennt: **Klassisch · Punkte** und **∞ Endlos · Zeit**. Geöffnet ist zunächst
+das der Spielart, aus der du kommst.
+
+### Klassisch
+
 Links steht jedes Merkwort, das du je gespielt hast, mit seinem **besten Punktestand**
 und der Zahl der Partien; die stärksten Wörter stehen oben. Ein Klick auf ein Wort
 zeigt rechts alle Partien dazu, die beste zuerst, und zu jeder:
@@ -99,7 +120,6 @@ zeigt rechts alle Partien dazu, die beste zuerst, und zu jeder:
 - **Reihen**, **Level** (samt Startlevel) und die **Dauer**
 - wie oft du **Einfach**, **Doppel**, **Dreifach** und **Tetris** geräumt hast
 - wie oft jede **Steinsorte** kam
-- zwei Knöpfe: **▶ Aufzeichnung ansehen** und **▾ Auswertung**
 
 Weil dasselbe Merkwort immer dieselbe Steinfolge bringt, sind die Partien eines Wortes
 direkt vergleichbar: Spiel dieselbe Aufgabe mehrmals und sieh zu, wie der Bestwert
@@ -115,63 +135,40 @@ Startbildschirm gewählt hast. Öffnest du die Liste aus der **Pause** heraus, w
 Hinweis darauf hin, dass die laufende Partie dabei verworfen wird — dort gibt es
 absichtlich keine Enter-Abkürzung.
 
+### ∞ Endlos
+
+Hier steht links jedes **Level**, auf dem du endlos gespielt hast, mit deiner
+**Bestzeit** und der Zahl der Partien — nach Level geordnet, von 0 aufwärts. Ein Klick
+zeigt rechts alle Partien dieses Levels, die längste zuerst; obenan steht bei jeder die
+durchgehaltene Zeit, daneben Punkte, Reihen und das Merkwort, mit dem sie lief.
+
+Der Knopf **▶ Endlos auf Level N** startet sofort eine neue Endlospartie auf genau
+diesem Level; darunter steht, mit welchem Merkwort — das ist das, was auf dem
+Startbildschirm im Feld steht. Auch hier genügt **Enter**, solange keine laufende
+Partie daran hängt.
+
+Ein Vergleich über die Level hinweg ist absichtlich nicht vorgegeben: Zehn Sekunden
+auf Level 9 sind mehr wert als zehn Minuten auf Level 0 — was dir mehr gilt, weißt
+nur du.
+
 Eine Partie, die du über *Hier weiterspielen* aus der Aufzeichnung fortgesetzt hast,
 wird ebenfalls eingetragen, aber mit dem Vermerk **↻ mit Wiedereinstieg gespielt** —
 sie ist mit einer durchgespielten Partie nicht ganz vergleichbar.
 
-### Alte Partien ansehen
-
-Unter jeder einzelnen Partie stehen zwei Knöpfe:
-
-- **▶ Aufzeichnung ansehen** öffnet die Wiedergabe genau dieser Partie — mit derselben
-  Bedienleiste wie bei der frischen Aufzeichnung: Schieberegler, Einzelbild, vorwärts,
-  rückwärts, Tempo. Sie läuft gleich von Anfang an los. Oben im Feld steht *Archiv*
-  samt Merkwort, rechts in der Spalte die Partie, um die es geht. **Esc** bringt dich
-  zurück in die Liste.
-- **▾ Auswertung** klappt in der Karte die Zahlen hinter dem Ergebnis auf.
-
-Auch aus einer alten Partie heraus kannst du **Hier weiterspielen** — an jeder Stelle,
-an der das Spiel noch nicht verloren ist. Damit greifst du eine Partie von vor drei
-Wochen mitten im Zug wieder auf; sie zählt danach als Partie mit Wiedereinstieg.
-
-Bloßes Ansehen kostet dich nichts: Eine laufende Partie bleibt stehen, während du dir
-eine alte anschaust. Nur *Hier weiterspielen* verwirft sie — darauf weist die
-Bedienleiste dann auch hin.
-
-### Auswertung einer Partie
-
-**▾ Auswertung** rechnet aus dem gespeicherten Verlauf aus, was im Ergebnis nicht steht:
-
-- **Tempo** — Punkte, Steine und Reihen je Minute, und wie viele Sekunden ein Stein im
-  Schnitt brauchte.
-- **Ausbeute** — wie viele Steine du gesetzt hast, wie viele Reihen auf einen Stein
-  kamen, welcher Anteil deiner Reihen aus einem Tetris stammt, und wie lang die längste
-  Strecke ohne die lange Stange war.
-- **Stapel** — der höchste Stand des Stapels und sein Stand am Ende, dazu die Löcher:
-  leere Felder, über denen etwas liegt und die du erst wieder freiräumen musst.
-- **Züge** — wie oft du gedreht und verschoben hast und wie viele Züge damit auf einen
-  Stein kamen.
-
-Darunter zwei Kurven über die Spielzeit: **Punkte und Reihen**, und **der Stapel** mit
-seiner Höhe und der Zahl seiner Löcher. An ihnen sieht man meist gut, wo eine Partie
-gekippt ist — oft lange bevor sie zu Ende ging.
-
-Partien, die vor der Einführung des Archivs gespielt wurden, haben keinen gespeicherten
-Verlauf: Bei ihnen sind beide Knöpfe grau, und ein Hinweis sagt es.
-
 Die Liste liegt als Datei `tetris-highscores.json` im Datenordner und bleibt damit
 über das Schließen der App hinaus erhalten. Ist kein Datenordner eingerichtet, sagt
-die Liste das oben an — sie gilt dann nur für die laufende Sitzung. Die Partien selbst
-liegen als je eine Datei im Ordner `tetris-games` daneben; ohne Datenordner wird nichts
-davon gespeichert.
+die Liste das oben an — sie gilt dann nur für die laufende Sitzung.
 
 ## Anzeigen
 
 - **Punkte** — eine Reihe zählt 40, zwei 100, drei 300, vier auf einmal 1200 —
   jeweils mal Level plus eins. Jedes Feld, das du selbst tiefer schiebst oder
   fallen lässt, gibt einen Punkt dazu.
+- **Zeit** — nur im Endlosspiel: Sie steht dort an der Stelle der Punkte, weil sie
+  das Ergebnis ist; die Punkte stehen klein darunter.
 - **Level** und **Reihen** — alle zehn Reihen steigt das Level, die Steine fallen
-  schneller.
+  schneller. Im Endlosspiel bleibt das Level stehen — und damit auch die Farbe der
+  Oberfläche.
 - **Nächster** — der Stein, der als Nächstes kommt.
 - **Statistik** links — wie oft jede Steinsorte bisher kam.
 
@@ -196,6 +193,27 @@ Zierde:
 Die Wiedergabe zeigt dieselben Bilder; die Aufblitzer der Reihen, die Punktezahlen
 und die Levelwechsel laufen dort mit.
 
+## Ton
+
+Vier Geräusche begleiten das Spiel:
+
+- ein kurzer Klang beim **Verschieben und Drehen** — er bleibt aus, wenn der Stein an
+  einer Wand oder am Stapel hängen bleibt und sich nichts bewegt,
+- ein Aufschlag, wenn ein Stein **aufsetzt** — ob er von selbst gelandet ist oder mit
+  der Leertaste hinuntergeworfen wurde,
+- ein Klang, wenn **eine bis drei Reihen** fallen,
+- ein eigener, größerer für den **Tetris**: vier Reihen auf einmal.
+
+Die Taste **S** schaltet den Ton überall an und aus — im Spiel, in der Pause, in der
+Wiedergabe und in der Bestenliste. Auf dem Startbildschirm gibt es dafür auch den Knopf
+**🔊 Ton an**, und während des Spiels steht in der Tastenhilfe rechts, wie er gerade
+steht. Die Einstellung gilt für die laufende Sitzung; beim nächsten Öffnen ist der Ton
+wieder an.
+
+In der **Wiedergabe** klingen die Reihen mit, das Verschieben, Drehen und Aufsetzen
+dagegen nicht: Aufgezeichnet werden Bilder, keine Handgriffe. Beim Zurückspulen bleibt
+es ganz still.
+
 ## Das Besondere
 
 Welcher Stein kommt, wird nach dem Verfahren des Original-Tetris gewürfelt. Es
@@ -206,11 +224,10 @@ Unterschied schnell — und sollte flacher stapeln.
 
 ## Grenzen
 
-Aus der Bestenliste und dem Archiv lässt sich in der App nichts löschen; wer aufräumen
-will, muss die Dateien im Datenordner selbst anfassen. Eingetragen und aufgezeichnet
-wird eine Partie nur, wenn sie mit *Game Over* endet — brichst du mit Esc ab, zählt
-sie nicht, und ihr Verlauf ist verloren.
+Gespeichert werden nur die Ergebnisse der Partien, nicht die Partien selbst: Die
+Aufzeichnung gehört zur laufenden Partie und lässt sich nicht ablegen. Aus der
+Bestenliste lässt sich nichts löschen. Ein Ergebnis wird nur eingetragen, wenn die
+Partie mit *Game Over* endet — brichst du mit Esc ab, zählt sie nicht.
 
-Ein neues Spiel oder Esc zum Startbildschirm verwirft die laufende Aufzeichnung — eine
-durchgespielte Partie liegt da längst im Archiv. Weitergeben lässt sich außerdem das
-Merkwort — damit spielt jemand anderes dieselbe Steinfolge.
+Ein neues Spiel oder Esc zum Startbildschirm verwirft die Aufzeichnung. Weitergeben
+lässt sich aber das Merkwort — damit spielt jemand anderes dieselbe Steinfolge.
