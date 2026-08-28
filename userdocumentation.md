@@ -56,6 +56,7 @@ Pfeiltaste kurz antippst oder zweimal **P** drückst (Pause und weiter).
 | Leertaste | sofort ganz nach unten fallen lassen |
 | P | Pause und weiter |
 | S | Ton an- und ausschalten (überall) |
+| T | Ton-Diagnose auf- und zuklappen (überall) |
 | R | in der Pause oder nach dem Spielende: Aufzeichnung ansehen |
 | M | auf dem Startbildschirm: Spielart wechseln (klassisch / endlos) |
 | H | Bestenliste öffnen (auf dem Startbildschirm, in der Pause, nach dem Spielende) |
@@ -213,6 +214,27 @@ wieder an.
 In der **Wiedergabe** klingen die Reihen mit, das Verschieben, Drehen und Aufsetzen
 dagegen nicht: Aufgezeichnet werden Bilder, keine Handgriffe. Beim Zurückspulen bleibt
 es ganz still.
+
+### Wenn du nichts hörst
+
+Die Taste **T** öffnet die **Ton-Diagnose** — eine Tafel, die für jeden der vier
+Klänge zeigt, woran es liegt: ob seine Aufnahme überhaupt angekommen ist, ob sie sich
+öffnen ließ und auf welchem Weg er zuletzt geklungen hat. **T** schließt sie wieder;
+das Spiel läuft dabei weiter.
+
+Am wichtigsten sind die beiden Knöpfe in jeder Zeile:
+
+- **▶ Datei** spielt den Klang sofort, so wie ihn das Spiel spielt.
+- **▶ Ton** spielt statt der Aufnahme einen einfachen, selbst erzeugten Ton.
+
+Hörst du **▶ Ton**, aber nicht **▶ Datei**, dann kommen die Aufnahmen nicht durch —
+die Spalte **Vermerk** sagt dann, warum. Hörst du beides nicht, ist der Ton entweder
+abgeschaltet (**S**) oder der Lautsprecher stumm.
+
+Damit es in keinem Fall ganz still bleibt, greift das Spiel von sich aus auf diese
+einfachen Töne zurück, sobald eine Aufnahme nicht spielbar ist. Sie klingen deutlich
+schlichter als die Aufnahmen — wenn du sie hörst, weißt du also gleich, dass mit den
+Aufnahmen etwas nicht stimmt.
 
 ## Das Besondere
 

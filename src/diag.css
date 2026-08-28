@@ -1,0 +1,140 @@
+/* Die Ton-Diagnose (sounddiag.js). Sie liegt über allem, verdeckt aber nur ihren
+   eigenen Kasten — daneben bleibt das Spiel bedienbar. */
+
+.diag {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3vh 2vw;
+  z-index: 90;
+  pointer-events: none; /* nur der Kasten selbst fängt Klicks */
+}
+
+.diag-box {
+  pointer-events: auto;
+  max-width: min(1000px, 96vw);
+  width: 100%;
+  background: rgba(10, 14, 24, .96);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .6), 0 0 0 1px rgba(110, 168, 255, .12);
+  padding: 16px 18px 14px;
+  font-size: 13px;
+}
+
+.diag-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.diag-head h2 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.diag-ctx { color: var(--dim); }
+.diag-ctx b { color: var(--ink); font-weight: 600; }
+
+.diag-close {
+  margin-left: auto;
+  background: rgba(255, 255, 255, .07);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 5px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.diag-close:hover { background: rgba(255, 255, 255, .14); }
+
+.diag-warn {
+  margin: 0 0 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(255, 224, 64, .10);
+  border: 1px solid rgba(255, 224, 64, .28);
+  color: #ffe040;
+}
+
+.diag-box table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.diag-box th {
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 600;
+  padding: 0 8px 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.diag-box td {
+  padding: 7px 8px 7px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .05);
+  color: var(--dim);
+  vertical-align: middle;
+}
+
+.diag-box td.name { color: var(--ink); font-weight: 600; }
+.diag-box td.way { color: var(--ink); }
+.diag-box td.note { font-size: 12px; }
+.diag-box td b { color: #ff5c78; }
+
+.diag-box tr.ok td.way { color: #4dfb9a; }
+.diag-box tr.bad td.way { color: #ff5c78; }
+
+.diag-box td.act { white-space: nowrap; text-align: right; }
+
+.diag-box td.act button {
+  background: rgba(110, 168, 255, .13);
+  color: var(--ink);
+  border: 1px solid rgba(110, 168, 255, .32);
+  border-radius: 6px;
+  padding: 4px 9px;
+  margin-left: 5px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.diag-box td.act button:hover { background: rgba(110, 168, 255, .26); }
+
+.diag-hint {
+  margin: 10px 0 0;
+  color: var(--dim);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.diag-hint b { color: var(--ink); font-weight: 600; }
+.diag-hint kbd {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .06);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  text-align: center;
+}
+
+.diag-warn kbd {
+  padding: 1px 5px;
+  border: 1px solid rgba(255, 224, 64, .35);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 11px;
+}

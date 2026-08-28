@@ -38,11 +38,14 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
   Hintergrund und Saum zeichnen.
 - `src/fx.js` — die Bildschau des Feldes: eigener Bildtakt, Ereignisse, Teilchen,
   Erschütterung, Nachglühen. Von hier aus klingt der Reihenschlag.
-- `src/sound.js` — die vier Geräusche: entpackte Klangkörper in der Tonmaschine,
-  Mindestabstand, Rückfall über die Elemente, Stummschalter.
+- `src/sound.js` — die vier Geräusche: drei Wege zum Klang, Mindestabstand,
+  Stummschalter, Selbstauskunft für die Diagnose.
+- `src/sounddiag.js` — die Ton-Diagnose (Taste `T`): legt offen, was jeder Klang
+  gerade tut, und spielt ihn auf Knopfdruck.
 - `src/style.css` — Grundmaße, Farben, Feld und Seitenspalten.
 - `src/overlay.css` — Startbildschirm, Einblendungen, Knöpfe, Eingabefelder.
 - `src/screens.css` — Wiedergabe und Bestenliste.
+- `src/diag.css` — die Ton-Diagnose.
 
 Der Spielzustand liegt bewusst nicht in einem Preact-State, sondern in einer Ref:
 Der Bildtakt (`requestAnimationFrame`) schreibt ihn fort und stößt ein Neuzeichnen
@@ -131,12 +134,36 @@ einzige Eintrag ohne Bild: Es meldet sich allein, damit es zu hören ist.
 **Der Ton klingt im Augenblick des Zuges.** Die vier Klänge — Schieben und
 Drehen, Aufsetzen, volle Reihen, Tetris — liegen als `<audio>` im Dokument, weil nur
 im Markup der Pfad der Beigabe steht, den das Bündeln durch die eingebettete Fassung
-ersetzt; im JavaScript trüge er nicht. Gespielt werden sie aber nicht über diese
-Elemente, sondern über die Tonmaschine des Browsers: Aus der eingebetteten
-`data:`-Quelle entstehen beim Laden entpackte Klangkörper (`atob` und
-`decodeAudioData`, ohne Netzzugriff). Ein Anschlag ist danach nur das Starten
-einer Stimme — kein Anlauf, kein Abschneiden. Vorlaufende Stille im Klang wird
-übersprungen: Genau sie hört man sonst als Verzögerung.
+ersetzt; im JavaScript trüge er nicht.
+
+**Ein Klang geht drei Wege, bis einer trägt.** Weil sich von außen nicht feststellen
+lässt, welcher Weg in einem gegebenen Fensterrahmen wirklich zum Lautsprecher führt,
+verlässt sich `sound.js` auf keinen einzigen. Jeder Anschlag versucht der Reihe nach:
+
+1. **das `<audio>`-Element** — genauer eine von mehreren Kopien, damit ein Ton den
+   vorigen nicht abschneidet. Der verlässlichste Weg, darum der erste;
+2. **den entpackten Klangkörper in der Tonmaschine** — aus der eingebetteten
+   `data:`-Quelle entstehen beim Laden Klangkörper (`atob` und `decodeAudioData`,
+   ohne Netzzugriff). Vorlaufende Stille im Klang wird beim Starten übersprungen;
+3. **einen kurzen selbst erzeugten Ton** aus Oszillatoren der Tonmaschine.
+
+Weist ein Weg ab, übernimmt noch derselbe Anschlag den nächsten — auch dann, wenn das
+Element erst nachträglich ablehnt (`play()` gibt ein Versprechen). Ein Element, das
+einen Fehler meldet oder keine spielbare Quelle hat, wird gar nicht erst gefragt. Der
+dritte Weg ist der Notnagel: Er ersetzt die Aufnahme nicht, er verhindert nur, dass
+das Spiel stumm bleibt, wenn die Beigaben nicht ankommen. Jeder Klang bekommt seine
+Bank auch dann, wenn sein Element beim Laden noch fehlt — sonst gäbe es später nichts
+zu spielen; nach dem Element wird bei jedem Anschlag erneut gesucht.
+
+**Der Ton kann sich selbst erklären.** `sound.js` gibt über `report()` Auskunft: je
+Klang, ob sein Element im Dokument steht, ob seine Quelle eingebettet wurde, was das
+Entpacken ergab, welcher Weg zuletzt getragen hat und woran der letzte Versuch
+scheiterte. Die Ton-Diagnose (`sounddiag.js`, Taste `T`) zeigt das und spielt jeden
+Klang auf Knopfdruck — einmal die ganze Kette, einmal nur den eigenen Ton. Der Klick
+ist dabei die stärkste Zustimmung des Anwenders, die der Browser kennt: Was auf
+Knopfdruck stumm bleibt, bleibt nicht wegen fehlender Zustimmung stumm. Sie hängt an
+einer eigenen Preact-Wurzel (`#diag`) und liegt damit über jeder Ansicht, ohne dass
+eine davon von ihr wissen muss. `Esc` gehört weiter dem Spiel; nur `T` schließt sie.
 
 **Ausgelöst wird jeder Klang dort, wo sein Anlass entsteht.** Was die Regel meldet —
 Schieben, Drehen, Aufsetzen —, klingt in `engine.js`, noch im selben Tastendruck: Das
@@ -145,9 +172,10 @@ kommt, klingt nach dem Zug statt mit ihm. Volle Reihen sieht man dem Zustand an;
 klingen in der Bildschau (`fx.js`) und sind darum das Einzige, was auch in der
 Wiedergabe zu hören ist. Ein Mindestabstand je Klang hält die Salve einer gehaltenen
 Taste ab — er liegt unter der Wiederholrate, damit kein wirklicher Zug stumm bleibt.
-Der Stapel von Kopien der Elemente bleibt der Rückfall, falls das Entpacken nicht
-gelingt. Die Tonmaschine erwacht mit dem ersten Tastendruck oder Klick — vorher darf
-ohne Zutun des Anwenders nichts klingen; entpackt wird trotzdem schon beim Laden.
+Die Tonmaschine erwacht mit dem ersten Tastendruck oder Klick — vorher darf ohne
+Zutun des Anwenders nichts klingen; entpackt wird trotzdem schon beim Laden. Die
+beiden Wege, die auf sie bauen, kommen in einem Rahmen, der sie nie erwachen lässt,
+nie zum Zug — das Element aber schon. Darum steht es an erster Stelle.
 Ein Schalter (Taste `S`, dazu ein Knopf auf dem Startbildschirm) stellt alles still; er
 gehört keiner Ansicht und wird darum vor allen anderen Tasten abgefragt. Wie alles
 außer der Bestenliste lebt er nur für diese Sitzung.

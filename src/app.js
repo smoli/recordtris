@@ -515,7 +515,7 @@ function App() {
         <p><kbd>↓</kbd> ein Feld tiefer</p>
         <p><kbd>Leer</kbd> fallen lassen</p>
         <p><kbd>P</kbd> Pause · <kbd>Esc</kbd> Ende</p>
-        <p><kbd>S</kbd> Ton ${muted ? "aus" : "an"}</p>
+        <p><kbd>S</kbd> Ton ${muted ? "aus" : "an"} · <kbd>T</kbd> Ton prüfen</p>
         <p><kbd>R</kbd> Aufzeichnung (in Pause)</p>
         <p><kbd>H</kbd> Bestenliste (in Pause)</p>
       </div>

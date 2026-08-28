@@ -8,9 +8,12 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="overlay.css">
 <link rel="stylesheet" href="screens.css">
+<link rel="stylesheet" href="diag.css">
 </head>
 <body>
 <div id="app"></div>
+<!-- Die Ton-Diagnose (Taste T) hängt an einer eigenen Wurzel und liegt damit über
+     jeder Ansicht. --><div id="diag"></div>
 
 <!-- Die vier Klänge des Spiels. Sie hängen nur hier, damit ihre Quelle im Markup
      steht; abgespielt werden sie über sound.js. -->
@@ -35,5 +38,6 @@
 <script src="replay.js"></script>
 <script src="replayui.js"></script>
 <script src="app.js"></script>
+<script src="sounddiag.js"></script>
 </body>
 </html>

@@ -171,6 +171,7 @@ function StartScreen({ level, onLevel, mode, onMode, seed, onSeed, summary, onSc
       <button class="start small" onClick=${onScores}>Bestenliste</button>
       <button class="start small" onClick=${onSound}>${muted ? "🔇 Ton aus" : "🔊 Ton an"}</button>
     </div>
-    <p class="hint">Enter startet · M wechselt die Spielart · H zeigt die Bestenliste · S schaltet den Ton</p>
+    <p class="hint">Enter startet · M wechselt die Spielart · H zeigt die Bestenliste
+      · S schaltet den Ton · T prüft ihn</p>
   </div>`;
 }

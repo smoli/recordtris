@@ -936,16 +936,159 @@ kbd {
   .seed-col { width: 100%; max-height: 32%; }
 }
 </style>
+<style>/* Die Ton-Diagnose (sounddiag.js). Sie liegt über allem, verdeckt aber nur ihren
+   eigenen Kasten — daneben bleibt das Spiel bedienbar. */
+
+.diag {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3vh 2vw;
+  z-index: 90;
+  pointer-events: none; /* nur der Kasten selbst fängt Klicks */
+}
+
+.diag-box {
+  pointer-events: auto;
+  max-width: min(1000px, 96vw);
+  width: 100%;
+  background: rgba(10, 14, 24, .96);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .6), 0 0 0 1px rgba(110, 168, 255, .12);
+  padding: 16px 18px 14px;
+  font-size: 13px;
+}
+
+.diag-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.diag-head h2 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.diag-ctx { color: var(--dim); }
+.diag-ctx b { color: var(--ink); font-weight: 600; }
+
+.diag-close {
+  margin-left: auto;
+  background: rgba(255, 255, 255, .07);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 5px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.diag-close:hover { background: rgba(255, 255, 255, .14); }
+
+.diag-warn {
+  margin: 0 0 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(255, 224, 64, .10);
+  border: 1px solid rgba(255, 224, 64, .28);
+  color: #ffe040;
+}
+
+.diag-box table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.diag-box th {
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 600;
+  padding: 0 8px 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.diag-box td {
+  padding: 7px 8px 7px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .05);
+  color: var(--dim);
+  vertical-align: middle;
+}
+
+.diag-box td.name { color: var(--ink); font-weight: 600; }
+.diag-box td.way { color: var(--ink); }
+.diag-box td.note { font-size: 12px; }
+.diag-box td b { color: #ff5c78; }
+
+.diag-box tr.ok td.way { color: #4dfb9a; }
+.diag-box tr.bad td.way { color: #ff5c78; }
+
+.diag-box td.act { white-space: nowrap; text-align: right; }
+
+.diag-box td.act button {
+  background: rgba(110, 168, 255, .13);
+  color: var(--ink);
+  border: 1px solid rgba(110, 168, 255, .32);
+  border-radius: 6px;
+  padding: 4px 9px;
+  margin-left: 5px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.diag-box td.act button:hover { background: rgba(110, 168, 255, .26); }
+
+.diag-hint {
+  margin: 10px 0 0;
+  color: var(--dim);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.diag-hint b { color: var(--ink); font-weight: 600; }
+.diag-hint kbd {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .06);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  text-align: center;
+}
+
+.diag-warn kbd {
+  padding: 1px 5px;
+  border: 1px solid rgba(255, 224, 64, .35);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 11px;
+}
+</style>
 </head>
-<body data-morphos-src="src/index.html:12:1">
-<div data-morphos-src="src/index.html:13:1" id="app"></div>
+<body data-morphos-src="src/index.html:13:1">
+<div data-morphos-src="src/index.html:14:1" id="app"></div>
+<!-- Die Ton-Diagnose (Taste T) hängt an einer eigenen Wurzel und liegt damit über
+     jeder Ansicht. --><div data-morphos-src="src/index.html:16:24" id="diag"></div>
 
 <!-- Die vier Klänge des Spiels. Sie hängen nur hier, damit ihre Quelle im Markup
      steht; abgespielt werden sie über sound.js. -->
-<audio data-morphos-src="src/index.html:17:1" id="snd-move" src="assets/move-and-turn.mp3" preload="auto"></audio>
-<audio data-morphos-src="src/index.html:18:1" id="snd-drop" src="assets/drop-sound.mp3" preload="auto"></audio>
-<audio data-morphos-src="src/index.html:19:1" id="snd-rows" src="assets/row-completed-sound.mp3" preload="auto"></audio>
-<audio data-morphos-src="src/index.html:20:1" id="snd-tetris" src="assets/tetris-sound.mp3" preload="auto"></audio>
+<audio data-morphos-src="src/index.html:20:1" id="snd-move" src="assets/move-and-turn.mp3" preload="auto"></audio>
+<audio data-morphos-src="src/index.html:21:1" id="snd-drop" src="assets/drop-sound.mp3" preload="auto"></audio>
+<audio data-morphos-src="src/index.html:22:1" id="snd-rows" src="assets/row-completed-sound.mp3" preload="auto"></audio>
+<audio data-morphos-src="src/index.html:23:1" id="snd-tetris" src="assets/tetris-sound.mp3" preload="auto"></audio>
 
 <script>/* Der Zufall des originalen NES-Tetris.
    Er besteht aus zwei Teilen:
@@ -2176,51 +2319,60 @@ const TetrisPaint = (function () {
   };
 })();
 </script>
-<script>/* Die Geräusche des Spiels. Die vier Klänge liegen als <audio> im Dokument, weil
-   nur im Markup der Pfad der Beigabe steht, den das Bündeln durch die eingebettete
-   Fassung ersetzt.
+<script>/* Die Geräusche des Spiels.
 
-   Gespielt wird bevorzugt nicht über diese Elemente, sondern über die Tonmaschine
-   des Browsers: Die eingebettete Fassung ist eine data:-Quelle, aus ihr entstehen
-   beim Laden entpackte Klangkörper. Ein Anschlag ist danach nur noch das Starten
-   einer Stimme — ohne Anlauf, ohne Abschneiden, ohne Stapel von Kopien.
+   Die vier Klänge liegen als <audio> im Dokument, weil nur im Markup der Pfad der
+   Beigabe steht, den das Bündeln durch die eingebettete Fassung ersetzt.
 
-   Bevorzugt heißt: nur solange die Tonmaschine nachweislich läuft. Sie schläft, bis
-   der Anwender etwas tut, und in manchem Fensterrahmen darf sie überhaupt nie
-   erwachen — dann käme aus ihr nichts, und alles bliebe still. Deshalb entscheidet
-   jeder Anschlag neu: läuft sie und ist der Klang entpackt, klingt er über sie;
-   sonst über das Element. Weist auch das Element ab, springt die Tonmaschine ein.
-   Beide Wege fangen einander auf.
+   Gehört wird über drei Wege. Jeder Anschlag geht den ersten, der wirklich trägt:
+     1. das <audio>-Element (bzw. eine seiner Kopien) — der Weg, der immer ging;
+     2. der entpackte Klangkörper in der Tonmaschine — falls das Element abweist;
+     3. ein kurzer selbst erzeugter Ton — falls es die Aufnahme gar nicht gibt.
+   Weist ein Weg ab, übernimmt der nächste. Der dritte ist der Notnagel: Er
+   ersetzt die Aufnahme nicht, er verhindert nur, dass das Spiel stumm bleibt.
 
-   Vorlaufende Stille im Klang wird übersprungen: Manche Aufnahme beginnt erst ein
-   paar Millisekunden nach ihrem Anfang zu klingen, und genau das hört man als
-   Verzögerung.
+   Warum in dieser Reihenfolge: Die Tonmaschine schläft, bis der Anwender etwas
+   tut, und in manchem Fensterrahmen darf sie nie erwachen. Das Element ist der
+   verlässlichere Weg und kommt deshalb zuerst.
 
-   Ausgelöst werden die Klänge am Ort des Anlasses: was die Regel meldet, klingt in
-   der Regel (engine.js) — noch im selben Tastendruck. Was man erst dem Zustand
-   ansieht (volle Reihen), klingt in der Bildschau (fx.js). */
+   Vorlaufende Stille im Klangkörper wird übersprungen: Manche Aufnahme beginnt
+   erst ein paar Millisekunden nach ihrem Anfang zu klingen, und genau das hört
+   man als Verzögerung.
+
+   Was der Ton gerade tut, lässt sich ansehen: report() legt für jeden Klang
+   offen, was gefunden, entpackt und zuletzt geschehen ist — die Ton-Diagnose
+   (sounddiag.js) zeigt es, Taste T.
+
+   Ausgelöst werden die Klänge am Ort des Anlasses: was die Regel meldet, klingt
+   in der Regel (engine.js) — noch im selben Tastendruck. Was man erst dem
+   Zustand ansieht (volle Reihen), klingt in der Bildschau (fx.js). */
 const TetrisSound = (function () {
   /* Je Klang: das Element im Dokument, die Lautstärke, der Mindestabstand zweier
-     Anschläge und die Zahl der Stimmen des Rückfalls. Der Mindestabstand hält nur
-     Salven ab; er liegt unter der Wiederholrate der gehaltenen Taste (50 ms),
-     damit jeder wirkliche Zug seinen Ton bekommt. */
+     Anschläge, die Zahl der Stimmen und das Rezept des eigenen Tons. Der
+     Mindestabstand hält nur Salven ab; er liegt unter der Wiederholrate der
+     gehaltenen Taste (50 ms), damit jeder wirkliche Zug seinen Ton bekommt. */
   const DEFS = {
-    move:   { id: "snd-move",   vol: 0.40, gap: 25,  voices: 4 }, // verschieben und drehen
-    drop:   { id: "snd-drop",   vol: 0.60, gap: 60,  voices: 3 }, // der Stein setzt auf
-    rows:   { id: "snd-rows",   vol: 0.70, gap: 90,  voices: 2 }, // eine bis drei Reihen
-    tetris: { id: "snd-tetris", vol: 0.85, gap: 250, voices: 1 }  // vier Reihen auf einmal
+    move: { id: "snd-move", vol: 0.40, gap: 25, voices: 4, // verschieben und drehen
+            tone: { freqs: [660], to: 430, dur: 0.05, vol: 0.13, wave: "square" } },
+    drop: { id: "snd-drop", vol: 0.60, gap: 60, voices: 3, // der Stein setzt auf
+            tone: { freqs: [190], to: 60, dur: 0.15, vol: 0.30, wave: "triangle" } },
+    rows: { id: "snd-rows", vol: 0.70, gap: 90, voices: 2, // eine bis drei Reihen
+            tone: { freqs: [520], to: 1040, dur: 0.22, vol: 0.24, wave: "triangle" } },
+    tetris: { id: "snd-tetris", vol: 0.85, gap: 250, voices: 1, // vier auf einmal
+            tone: { freqs: [523, 659, 784, 1047], dur: 0.40, vol: 0.20,
+                    wave: "triangle", step: 0.06 } }
   };
 
-  const banks = {};
-  let built = false;
-  let muted = false;
+  const WAYS = ["element", "buffer", "tone"];
+  const NO_SOURCE = 3; // networkState: es gibt keine spielbare Quelle
 
-  let ctx = null;        // die Tonmaschine
-  let master = null;     // der gemeinsame Regler — über ihn läuft die Stummschaltung
-  let live = [];         // was gerade klingt; nur damit Stummschalten es abbrechen kann
-  let dead = false;      // die Tonmaschine läuft zwar, bringt aber nichts hervor
-  let probeT = 0;        // Wanduhr des letzten Anschlags über die Tonmaschine
-  let probeC = 0;        // ihr Uhrenstand dabei
+  const banks = {};
+  let muted = false;
+  let watching = false;
+
+  let ctx = null;    // die Tonmaschine
+  let master = null; // der gemeinsame Regler — über ihn läuft die Stummschaltung
+  let live = [];     // was gerade über sie klingt; damit Stummschalten es abbricht
 
   function now() {
     return typeof performance !== "undefined" && performance.now
@@ -2229,25 +2381,23 @@ const TetrisSound = (function () {
 
   // --- Die Tonmaschine ---
 
-  function audioCtor() {
-    return window.AudioContext || window.webkitAudioContext || null;
-  }
-
   /* Sie entsteht schon beim Laden. Ohne Zutun des Anwenders bleibt sie angehalten —
      entpacken darf sie trotzdem, und das ist der Sinn: Beim ersten Tastendruck ist
      alles fertig. */
   function openCtx() {
     if (ctx) return ctx;
-    const Ctor = audioCtor();
+    const Ctor = window.AudioContext || window.webkitAudioContext || null;
     if (!Ctor) return null;
     try {
       ctx = new Ctor({ latencyHint: "interactive" });
     } catch (e) {
       try { ctx = new Ctor(); } catch (e2) { return null; }
     }
-    master = ctx.createGain();
-    master.gain.value = 1;
-    master.connect(ctx.destination);
+    try {
+      master = ctx.createGain();
+      master.gain.value = 1;
+      master.connect(ctx.destination);
+    } catch (e) { master = null; }
     return ctx;
   }
 
@@ -2256,14 +2406,18 @@ const TetrisSound = (function () {
   function unlock() {
     if (!ctx) return;
     if (ctx.state === "running") { dropWatchers(); return; }
-    const p = ctx.resume();
+    let p;
+    try { p = ctx.resume(); } catch (e) { return; }
     if (p && p.then) p.then(function () { dropWatchers(); }, function () {});
   }
   function dropWatchers() {
+    watching = false;
     window.removeEventListener("keydown", unlock, true);
     window.removeEventListener("pointerdown", unlock, true);
   }
   function addWatchers() {
+    if (watching) return;
+    watching = true;
     window.addEventListener("keydown", unlock, true);
     window.addEventListener("pointerdown", unlock, true);
   }
@@ -2298,98 +2452,173 @@ const TetrisSound = (function () {
   }
 
   function decodeInto(bank, src) {
+    if (!ctx || !ctx.decodeAudioData) { bank.dec = "keine Tonmaschine"; return; }
     const buffer = bytesOf(src);
-    if (!buffer || !ctx || !ctx.decodeAudioData) return;
+    if (!buffer) {
+      bank.dec = !src ? "keine Quelle"
+        : src.slice(0, 5) === "data:" ? "nicht base64" : "nicht eingebettet";
+      return;
+    }
+    bank.dec = "läuft";
     // Die alte Form gibt kein Versprechen zurück, sondern ruft zurück.
     let p;
-    try { p = ctx.decodeAudioData(buffer, ok, fail); } catch (e) { return; }
+    try { p = ctx.decodeAudioData(buffer, ok, fail); }
+    catch (e) { bank.dec = "wirft " + (e && e.name ? e.name : "?"); return; }
     if (p && p.then) p.then(ok, fail);
     function ok(buf) {
       if (!buf) return;
       bank.buf = buf;
       bank.skip = firstSound(buf);
+      bank.dec = "entpackt";
     }
-    function fail() { /* dann bleibt der Rückfall über das Element */ }
+    function fail() { bank.dec = "misslungen"; }
   }
 
-  // --- Die Stimmen ---
+  // --- Der Aufbau ---
 
-  /* Der Rückfall: Kopien des Elements, damit ein Ton den vorigen nicht abschneidet.
-     Sie tragen die Quelle des Vorbilds mit sich und müssen nicht im Dokument hängen,
-     um zu klingen. */
+  /* Jeder Klang bekommt seine Bank gleich beim Laden — auch dann, wenn sein
+     Element noch fehlt. Denn ohne Bank gäbe es nichts zu spielen, und dann wäre
+     es für immer still; mit Bank bleibt wenigstens der eigene Ton.
+
+     Die Stimmen sind Kopien des Elements, damit ein Ton den vorigen nicht
+     abschneidet. Sie tragen die Quelle des Vorbilds mit sich und müssen nicht im
+     Dokument hängen, um zu klingen. Fehlte das Element beim Laden noch, wird bei
+     jedem Anschlag erneut nach ihm gesucht. */
   function build() {
-    if (built) return;
     openCtx();
-    let found = 0;
     for (const key in DEFS) {
       const def = DEFS[key];
+      let bank = banks[key];
+      if (!bank) {
+        bank = banks[key] = { key: key, def: def, voices: [], at: 0,
+                              last: -1e9, buf: null, skip: 0,
+                              way: "noch nichts", note: "", dec: "—" };
+      }
+      if (bank.voices.length) continue;
       const el = document.getElementById(def.id);
-      if (!el) continue;
-      found++;
-      const voices = [];
+      if (!el) { bank.note = "Element " + def.id + " fehlt im Dokument"; continue; }
       for (let i = 0; i < def.voices; i++) {
         const v = i === 0 ? el : el.cloneNode(true);
         v.preload = "auto";
         v.volume = def.vol;
         if (v !== el) v.load(); // die Kopie soll bereitstehen, bevor sie gebraucht wird
-        voices.push(v);
+        bank.voices.push(v);
       }
-      const bank = { voices: voices, at: 0, last: -1e9, gap: def.gap,
-                     vol: def.vol, buf: null, skip: 0 };
-      banks[key] = bank;
-      if (ctx) decodeInto(bank, el.getAttribute("src") || el.src);
+      bank.note = "";
+      decodeInto(bank, el.getAttribute("src") || el.src);
     }
-    /* Fertig ist der Aufbau erst, wenn die Elemente wirklich im Dokument standen.
-       Stand er zu früh — noch bevor sie da waren —, wird beim nächsten Anschlag
-       noch einmal gesucht, statt für immer stumm zu bleiben. */
-    if (!found) return;
-    built = true;
     if (ctx) addWatchers();
+  }
+
+  // --- Die drei Wege ---
+
+  /* Ein Element, dessen Quelle nicht spielbar ist, wird nicht erst gefragt: Es
+     meldet einen Fehler oder hat gar keine Quelle. Dann geht es gleich weiter. */
+  function voiceOf(bank) {
+    if (!bank.voices.length) return null;
+    const v = bank.voices[bank.at];
+    bank.at = (bank.at + 1) % bank.voices.length;
+    if (v.error) {
+      bank.note = "Quelle nicht spielbar (Fehler " + v.error.code + ")";
+      return null;
+    }
+    if (v.networkState === NO_SOURCE) {
+      bank.note = "keine spielbare Quelle";
+      return null;
+    }
+    return v;
+  }
+
+  function playElement(bank, i) {
+    const v = voiceOf(bank);
+    if (!v) return false;
+    try { v.currentTime = 0; } catch (e) { /* noch nicht bereit — dann von vorn */ }
+    let p;
+    try { p = v.play(); }
+    catch (e) { bank.note = "play() wirft " + (e && e.name ? e.name : "?"); return false; }
+    bank.way = "Element";
+    bank.note = "";
+    // Weist es erst nachträglich ab, übernimmt noch derselbe Anschlag den nächsten Weg.
+    if (p && p.catch) p.catch(function (e) {
+      bank.note = "play() abgewiesen: " + (e && e.name ? e.name : "?");
+      fire(bank, i + 1);
+    });
+    return true;
   }
 
   // Über die Tonmaschine: eine neue Stimme je Anschlag, sofort und ohne Anlauf.
   function playBuffered(bank) {
-    const src = ctx.createBufferSource();
-    src.buffer = bank.buf;
-    const gain = ctx.createGain();
-    gain.gain.value = bank.vol;
-    src.connect(gain);
-    gain.connect(master);
+    if (!ctx || !master || !bank.buf || ctx.state !== "running") return false;
+    let src;
+    try {
+      src = ctx.createBufferSource();
+      src.buffer = bank.buf;
+      const gain = ctx.createGain();
+      gain.gain.value = bank.def.vol;
+      src.connect(gain);
+      gain.connect(master);
+    } catch (e) { return false; }
     src.onended = function () {
-      const i = live.indexOf(src);
-      if (i >= 0) live.splice(i, 1);
+      const k = live.indexOf(src);
+      if (k >= 0) live.splice(k, 1);
     };
     live.push(src);
-    try { src.start(0, bank.skip); } catch (e) { try { src.start(0); } catch (e2) {} }
+    try { src.start(0, bank.skip); }
+    catch (e) { try { src.start(0); } catch (e2) { return false; } }
+    bank.way = "Tonmaschine";
+    return true;
   }
 
-  /* Der Rückfall über das Element. Weist es den Anschlag ab — weil noch kein Zutun
-     des Anwenders vorlag oder die Quelle nicht spielbar ist —, springt die
-     Tonmaschine ein, sofern sie läuft. So fängt jeder der beiden Wege den anderen
-     auf, statt dass es still bleibt. */
-  function playElement(bank) {
-    const v = bank.voices[bank.at];
-    bank.at = (bank.at + 1) % bank.voices.length;
-    try { v.currentTime = 0; } catch (e) { /* noch nicht bereit — dann von vorn */ }
-    let p;
-    try { p = v.play(); } catch (e) { rescue(bank); return; }
-    if (p && p.catch) p.catch(function () { rescue(bank); });
+  /* Der Notnagel: ein kurzer eigener Ton. Er klingt nur, wenn die Aufnahme fehlt
+     oder abweist — und nur, solange die Tonmaschine wach ist. */
+  function playTone(bank) {
+    if (!ctx || !master || ctx.state !== "running") return false;
+    const t = bank.def.tone;
+    if (!t) return false;
+    const t0 = ctx.currentTime + 0.001;
+    const peak = t.vol / Math.sqrt(t.freqs.length);
+    for (let i = 0; i < t.freqs.length; i++) {
+      const at = t0 + (t.step ? i * t.step : 0);
+      let osc;
+      try {
+        osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = t.wave || "triangle";
+        osc.frequency.setValueAtTime(t.freqs[i], at);
+        if (t.to) osc.frequency.exponentialRampToValueAtTime(Math.max(30, t.to), at + t.dur);
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.exponentialRampToValueAtTime(peak, at + 0.006);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + t.dur);
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(at);
+        osc.stop(at + t.dur + 0.02);
+      } catch (e) {
+        // Ein Teil des Akkords klingt schon — dann gilt der Weg als getragen.
+        if (i > 0) { bank.way = "eigener Ton"; return true; }
+        return false;
+      }
+      osc.onended = function () {
+        const k = live.indexOf(osc);
+        if (k >= 0) live.splice(k, 1);
+      };
+      live.push(osc);
+    }
+    bank.way = "eigener Ton";
+    return true;
   }
 
-  function rescue(bank) {
-    if (muted) return;
-    if (ctx && bank.buf && ctx.state === "running" && !dead) playBuffered(bank);
-  }
-
-  /* Läuft sie wirklich? Eine laufende Tonmaschine lässt ihre Uhr weiterlaufen.
-     Steht die Uhr, obwohl zwischen zwei Anschlägen Zeit vergangen ist, kommt aus
-     ihr nichts heraus — dann übernehmen dauerhaft wieder die Elemente. */
-  function stalled(t) {
-    if (dead) return true;
-    const c = ctx.currentTime;
-    if (!probeT || c > probeC) { probeT = t; probeC = c; return false; }
-    if (t - probeT > 300) { dead = true; return true; }
-    return false;
+  /* Der erste Weg, der trägt, gewinnt. Trägt keiner, bleibt es bei diesem
+     Anschlag still — und der Klang vermerkt, warum. */
+  function fire(bank, i) {
+    while (i < WAYS.length) {
+      const way = WAYS[i];
+      if (way === "element" && playElement(bank, i)) return;
+      if (way === "buffer" && playBuffered(bank)) return;
+      if (way === "tone" && playTone(bank)) return;
+      i++;
+    }
+    bank.way = "stumm";
   }
 
   function play(key) {
@@ -2398,18 +2627,13 @@ const TetrisSound = (function () {
     const bank = banks[key];
     if (!bank) return;
     const t = now();
-    if (t - bank.last < bank.gap) return;
+    if (t - bank.last < bank.def.gap) return;
     bank.last = t;
     /* Die Tonmaschine schläft, bis der Anwender etwas tut — der Tastendruck selbst
-       weckt sie. In manchem Fensterrahmen darf sie nie erwachen. Gespielt wird über
-       sie deshalb nur, solange sie nachweislich läuft; sonst klingt es über die
-       Elemente, so wie es das immer getan hat. */
+       weckt sie. In manchem Fensterrahmen darf sie nie erwachen; die Wege, die auf
+       sie bauen, kommen dann nie zum Zug, das Element aber schon. */
     if (ctx && ctx.state !== "running") unlock();
-    if (ctx && bank.buf && ctx.state === "running" && !stalled(t)) {
-      playBuffered(bank);
-      return;
-    }
-    playElement(bank);
+    fire(bank, 0);
   }
 
   // Abschalten heißt auch: was gerade klingt, hört auf.
@@ -2432,12 +2656,62 @@ const TetrisSound = (function () {
     if (muted) stopAll();
   }
 
-  // Die Stimmen entstehen gleich beim Laden — dann klingt schon der erste Zug.
+  // --- Was der Ton gerade tut ---
+
+  /* Offengelegt für die Diagnose: je Klang, ob sein Element da ist, ob seine
+     Quelle eingebettet wurde, was das Entpacken ergab und welcher Weg zuletzt
+     getragen hat. Nur Ablesen, kein Eingriff. */
+  function report() {
+    const sounds = [];
+    for (const key in DEFS) {
+      const def = DEFS[key];
+      const bank = banks[key] || null;
+      const el = document.getElementById(def.id);
+      const src = el ? (el.getAttribute("src") || el.src || "") : "";
+      const embedded = src.slice(0, 5) === "data:";
+      sounds.push({
+        key: key,
+        found: !!el,
+        embedded: embedded,
+        kb: embedded ? Math.round(src.length * 0.75 / 1024) : 0,
+        src: embedded ? "" : src,
+        ready: el ? el.readyState : -1,
+        net: el ? el.networkState : -1,
+        error: el && el.error ? el.error.code : 0,
+        voices: bank ? bank.voices.length : 0,
+        decode: bank ? bank.dec : "—",
+        way: bank ? bank.way : "—",
+        note: bank ? bank.note : ""
+      });
+    }
+    return {
+      muted: muted,
+      ctx: ctx ? ctx.state : "keine",
+      clock: ctx ? Math.round(ctx.currentTime * 100) / 100 : 0,
+      sounds: sounds
+    };
+  }
+
+  /* Ein Klang auf Verlangen — ohne Mindestabstand. Mit way = "tone" wird nur der
+     eigene Ton versucht, sonst die ganze Kette von vorn. */
+  function test(key, way) {
+    if (muted) return;
+    build();
+    const bank = banks[key];
+    if (!bank) return;
+    bank.last = -1e9;
+    if (ctx && ctx.state !== "running") unlock();
+    fire(bank, way === "tone" ? WAYS.indexOf("tone") : 0);
+  }
+
+  // Die Bänke entstehen gleich beim Laden — dann klingt schon der erste Zug.
   build();
 
   return {
     play: play,
-    setMuted: setMuted
+    setMuted: setMuted,
+    report: report,
+    test: test
   };
 })();
 </script>
@@ -3146,7 +3420,8 @@ function StartScreen({ level, onLevel, mode, onMode, seed, onSeed, summary, onSc
       <button class="start small" onClick=${onScores}>Bestenliste</button>
       <button class="start small" onClick=${onSound}>${muted ? "🔇 Ton aus" : "🔊 Ton an"}</button>
     </div>
-    <p class="hint">Enter startet · M wechselt die Spielart · H zeigt die Bestenliste · S schaltet den Ton</p>
+    <p class="hint">Enter startet · M wechselt die Spielart · H zeigt die Bestenliste
+      · S schaltet den Ton · T prüft ihn</p>
   </div>`;
 }
 </script>
@@ -4087,7 +4362,7 @@ function App() {
         <p><kbd>↓</kbd> ein Feld tiefer</p>
         <p><kbd>Leer</kbd> fallen lassen</p>
         <p><kbd>P</kbd> Pause · <kbd>Esc</kbd> Ende</p>
-        <p><kbd>S</kbd> Ton ${muted ? "aus" : "an"}</p>
+        <p><kbd>S</kbd> Ton ${muted ? "aus" : "an"} · <kbd>T</kbd> Ton prüfen</p>
         <p><kbd>R</kbd> Aufzeichnung (in Pause)</p>
         <p><kbd>H</kbd> Bestenliste (in Pause)</p>
       </div>
@@ -4096,6 +4371,107 @@ function App() {
 }
 
 render(html`<${App} />`, document.getElementById("app"));
+</script>
+<script>/* Die Ton-Diagnose. Taste T öffnet und schließt sie, überall in der App.
+
+   Sie greift nicht ein, sie liest nur ab: was sound.js über jeden der vier Klänge
+   weiß — ob sein Element im Dokument steht, ob seine Quelle eingebettet wurde, was
+   das Entpacken ergab, welcher Weg zuletzt getragen hat und woran der letzte
+   Versuch scheiterte. Dazu je Klang zwei Knöpfe, die ihn auf der Stelle spielen:
+   einmal die ganze Kette, einmal nur den eigenen Ton.
+
+   Der Klick ist dabei mehr als Bequemlichkeit: Er ist die stärkste Zustimmung des
+   Anwenders, die der Browser kennt. Was auf Knopfdruck stumm bleibt, bleibt nicht
+   wegen fehlender Zustimmung stumm.
+
+   Sie hängt an einer eigenen Wurzel (#diag) und liegt damit über jeder Ansicht,
+   ohne dass eine davon etwas von ihr wissen muss. */
+
+// Was die Zahlen des Elements bedeuten — in Worten statt in Kennziffern.
+const DIAG_READY = ["nichts", "Metadaten", "erste Daten", "läuft durch", "vollständig"];
+const DIAG_NET = ["leer", "im Leerlauf", "lädt", "keine Quelle"];
+const DIAG_ERR = { 1: "abgebrochen", 2: "Netzfehler", 3: "nicht entschlüsselbar",
+                   4: "Quelle nicht unterstützt" };
+const DIAG_NAMES = { move: "Schieben / Drehen", drop: "Aufsetzen",
+                     rows: "Reihe voll", tetris: "Tetris" };
+
+function SoundDiagRow({ s }) {
+  // Grün, solange etwas getragen hat; rot, wo der Weg nachweislich zu ist.
+  const bad = !s.found || s.error > 0 || s.way === "stumm";
+  const ok = s.way === "Element" || s.way === "Tonmaschine";
+  return html`<tr class=${bad ? "bad" : ok ? "ok" : ""}>
+    <td class="name">${DIAG_NAMES[s.key] || s.key}</td>
+    <td>${!s.found ? "fehlt"
+      : s.embedded ? "eingebettet " + s.kb + " KB"
+      : s.src ? "Pfad: " + s.src : "ohne Quelle"}</td>
+    <td>${s.found ? (DIAG_READY[s.ready] || s.ready) + " · " + (DIAG_NET[s.net] || s.net) : "—"}
+      ${s.error > 0 && html`<b> · ${DIAG_ERR[s.error] || "Fehler " + s.error}</b>`}</td>
+    <td>${s.decode}</td>
+    <td class="way">${s.way}${s.voices ? " (" + s.voices + ")" : ""}</td>
+    <td class="note">${s.note || "—"}</td>
+    <td class="act">
+      <button onClick=${() => TetrisSound.test(s.key)}>▶ Datei</button>
+      <button onClick=${() => TetrisSound.test(s.key, "tone")}>▶ Ton</button>
+    </td>
+  </tr>`;
+}
+
+function SoundDiag() {
+  const { useState, useEffect } = preactHooks;
+  const [open, setOpen] = useState(false);
+  const [, bump] = useState(0);
+
+  // Taste T — aber nicht, während der Anwender ein Merkwort tippt.
+  useEffect(() => {
+    function onKey(e) {
+      if (e.target && e.target.tagName === "INPUT") return;
+      if (e.repeat) return;
+      /* Nur T — Esc gehört dem Spiel (Aufgeben, Liste schließen) und würde sonst
+         zweierlei zugleich tun. */
+      if (e.key === "t" || e.key === "T") setOpen((o) => !o);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Solange sie offen ist, liest sie sich viermal je Sekunde neu ab.
+  useEffect(() => {
+    if (!open) return;
+    const id = setInterval(() => bump((v) => v + 1), 250);
+    return () => clearInterval(id);
+  }, [open]);
+
+  if (!open) return null;
+  const r = TetrisSound.report();
+
+  return html`<div class="diag">
+    <div class="diag-box">
+      <div class="diag-head">
+        <h2>Ton-Diagnose</h2>
+        <span class="diag-ctx">Tonmaschine: <b>${r.ctx}</b> · Uhr ${r.clock}s
+          · Ton ${r.muted ? "aus" : "an"}</span>
+        <button class="diag-close" onClick=${() => setOpen(false)}>Schließen</button>
+      </div>
+      ${r.muted && html`<p class="diag-warn">Der Ton ist abgeschaltet —
+        <kbd>S</kbd> schaltet ihn an. Solange bleibt auch die Probe stumm.</p>`}
+      <table>
+        <thead><tr>
+          <th>Klang</th><th>Quelle</th><th>Element</th><th>Entpacken</th>
+          <th>zuletzt über</th><th>Vermerk</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${r.sounds.map((s) => html`<${SoundDiagRow} key=${s.key} s=${s} />`)}
+        </tbody>
+      </table>
+      <p class="diag-hint">Ein Klang geht drei Wege, bis einer trägt:
+        <b>Element</b> → <b>Tonmaschine</b> → <b>eigener Ton</b>.
+        Steht in „zuletzt über“ noch <i>noch nichts</i>, war dieser Klang noch nicht
+        fällig. <kbd>T</kbd> schließt wieder.</p>
+    </div>
+  </div>`;
+}
+
+preact.render(html`<${SoundDiag} />`, document.getElementById("diag"));
 </script>
 </body>
 </html>
