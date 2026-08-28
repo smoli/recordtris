@@ -236,6 +236,31 @@ einfachen Töne zurück, sobald eine Aufnahme nicht spielbar ist. Sie klingen de
 schlichter als die Aufnahmen — wenn du sie hörst, weißt du also gleich, dass mit den
 Aufnahmen etwas nicht stimmt.
 
+### Die Aufnahmen zum Klingen bringen
+
+Das Fenster, in dem das Spiel läuft, lässt keine Tondateien herein: Die vier
+Aufnahmen, die zur App gehören, kommen dort nicht an — jede Zeile der Diagnose meldet
+dann **Quelle nicht spielbar (Fehler 4)**, und es klingen die einfachen Töne.
+
+Es gibt einen Weg hinein, und der führt über den **Datenordner** — denselben Ordner,
+in dem auch Bestenliste und Aufzeichnungen liegen. Unten in der Ton-Diagnose steht,
+was dort gefunden wurde. Zwei Möglichkeiten:
+
+- Lege die vier Dateien in den Unterordner **tetris-sounds** (oder direkt in den
+  Datenordner). Erkannt werden sie am Namen: Er muss *move*, *drop*, *row* oder
+  *tetris* enthalten — die Originalnamen passen also schon.
+- Oder klicke in der Diagnose bei einem Klang auf **Datei wählen** und such sie dir
+  aus. Diese Wahl bleibt gemerkt: Beim nächsten Öffnen klingt dieselbe Datei wieder.
+
+Beides wirkt sofort — der nächste Zug klingt schon mit der Aufnahme. Steht bei einer
+Datei **als Text zerfallen** oder **keine Tonform erkennbar**, hat sie den Weg durch
+den Datenordner nicht heil überstanden. Dann hilft derselbe Klang als **base64** in
+einer Textdatei (`.txt`): Diese Form kommt immer unversehrt an, und das Spiel erkennt
+sie von selbst.
+
+Findet sich nichts, ändert sich nichts: Das Spiel klingt mit seinen eigenen Tönen
+weiter.
+
 ## Das Besondere
 
 Welcher Stein kommt, wird nach dem Verfahren des Original-Tetris gewürfelt. Es

@@ -10,6 +10,10 @@
    Anwenders, die der Browser kennt. Was auf Knopfdruck stumm bleibt, bleibt nicht
    wegen fehlender Zustimmung stumm.
 
+   Darunter steht, was soundfiles.js im Datenordner gefunden hat — der einzige Weg,
+   auf dem eine Aufnahme in diesem Fensterrahmen überhaupt in die App gelangt. Dort
+   lässt sich für jeden Klang auch eine Datei von Hand wählen.
+
    Sie hängt an einer eigenen Wurzel (#diag) und liegt damit über jeder Ansicht,
    ohne dass eine davon etwas von ihr wissen muss. */
 
@@ -27,7 +31,8 @@ function SoundDiagRow({ s }) {
   const ok = s.way === "Element" || s.way === "Tonmaschine";
   return html`<tr class=${bad ? "bad" : ok ? "ok" : ""}>
     <td class="name">${DIAG_NAMES[s.key] || s.key}</td>
-    <td>${!s.found ? "fehlt"
+    <td>${s.file ? "Datei: " + s.file
+      : !s.found ? "fehlt"
       : s.embedded ? "eingebettet " + s.kb + " KB"
       : s.src ? "Pfad: " + s.src : "ohne Quelle"}</td>
     <td>${s.found ? (DIAG_READY[s.ready] || s.ready) + " · " + (DIAG_NET[s.net] || s.net) : "—"}
@@ -40,6 +45,58 @@ function SoundDiagRow({ s }) {
       <button onClick=${() => TetrisSound.test(s.key, "tone")}>▶ Ton</button>
     </td>
   </tr>`;
+}
+
+/* Die Aufnahmen aus dem Datenordner (soundfiles.js): was gefunden wurde, was fehlt
+   und woran es lag. Von hier aus lässt sich für jeden Klang eine Datei wählen — das
+   ist zugleich der einzige Weg, auf dem eine Aufnahme überhaupt in die App gelangt. */
+// Was von einer gefundenen Datei zu sagen ist — nur, was auch dasteht.
+function fileLine(f) {
+  if (!f) return "keine Datei gefunden";
+  const bits = [f.name];
+  if (f.kb) bits.push(f.kb + " KB");
+  if (f.how) bits.push(f.how);
+  bits.push(f.state);
+  return bits.join(" · ");
+}
+
+function SoundFilesBlock() {
+  const { useState } = preactHooks;
+  const [busy, setBusy] = useState("");
+  const r = TetrisSoundFiles.report();
+  const keys = ["move", "drop", "rows", "tetris"];
+
+  async function choose(key) {
+    setBusy(key);
+    try { await TetrisSoundFiles.pick(key); } finally { setBusy(""); }
+  }
+
+  return html`<div class="diag-files">
+    <h3>Aufnahmen aus dem Datenordner <span>${r.note}</span></h3>
+    ${!r.fs
+      ? html`<p class="diag-hint">Es ist kein Datenordner festgelegt — ohne ihn
+          bleibt es bei den eigenen Tönen.</p>`
+      : html`<p class="diag-hint">Tondateien neben der App sind hier nicht
+          erreichbar; nur der Datenordner führt hinein. Lege die vier Aufnahmen in
+          <b>${r.dir}</b> oder in den Datenordner selbst — erkannt werden sie am
+          Namen (<i>move</i>, <i>drop</i>, <i>row</i>, <i>tetris</i>). Kommt eine
+          Datei <i>als Text zerfallen</i> an, trägt dieselbe Aufnahme als
+          <b>base64</b> in einer <b>.txt</b> ganz sicher.</p>`}
+    <ul>
+      ${keys.map((k) => {
+        const f = r.files[k];
+        const good = !!f && f.ok;
+        return html`<li key=${k} class=${good ? "ok" : f ? "bad" : ""}>
+          <b>${DIAG_NAMES[k]}</b>
+          <span>${fileLine(f)}</span>
+          <button disabled=${busy === k} onClick=${() => choose(k)}>
+            ${busy === k ? "…" : "Datei wählen"}</button>
+        </li>`;
+      })}
+    </ul>
+    <button class="diag-again" onClick=${() => TetrisSoundFiles.scan().catch(() => {})}>Erneut
+      suchen</button>
+  </div>`;
 }
 
 function SoundDiag() {
@@ -89,9 +146,11 @@ function SoundDiag() {
           ${r.sounds.map((s) => html`<${SoundDiagRow} key=${s.key} s=${s} />`)}
         </tbody>
       </table>
+      <${SoundFilesBlock} />
       <p class="diag-hint">Ein Klang geht drei Wege, bis einer trägt:
-        <b>Element</b> → <b>Tonmaschine</b> → <b>eigener Ton</b>.
-        Steht in „zuletzt über“ noch <i>noch nichts</i>, war dieser Klang noch nicht
+        <b>Element</b> → <b>Tonmaschine</b> → <b>eigener Ton</b>. Liegt eine
+        Aufnahme aus dem Datenordner bereit, klingt sie zuerst. Steht in
+        „zuletzt über“ noch <i>noch nichts</i>, war dieser Klang noch nicht
         fällig. <kbd>T</kbd> schließt wieder.</p>
     </div>
   </div>`;

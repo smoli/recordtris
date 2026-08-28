@@ -15,8 +15,10 @@
 <!-- Die Ton-Diagnose (Taste T) hängt an einer eigenen Wurzel und liegt damit über
      jeder Ansicht. --><div id="diag"></div>
 
-<!-- Die vier Klänge des Spiels. Sie hängen nur hier, damit ihre Quelle im Markup
-     steht; abgespielt werden sie über sound.js. -->
+<!-- Die vier Klänge des Spiels. Ihre Pfade führen im Fensterrahmen der App
+     nirgendwohin; die Aufnahmen kommen über den Datenordner (soundfiles.js) und
+     werden dort in diese Elemente eingehängt. Sie hängen hier, damit es sie gibt
+     und ihre Quelle im Markup steht; abgespielt wird über sound.js. -->
 <audio id="snd-move" src="assets/move-and-turn.mp3" preload="auto"></audio>
 <audio id="snd-drop" src="assets/drop-sound.mp3" preload="auto"></audio>
 <audio id="snd-rows" src="assets/row-completed-sound.mp3" preload="auto"></audio>
@@ -31,6 +33,7 @@
 <script src="analysis.js"></script>
 <script src="fxpaint.js"></script>
 <script src="sound.js"></script>
+<script src="soundfiles.js"></script>
 <script src="fx.js"></script>
 <script src="gameui.js"></script>
 <script src="statsui.js"></script>

@@ -1,7 +1,11 @@
 /* Die Geräusche des Spiels.
 
-   Die vier Klänge liegen als <audio> im Dokument, weil nur im Markup der Pfad der
-   Beigabe steht, den das Bündeln durch die eingebettete Fassung ersetzt.
+   Die vier Klänge liegen als <audio> im Dokument. Ihre Quellen sind Pfade
+   (assets/…) — und Pfade führen in diesem Fensterrahmen nirgendwohin: Das Bündeln
+   lässt sie stehen, und der Rahmen lässt keinen Dateizugriff zu. Jedes Element
+   meldet darum "Quelle nicht spielbar". Die Aufnahmen kommen deshalb über das
+   Dateisystem des Workspace in die App (soundfiles.js) und werden hier mit adopt()
+   übernommen: Sie werden entpackt UND als data:-Quelle in die Elemente gehängt.
 
    Gehört wird über drei Wege. Jeder Anschlag geht den ersten, der wirklich trägt:
      1. das <audio>-Element (bzw. eine seiner Kopien) — der Weg, der immer ging;
@@ -12,7 +16,8 @@
 
    Warum in dieser Reihenfolge: Die Tonmaschine schläft, bis der Anwender etwas
    tut, und in manchem Fensterrahmen darf sie nie erwachen. Das Element ist der
-   verlässlichere Weg und kommt deshalb zuerst.
+   verlässlichere Weg und kommt deshalb zuerst. Liegt eine entpackte Aufnahme
+   bereit, dreht sich das um — sie klingt ohne Anlauf, das Element wird Rückfall.
 
    Vorlaufende Stille im Klangkörper wird übersprungen: Manche Aufnahme beginnt
    erst ein paar Millisekunden nach ihrem Anfang zu klingen, und genau das hört
@@ -131,13 +136,20 @@ const TetrisSound = (function () {
   }
 
   function decodeInto(bank, src) {
-    if (!ctx || !ctx.decodeAudioData) { bank.dec = "keine Tonmaschine"; return; }
     const buffer = bytesOf(src);
     if (!buffer) {
       bank.dec = !src ? "keine Quelle"
         : src.slice(0, 5) === "data:" ? "nicht base64" : "nicht eingebettet";
       return;
     }
+    decodeBuffer(bank, buffer, "");
+  }
+
+  /* Die nackten Bytes einer Aufnahme entpacken — gleich, woher sie stammen: aus
+     dem Dokument oder aus dem Datenordner. Das Entpacken frisst den Puffer auf;
+     wer ihn noch braucht, bedient sich vorher. */
+  function decodeBuffer(bank, buffer, label) {
+    if (!ctx || !ctx.decodeAudioData) { bank.dec = "keine Tonmaschine"; return; }
     bank.dec = "läuft";
     // Die alte Form gibt kein Versprechen zurück, sondern ruft zurück.
     let p;
@@ -148,9 +160,51 @@ const TetrisSound = (function () {
       if (!buf) return;
       bank.buf = buf;
       bank.skip = firstSound(buf);
-      bank.dec = "entpackt";
+      bank.dec = "entpackt" + (label ? " (" + label + ")" : "");
     }
-    function fail() { bank.dec = "misslungen"; }
+    function fail() { bank.dec = "misslungen" + (label ? " (" + label + ")" : ""); }
+  }
+
+  // --- Eine Aufnahme von außen ---
+
+  /* Die Bytes einer Datei aus dem Datenordner (soundfiles.js). Sie sind der einzige
+     Weg, auf dem eine Aufnahme in diesem Fensterrahmen überhaupt ankommt: Die
+     Quellen im Dokument sind Pfade, und Pfade führen hier nirgendwohin.
+
+     Beide Wege werden damit gangbar — der Klangkörper in der Tonmaschine (dafür
+     wird entpackt) und das Element (dafür wird die Datei zur data:-Quelle). */
+  function adopt(key, buffer, mime, label) {
+    build();
+    const bank = banks[key];
+    if (!bank || !buffer || !buffer.byteLength) return false;
+    bank.file = label || "Datei";
+    bank.note = "";
+    openCtx();
+    feedVoices(bank, buffer, mime);      // erst der data:-Umweg …
+    decodeBuffer(bank, buffer, "Datei"); // … dann das Entpacken, das den Puffer frisst
+    return true;
+  }
+
+  const MAX_INLINE = 3 * 1024 * 1024; // darüber lohnt die data:-Quelle nicht mehr
+
+  /* Aus den Bytes eine data:-Quelle machen und sie den Stimmen geben. Das ist der
+     Weg, der auch ohne wache Tonmaschine trägt. Ein neues src löscht den Fehler
+     des Elements — der alte Pfad ist damit vergessen. */
+  function feedVoices(bank, buffer, mime) {
+    if (!bank.voices.length || buffer.byteLength > MAX_INLINE) return;
+    const bytes = new Uint8Array(buffer);
+    let bin = "";
+    // In Häppchen, sonst sprengt der Aufruf bei großen Dateien den Stapel.
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    let uri;
+    try { uri = "data:" + (mime || "audio/mpeg") + ";base64," + btoa(bin); }
+    catch (e) { return; }
+    for (let i = 0; i < bank.voices.length; i++) {
+      const v = bank.voices[i];
+      try { v.src = uri; v.volume = bank.def.vol; v.load(); } catch (e) {}
+    }
   }
 
   // --- Der Aufbau ---
@@ -170,7 +224,7 @@ const TetrisSound = (function () {
       let bank = banks[key];
       if (!bank) {
         bank = banks[key] = { key: key, def: def, voices: [], at: 0,
-                              last: -1e9, buf: null, skip: 0,
+                              last: -1e9, buf: null, skip: 0, file: "",
                               way: "noch nichts", note: "", dec: "—" };
       }
       if (bank.voices.length) continue;
@@ -287,11 +341,20 @@ const TetrisSound = (function () {
     return true;
   }
 
+  /* Liegt eine entpackte Aufnahme bereit, klingt sie zuerst: Über die Tonmaschine
+     geht es ohne Anlauf, das Element bleibt der Rückfall. Ohne Aufnahme bleibt es
+     bei der gewohnten Ordnung. Der eigene Ton steht so oder so am Ende — test()
+     verlässt sich darauf. */
+  function waysFor(bank) {
+    return bank.buf ? ["buffer", "element", "tone"] : WAYS;
+  }
+
   /* Der erste Weg, der trägt, gewinnt. Trägt keiner, bleibt es bei diesem
      Anschlag still — und der Klang vermerkt, warum. */
   function fire(bank, i) {
-    while (i < WAYS.length) {
-      const way = WAYS[i];
+    const ways = waysFor(bank);
+    while (i < ways.length) {
+      const way = ways[i];
       if (way === "element" && playElement(bank, i)) return;
       if (way === "buffer" && playBuffered(bank)) return;
       if (way === "tone" && playTone(bank)) return;
@@ -358,6 +421,7 @@ const TetrisSound = (function () {
         net: el ? el.networkState : -1,
         error: el && el.error ? el.error.code : 0,
         voices: bank ? bank.voices.length : 0,
+        file: bank ? bank.file : "",
         decode: bank ? bank.dec : "—",
         way: bank ? bank.way : "—",
         note: bank ? bank.note : ""
@@ -388,6 +452,7 @@ const TetrisSound = (function () {
 
   return {
     play: play,
+    adopt: adopt,
     setMuted: setMuted,
     report: report,
     test: test

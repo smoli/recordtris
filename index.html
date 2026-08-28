@@ -954,6 +954,8 @@ kbd {
   pointer-events: auto;
   max-width: min(1000px, 96vw);
   width: 100%;
+  max-height: 94vh;  /* mit den Aufnahmen darunter wird die Tafel hoch */
+  overflow: auto;
   background: rgba(10, 14, 24, .96);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -1048,6 +1050,71 @@ kbd {
 }
 .diag-box td.act button:hover { background: rgba(110, 168, 255, .26); }
 
+/* Die Aufnahmen aus dem Datenordner — der einzige Weg, auf dem eine Tondatei in
+   die App gelangt. */
+.diag-files {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.diag-files h3 {
+  margin: 0 0 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.diag-files h3 span {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--dim);
+}
+
+.diag-files ul {
+  list-style: none;
+  margin: 10px 0 10px;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.diag-files li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .035);
+  color: var(--dim);
+}
+.diag-files li b {
+  color: var(--ink);
+  font-weight: 600;
+  min-width: 11em;
+}
+.diag-files li span { flex: 1; font-size: 12px; }
+.diag-files li.ok span { color: #4dfb9a; }
+.diag-files li.bad span { color: #ffb45c; }
+
+.diag-files button {
+  background: rgba(110, 168, 255, .13);
+  color: var(--ink);
+  border: 1px solid rgba(110, 168, 255, .32);
+  border-radius: 6px;
+  padding: 4px 9px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.diag-files button:hover { background: rgba(110, 168, 255, .26); }
+.diag-files button[disabled] { opacity: .5; cursor: default; }
+
 .diag-hint {
   margin: 10px 0 0;
   color: var(--dim);
@@ -1083,12 +1150,14 @@ kbd {
 <!-- Die Ton-Diagnose (Taste T) hängt an einer eigenen Wurzel und liegt damit über
      jeder Ansicht. --><div data-morphos-src="src/index.html:16:24" id="diag"></div>
 
-<!-- Die vier Klänge des Spiels. Sie hängen nur hier, damit ihre Quelle im Markup
-     steht; abgespielt werden sie über sound.js. -->
-<audio data-morphos-src="src/index.html:20:1" id="snd-move" src="assets/move-and-turn.mp3" preload="auto"></audio>
-<audio data-morphos-src="src/index.html:21:1" id="snd-drop" src="assets/drop-sound.mp3" preload="auto"></audio>
-<audio data-morphos-src="src/index.html:22:1" id="snd-rows" src="assets/row-completed-sound.mp3" preload="auto"></audio>
-<audio data-morphos-src="src/index.html:23:1" id="snd-tetris" src="assets/tetris-sound.mp3" preload="auto"></audio>
+<!-- Die vier Klänge des Spiels. Ihre Pfade führen im Fensterrahmen der App
+     nirgendwohin; die Aufnahmen kommen über den Datenordner (soundfiles.js) und
+     werden dort in diese Elemente eingehängt. Sie hängen hier, damit es sie gibt
+     und ihre Quelle im Markup steht; abgespielt wird über sound.js. -->
+<audio data-morphos-src="src/index.html:22:1" id="snd-move" src="assets/move-and-turn.mp3" preload="auto"></audio>
+<audio data-morphos-src="src/index.html:23:1" id="snd-drop" src="assets/drop-sound.mp3" preload="auto"></audio>
+<audio data-morphos-src="src/index.html:24:1" id="snd-rows" src="assets/row-completed-sound.mp3" preload="auto"></audio>
+<audio data-morphos-src="src/index.html:25:1" id="snd-tetris" src="assets/tetris-sound.mp3" preload="auto"></audio>
 
 <script>/* Der Zufall des originalen NES-Tetris.
    Er besteht aus zwei Teilen:
@@ -2321,8 +2390,12 @@ const TetrisPaint = (function () {
 </script>
 <script>/* Die Geräusche des Spiels.
 
-   Die vier Klänge liegen als <audio> im Dokument, weil nur im Markup der Pfad der
-   Beigabe steht, den das Bündeln durch die eingebettete Fassung ersetzt.
+   Die vier Klänge liegen als <audio> im Dokument. Ihre Quellen sind Pfade
+   (assets/…) — und Pfade führen in diesem Fensterrahmen nirgendwohin: Das Bündeln
+   lässt sie stehen, und der Rahmen lässt keinen Dateizugriff zu. Jedes Element
+   meldet darum "Quelle nicht spielbar". Die Aufnahmen kommen deshalb über das
+   Dateisystem des Workspace in die App (soundfiles.js) und werden hier mit adopt()
+   übernommen: Sie werden entpackt UND als data:-Quelle in die Elemente gehängt.
 
    Gehört wird über drei Wege. Jeder Anschlag geht den ersten, der wirklich trägt:
      1. das <audio>-Element (bzw. eine seiner Kopien) — der Weg, der immer ging;
@@ -2333,7 +2406,8 @@ const TetrisPaint = (function () {
 
    Warum in dieser Reihenfolge: Die Tonmaschine schläft, bis der Anwender etwas
    tut, und in manchem Fensterrahmen darf sie nie erwachen. Das Element ist der
-   verlässlichere Weg und kommt deshalb zuerst.
+   verlässlichere Weg und kommt deshalb zuerst. Liegt eine entpackte Aufnahme
+   bereit, dreht sich das um — sie klingt ohne Anlauf, das Element wird Rückfall.
 
    Vorlaufende Stille im Klangkörper wird übersprungen: Manche Aufnahme beginnt
    erst ein paar Millisekunden nach ihrem Anfang zu klingen, und genau das hört
@@ -2452,13 +2526,20 @@ const TetrisSound = (function () {
   }
 
   function decodeInto(bank, src) {
-    if (!ctx || !ctx.decodeAudioData) { bank.dec = "keine Tonmaschine"; return; }
     const buffer = bytesOf(src);
     if (!buffer) {
       bank.dec = !src ? "keine Quelle"
         : src.slice(0, 5) === "data:" ? "nicht base64" : "nicht eingebettet";
       return;
     }
+    decodeBuffer(bank, buffer, "");
+  }
+
+  /* Die nackten Bytes einer Aufnahme entpacken — gleich, woher sie stammen: aus
+     dem Dokument oder aus dem Datenordner. Das Entpacken frisst den Puffer auf;
+     wer ihn noch braucht, bedient sich vorher. */
+  function decodeBuffer(bank, buffer, label) {
+    if (!ctx || !ctx.decodeAudioData) { bank.dec = "keine Tonmaschine"; return; }
     bank.dec = "läuft";
     // Die alte Form gibt kein Versprechen zurück, sondern ruft zurück.
     let p;
@@ -2469,9 +2550,51 @@ const TetrisSound = (function () {
       if (!buf) return;
       bank.buf = buf;
       bank.skip = firstSound(buf);
-      bank.dec = "entpackt";
+      bank.dec = "entpackt" + (label ? " (" + label + ")" : "");
     }
-    function fail() { bank.dec = "misslungen"; }
+    function fail() { bank.dec = "misslungen" + (label ? " (" + label + ")" : ""); }
+  }
+
+  // --- Eine Aufnahme von außen ---
+
+  /* Die Bytes einer Datei aus dem Datenordner (soundfiles.js). Sie sind der einzige
+     Weg, auf dem eine Aufnahme in diesem Fensterrahmen überhaupt ankommt: Die
+     Quellen im Dokument sind Pfade, und Pfade führen hier nirgendwohin.
+
+     Beide Wege werden damit gangbar — der Klangkörper in der Tonmaschine (dafür
+     wird entpackt) und das Element (dafür wird die Datei zur data:-Quelle). */
+  function adopt(key, buffer, mime, label) {
+    build();
+    const bank = banks[key];
+    if (!bank || !buffer || !buffer.byteLength) return false;
+    bank.file = label || "Datei";
+    bank.note = "";
+    openCtx();
+    feedVoices(bank, buffer, mime);      // erst der data:-Umweg …
+    decodeBuffer(bank, buffer, "Datei"); // … dann das Entpacken, das den Puffer frisst
+    return true;
+  }
+
+  const MAX_INLINE = 3 * 1024 * 1024; // darüber lohnt die data:-Quelle nicht mehr
+
+  /* Aus den Bytes eine data:-Quelle machen und sie den Stimmen geben. Das ist der
+     Weg, der auch ohne wache Tonmaschine trägt. Ein neues src löscht den Fehler
+     des Elements — der alte Pfad ist damit vergessen. */
+  function feedVoices(bank, buffer, mime) {
+    if (!bank.voices.length || buffer.byteLength > MAX_INLINE) return;
+    const bytes = new Uint8Array(buffer);
+    let bin = "";
+    // In Häppchen, sonst sprengt der Aufruf bei großen Dateien den Stapel.
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    let uri;
+    try { uri = "data:" + (mime || "audio/mpeg") + ";base64," + btoa(bin); }
+    catch (e) { return; }
+    for (let i = 0; i < bank.voices.length; i++) {
+      const v = bank.voices[i];
+      try { v.src = uri; v.volume = bank.def.vol; v.load(); } catch (e) {}
+    }
   }
 
   // --- Der Aufbau ---
@@ -2491,7 +2614,7 @@ const TetrisSound = (function () {
       let bank = banks[key];
       if (!bank) {
         bank = banks[key] = { key: key, def: def, voices: [], at: 0,
-                              last: -1e9, buf: null, skip: 0,
+                              last: -1e9, buf: null, skip: 0, file: "",
                               way: "noch nichts", note: "", dec: "—" };
       }
       if (bank.voices.length) continue;
@@ -2608,11 +2731,20 @@ const TetrisSound = (function () {
     return true;
   }
 
+  /* Liegt eine entpackte Aufnahme bereit, klingt sie zuerst: Über die Tonmaschine
+     geht es ohne Anlauf, das Element bleibt der Rückfall. Ohne Aufnahme bleibt es
+     bei der gewohnten Ordnung. Der eigene Ton steht so oder so am Ende — test()
+     verlässt sich darauf. */
+  function waysFor(bank) {
+    return bank.buf ? ["buffer", "element", "tone"] : WAYS;
+  }
+
   /* Der erste Weg, der trägt, gewinnt. Trägt keiner, bleibt es bei diesem
      Anschlag still — und der Klang vermerkt, warum. */
   function fire(bank, i) {
-    while (i < WAYS.length) {
-      const way = WAYS[i];
+    const ways = waysFor(bank);
+    while (i < ways.length) {
+      const way = ways[i];
       if (way === "element" && playElement(bank, i)) return;
       if (way === "buffer" && playBuffered(bank)) return;
       if (way === "tone" && playTone(bank)) return;
@@ -2679,6 +2811,7 @@ const TetrisSound = (function () {
         net: el ? el.networkState : -1,
         error: el && el.error ? el.error.code : 0,
         voices: bank ? bank.voices.length : 0,
+        file: bank ? bank.file : "",
         decode: bank ? bank.dec : "—",
         way: bank ? bank.way : "—",
         note: bank ? bank.note : ""
@@ -2709,9 +2842,271 @@ const TetrisSound = (function () {
 
   return {
     play: play,
+    adopt: adopt,
     setMuted: setMuted,
     report: report,
     test: test
+  };
+})();
+</script>
+<script>/* Die Aufnahmen aus dem Datenordner.
+
+   In diesem Fensterrahmen kommt keine Tondatei von selbst an: Die Quellen der
+   <audio>-Elemente sind Pfade (assets/…), die das Bündeln stehen lässt, und auf
+   Dateien neben der App hat der Rahmen keinen Zugriff. Jedes Element meldet darum
+   "Quelle nicht spielbar (Fehler 4)", und es bleibt bei den eigenen Tönen.
+
+   Es gibt genau einen Weg, auf dem die Bytes einer Aufnahme dennoch in die
+   laufende App gelangen: das Dateisystem des Workspace (morphosFS). Von dort
+   gelesen, werden sie in sound.js entpackt und ersetzen, was im Dokument steht.
+
+   Gesucht wird beim Start, ohne Zutun — in dieser Ordnung:
+     1. die Merkliste zuletzt von Hand gewählter Dateien (tetris-sounds.json),
+     2. der Ordner tetris-sounds/,
+     3. der Datenordner selbst.
+   Welcher Klang gemeint ist, verrät der Dateiname.
+
+   Zwei Formen werden gelesen:
+     - eine Tondatei (mp3/wav/ogg/m4a), sofern das Dateisystem ihre Bytes
+       unversehrt durchreicht;
+     - eine Textdatei mit derselben Aufnahme in base64 (auch als data:-Zeile) —
+       der Weg, der immer trägt, weil Text unterwegs nichts verliert.
+
+   Findet sich nichts, bleibt alles, wie es war: Die App klingt mit ihren eigenen
+   Tönen weiter. Was gefunden wurde, gibt report() preis; die Ton-Diagnose
+   (Taste T) zeigt es und lässt Dateien von Hand wählen. */
+const TetrisSoundFiles = (function () {
+  const DIR = "tetris-sounds";
+  const LIST = "tetris-sounds.json"; // die von Hand gewählten Dateien
+
+  // Woran ein Klang in einem Dateinamen zu erkennen ist — ohne Endung, klein
+  // geschrieben, ohne Trennzeichen. Erst genau, dann als Teil des Namens.
+  const NAMES = {
+    move: ["move", "moveandturn", "moveturn", "schieben", "drehen"],
+    drop: ["drop", "dropsound", "aufsetzen", "fallen"],
+    rows: ["rows", "row", "rowcompleted", "rowcompletedsound", "reihe", "line"],
+    tetris: ["tetris", "tetrissound", "viererreihe"]
+  };
+
+  const MIME = { mp3: "audio/mpeg", mpeg: "audio/mpeg", wav: "audio/wav",
+                 ogg: "audio/ogg", oga: "audio/ogg", m4a: "audio/mp4",
+                 aac: "audio/aac", flac: "audio/flac", webm: "audio/webm" };
+
+  /* Nur diese Endungen kommen beim Durchsehen eines Ordners in Frage. Die Grenze
+     ist nötig, weil im Datenordner auch die Dateien der App liegen: Ohne sie
+     hielte die Merkliste "tetris-sounds.json" sich selbst für den Tetris-Klang. */
+  const EXTS = ["mp3", "mpeg", "wav", "ogg", "oga", "m4a", "aac", "flac", "webm",
+                "b64", "base64", "txt"];
+
+  const found = {};          // key -> { name, path, how, kb, state }
+  let note = "noch nicht gesucht";
+  let picks = null;          // die Merkliste, sobald sie gelesen wurde
+
+  // --- Namen ---
+
+  function extOf(name) {
+    const dot = name.lastIndexOf(".");
+    return dot > 0 ? name.slice(dot + 1).toLowerCase() : "";
+  }
+  function baseOf(name) {
+    const dot = name.lastIndexOf(".");
+    return (dot > 0 ? name.slice(0, dot) : name).toLowerCase().replace(/[^a-z0-9]/g, "");
+  }
+
+  function keyOf(name) {
+    if (EXTS.indexOf(extOf(name)) < 0) return null;
+    const b = baseOf(name);
+    if (!b) return null;
+    for (const key in NAMES) {
+      if (NAMES[key].indexOf(b) >= 0) return key;
+    }
+    for (const key in NAMES) {
+      const list = NAMES[key];
+      for (let i = 0; i < list.length; i++) {
+        if (b.indexOf(list[i]) >= 0) return key;
+      }
+    }
+    return null;
+  }
+
+  // --- Aus Text werden Bytes ---
+
+  function fromBase64(s) {
+    const bin = atob(s);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  }
+
+  /* Das Dateisystem liefert Text. Steht darin base64 (auch mit data:-Kopf), ist der
+     Fall klar. Sonst können es die Bytes selbst sein, Zeichen für Zeichen — aber nur,
+     wenn sie den Weg unbeschadet überstanden haben: Ein Zeichen über 255 heißt, dass
+     die Datei als Text gelesen wurde und dabei zerfiel — auch das Ersatzzeichen, mit
+     dem ein Leser jedes unverständliche Byte quittiert, liegt darüber. */
+  function bytesOf(text) {
+    if (typeof text !== "string" || !text.length) return { err: "leer" };
+    let s = text;
+    if (/^\s*data:[^,]{0,200},/.test(s)) s = s.slice(s.indexOf(",") + 1);
+    const clean = s.replace(/\s+/g, "");
+    if (clean.length > 64 && /^[A-Za-z0-9+/]+={0,2}$/.test(clean)) {
+      try { return { buf: fromBase64(clean), how: "base64" }; } catch (e) { /* dann eben nicht */ }
+    }
+    const bytes = new Uint8Array(text.length);
+    for (let i = 0; i < text.length; i++) {
+      const c = text.charCodeAt(i);
+      if (c > 255) return { err: "als Text zerfallen" };
+      bytes[i] = c;
+    }
+    return { buf: bytes.buffer, how: "Bytes" };
+  }
+
+  /* Woran eine Aufnahme zu erkennen ist, wenn die Endung nichts verrät (base64 in
+     einer .txt): an ihren ersten Bytes. Nur das Element braucht diese Auskunft —
+     das Entpacken riecht selbst, was es vor sich hat. */
+  function sniff(buffer) {
+    const n = Math.min(12, buffer.byteLength);
+    const b = new Uint8Array(buffer, 0, n);
+    const head = String.fromCharCode(b[0] || 0, b[1] || 0, b[2] || 0, b[3] || 0);
+    if (head === "RIFF") return "audio/wav";
+    if (head === "OggS") return "audio/ogg";
+    if (head === "fLaC") return "audio/flac";
+    if (head.slice(0, 3) === "ID3") return "audio/mpeg";
+    if (b[0] === 0xFF && (b[1] & 0xE0) === 0xE0) return "audio/mpeg";
+    if (n >= 8 && b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70) {
+      return "audio/mp4";
+    }
+    return "";
+  }
+
+  // Der letzte Teil eines Pfades — die Dialoge dürfen auch Windows-Trenner liefern.
+  function nameOf(path) {
+    return String(path).split(/[\\/]/).pop();
+  }
+
+  // --- Lesen und übergeben ---
+
+  function done(key) {
+    return !!(found[key] && found[key].ok);
+  }
+
+  async function take(key, name, path) {
+    const fs = window.morphosFS;
+    const f = found[key] = { name: name, path: path, how: "", kb: 0,
+                             ok: false, state: "wird gelesen" };
+    if (!fs) { f.state = "kein Datenordner"; return false; }
+    let text;
+    try { text = await fs.readFile(path); }
+    catch (e) { f.state = "nicht lesbar"; return false; }
+    const r = bytesOf(text);
+    if (!r.buf) { f.state = r.err; return false; }
+    f.how = r.how;
+    f.kb = Math.round(r.buf.byteLength / 1024 * 10) / 10;
+    /* Erkennt der Blick auf die ersten Bytes keine Tonform, ist die Datei auf dem
+       Weg durch das Dateisystem als Text zerfallen. Versucht wird es trotzdem —
+       aber der Vermerk sagt, woran es liegt, wenn nichts klingt. */
+    const kind = sniff(r.buf);
+    f.ok = TetrisSound.adopt(key, r.buf, kind || MIME[extOf(name)] || "audio/mpeg", name);
+    f.state = !f.ok ? "abgewiesen"
+      : kind ? "übernommen"
+      : "übernommen, aber keine Tonform erkennbar";
+    return f.ok;
+  }
+
+  async function fromDir(dir) {
+    const fs = window.morphosFS;
+    let entries;
+    try { entries = await fs.list(dir); } catch (e) { return; }
+    if (!Array.isArray(entries)) return;
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      if (!e || e.isDir || !e.name) continue;
+      const key = keyOf(e.name);
+      if (!key || done(key)) continue;
+      // Der Pfad wird selbst gebaut wie im Archiv: relativ zum Datenordner.
+      await take(key, e.name, dir ? dir + "/" + e.name : e.name);
+    }
+  }
+
+  async function fromPicks() {
+    const fs = window.morphosFS;
+    let text;
+    try { text = await fs.readFile(LIST); } catch (e) { return; }
+    let map;
+    try { map = JSON.parse(text); } catch (e) { return; }
+    if (!map || typeof map !== "object") return;
+    picks = map;
+    for (const key in map) {
+      if (!NAMES[key] || done(key) || typeof map[key] !== "string") continue;
+      await take(key, nameOf(map[key]), map[key]);
+    }
+  }
+
+  // --- Was von außen aufgerufen wird ---
+
+  /* Einmal alles durchsehen. Läuft beim Start von selbst und noch einmal, wenn die
+     Diagnose darum bittet. */
+  async function scan() {
+    const fs = window.morphosFS;
+    if (!fs || !fs.list) { note = "kein Datenordner"; return report(); }
+    note = "wird gesucht …";
+    await fromPicks();
+    await fromDir(DIR);
+    await fromDir("");
+    let n = 0;
+    for (const key in NAMES) if (done(key)) n++;
+    note = n ? n + " von 4 Aufnahmen übernommen" : "keine Aufnahme gefunden";
+    return report();
+  }
+
+  /* Eine Aufnahme von Hand wählen. Der Dialog zeigt den Datenordner; der gewählte
+     Pfad wird gemerkt, damit dieselbe Datei beim nächsten Start von selbst klingt. */
+  async function pick(key) {
+    const fs = window.morphosFS;
+    if (!NAMES[key] || !fs || !fs.openFile) return false;
+    let path;
+    try {
+      path = await fs.openFile({
+        title: "Aufnahme wählen",
+        extensions: ["mp3", "wav", "ogg", "m4a", "b64", "txt"]
+      });
+    } catch (e) { return false; }
+    if (!path) return false;
+    const ok = await take(key, nameOf(path), path);
+    if (ok) await remember(key, path);
+    return ok;
+  }
+
+  async function remember(key, path) {
+    const fs = window.morphosFS;
+    if (!fs || !fs.writeFile) return;
+    if (!picks) picks = {};
+    picks[key] = path;
+    try { await fs.writeFile(LIST, JSON.stringify(picks, null, 1)); } catch (e) {}
+  }
+
+  // Nur Ablesen, kein Eingriff — für die Ton-Diagnose.
+  function report() {
+    return {
+      fs: !!(window.morphosFS && window.morphosFS.list),
+      dir: DIR,
+      note: note,
+      files: found
+    };
+  }
+
+  // Beim Start einmal von selbst: Was hier liegt, klingt ab dem ersten Zug.
+  function begin() { scan().catch(function () { note = "Suche misslungen"; }); }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", begin);
+  } else {
+    begin();
+  }
+
+  return {
+    scan: scan,
+    pick: pick,
+    report: report,
+    dir: DIR
   };
 })();
 </script>
@@ -4384,6 +4779,10 @@ render(html`<${App} />`, document.getElementById("app"));
    Anwenders, die der Browser kennt. Was auf Knopfdruck stumm bleibt, bleibt nicht
    wegen fehlender Zustimmung stumm.
 
+   Darunter steht, was soundfiles.js im Datenordner gefunden hat — der einzige Weg,
+   auf dem eine Aufnahme in diesem Fensterrahmen überhaupt in die App gelangt. Dort
+   lässt sich für jeden Klang auch eine Datei von Hand wählen.
+
    Sie hängt an einer eigenen Wurzel (#diag) und liegt damit über jeder Ansicht,
    ohne dass eine davon etwas von ihr wissen muss. */
 
@@ -4401,7 +4800,8 @@ function SoundDiagRow({ s }) {
   const ok = s.way === "Element" || s.way === "Tonmaschine";
   return html`<tr class=${bad ? "bad" : ok ? "ok" : ""}>
     <td class="name">${DIAG_NAMES[s.key] || s.key}</td>
-    <td>${!s.found ? "fehlt"
+    <td>${s.file ? "Datei: " + s.file
+      : !s.found ? "fehlt"
       : s.embedded ? "eingebettet " + s.kb + " KB"
       : s.src ? "Pfad: " + s.src : "ohne Quelle"}</td>
     <td>${s.found ? (DIAG_READY[s.ready] || s.ready) + " · " + (DIAG_NET[s.net] || s.net) : "—"}
@@ -4414,6 +4814,58 @@ function SoundDiagRow({ s }) {
       <button onClick=${() => TetrisSound.test(s.key, "tone")}>▶ Ton</button>
     </td>
   </tr>`;
+}
+
+/* Die Aufnahmen aus dem Datenordner (soundfiles.js): was gefunden wurde, was fehlt
+   und woran es lag. Von hier aus lässt sich für jeden Klang eine Datei wählen — das
+   ist zugleich der einzige Weg, auf dem eine Aufnahme überhaupt in die App gelangt. */
+// Was von einer gefundenen Datei zu sagen ist — nur, was auch dasteht.
+function fileLine(f) {
+  if (!f) return "keine Datei gefunden";
+  const bits = [f.name];
+  if (f.kb) bits.push(f.kb + " KB");
+  if (f.how) bits.push(f.how);
+  bits.push(f.state);
+  return bits.join(" · ");
+}
+
+function SoundFilesBlock() {
+  const { useState } = preactHooks;
+  const [busy, setBusy] = useState("");
+  const r = TetrisSoundFiles.report();
+  const keys = ["move", "drop", "rows", "tetris"];
+
+  async function choose(key) {
+    setBusy(key);
+    try { await TetrisSoundFiles.pick(key); } finally { setBusy(""); }
+  }
+
+  return html`<div class="diag-files">
+    <h3>Aufnahmen aus dem Datenordner <span>${r.note}</span></h3>
+    ${!r.fs
+      ? html`<p class="diag-hint">Es ist kein Datenordner festgelegt — ohne ihn
+          bleibt es bei den eigenen Tönen.</p>`
+      : html`<p class="diag-hint">Tondateien neben der App sind hier nicht
+          erreichbar; nur der Datenordner führt hinein. Lege die vier Aufnahmen in
+          <b>${r.dir}</b> oder in den Datenordner selbst — erkannt werden sie am
+          Namen (<i>move</i>, <i>drop</i>, <i>row</i>, <i>tetris</i>). Kommt eine
+          Datei <i>als Text zerfallen</i> an, trägt dieselbe Aufnahme als
+          <b>base64</b> in einer <b>.txt</b> ganz sicher.</p>`}
+    <ul>
+      ${keys.map((k) => {
+        const f = r.files[k];
+        const good = !!f && f.ok;
+        return html`<li key=${k} class=${good ? "ok" : f ? "bad" : ""}>
+          <b>${DIAG_NAMES[k]}</b>
+          <span>${fileLine(f)}</span>
+          <button disabled=${busy === k} onClick=${() => choose(k)}>
+            ${busy === k ? "…" : "Datei wählen"}</button>
+        </li>`;
+      })}
+    </ul>
+    <button class="diag-again" onClick=${() => TetrisSoundFiles.scan().catch(() => {})}>Erneut
+      suchen</button>
+  </div>`;
 }
 
 function SoundDiag() {
@@ -4463,9 +4915,11 @@ function SoundDiag() {
           ${r.sounds.map((s) => html`<${SoundDiagRow} key=${s.key} s=${s} />`)}
         </tbody>
       </table>
+      <${SoundFilesBlock} />
       <p class="diag-hint">Ein Klang geht drei Wege, bis einer trägt:
-        <b>Element</b> → <b>Tonmaschine</b> → <b>eigener Ton</b>.
-        Steht in „zuletzt über“ noch <i>noch nichts</i>, war dieser Klang noch nicht
+        <b>Element</b> → <b>Tonmaschine</b> → <b>eigener Ton</b>. Liegt eine
+        Aufnahme aus dem Datenordner bereit, klingt sie zuerst. Steht in
+        „zuletzt über“ noch <i>noch nichts</i>, war dieser Klang noch nicht
         fällig. <kbd>T</kbd> schließt wieder.</p>
     </div>
   </div>`;

@@ -16,6 +16,8 @@
   pointer-events: auto;
   max-width: min(1000px, 96vw);
   width: 100%;
+  max-height: 94vh;  /* mit den Aufnahmen darunter wird die Tafel hoch */
+  overflow: auto;
   background: rgba(10, 14, 24, .96);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -109,6 +111,71 @@
   cursor: pointer;
 }
 .diag-box td.act button:hover { background: rgba(110, 168, 255, .26); }
+
+/* Die Aufnahmen aus dem Datenordner — der einzige Weg, auf dem eine Tondatei in
+   die App gelangt. */
+.diag-files {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.diag-files h3 {
+  margin: 0 0 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.diag-files h3 span {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--dim);
+}
+
+.diag-files ul {
+  list-style: none;
+  margin: 10px 0 10px;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.diag-files li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .035);
+  color: var(--dim);
+}
+.diag-files li b {
+  color: var(--ink);
+  font-weight: 600;
+  min-width: 11em;
+}
+.diag-files li span { flex: 1; font-size: 12px; }
+.diag-files li.ok span { color: #4dfb9a; }
+.diag-files li.bad span { color: #ffb45c; }
+
+.diag-files button {
+  background: rgba(110, 168, 255, .13);
+  color: var(--ink);
+  border: 1px solid rgba(110, 168, 255, .32);
+  border-radius: 6px;
+  padding: 4px 9px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.diag-files button:hover { background: rgba(110, 168, 255, .26); }
+.diag-files button[disabled] { opacity: .5; cursor: default; }
 
 .diag-hint {
   margin: 10px 0 0;

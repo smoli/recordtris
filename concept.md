@@ -40,8 +40,10 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
   Erschütterung, Nachglühen. Von hier aus klingt der Reihenschlag.
 - `src/sound.js` — die vier Geräusche: drei Wege zum Klang, Mindestabstand,
   Stummschalter, Selbstauskunft für die Diagnose.
+- `src/soundfiles.js` — die Aufnahmen aus dem Datenordner: suchen, lesen, in Bytes
+  verwandeln und an `sound.js` übergeben.
 - `src/sounddiag.js` — die Ton-Diagnose (Taste `T`): legt offen, was jeder Klang
-  gerade tut, und spielt ihn auf Knopfdruck.
+  gerade tut, spielt ihn auf Knopfdruck und lässt Aufnahmen wählen.
 - `src/style.css` — Grundmaße, Farben, Feld und Seitenspalten.
 - `src/overlay.css` — Startbildschirm, Einblendungen, Knöpfe, Eingabefelder.
 - `src/screens.css` — Wiedergabe und Bestenliste.
@@ -132,19 +134,36 @@ darum weder in der Momentaufnahme noch in der Bestenliste. Das Schieben ist der
 einzige Eintrag ohne Bild: Es meldet sich allein, damit es zu hören ist.
 
 **Der Ton klingt im Augenblick des Zuges.** Die vier Klänge — Schieben und
-Drehen, Aufsetzen, volle Reihen, Tetris — liegen als `<audio>` im Dokument, weil nur
-im Markup der Pfad der Beigabe steht, den das Bündeln durch die eingebettete Fassung
-ersetzt; im JavaScript trüge er nicht.
+Drehen, Aufsetzen, volle Reihen, Tetris — liegen als `<audio>` im Dokument.
+
+**Die Aufnahmen kommen über den Datenordner, nicht über das Dokument.** Die Quellen
+der Elemente sind Pfade (`assets/…`), und das Bündeln lässt sie stehen: Es bettet
+Stil und Skript ein, keine Medien. Im Fensterrahmen der App führt ein Pfad
+nirgendwohin — jedes Element meldet "Quelle nicht spielbar" (Fehler 4). Damit bleibt
+genau ein Weg, auf dem die Bytes einer Aufnahme in die laufende App gelangen: das
+Dateisystem des Workspace. `soundfiles.js` sucht beim Start in der Merkliste
+`tetris-sounds.json`, im Ordner `tetris-sounds/` und im Datenordner selbst; welcher
+Klang gemeint ist, verrät der Dateiname, welche Tonform vorliegt, verraten die ersten
+Bytes. Gelesen werden beide Formen — die Bytes der Tondatei selbst, sofern das
+Dateisystem sie unversehrt durchreicht, und dieselbe Aufnahme als base64 in einer
+Textdatei; die zweite trägt immer, weil Text unterwegs nichts verliert.
+`TetrisSound.adopt()` nimmt die Bytes an und macht beide Wege gangbar: Es entpackt
+sie für die Tonmaschine und hängt sie zugleich als `data:`-Quelle in die Elemente.
+Eine von Hand gewählte Datei wird in der Merkliste vermerkt und klingt beim nächsten
+Start von selbst. Findet sich nichts, bleibt es bei den eigenen Tönen — der
+Datenordner ist keine Bedingung, sondern eine Möglichkeit.
 
 **Ein Klang geht drei Wege, bis einer trägt.** Weil sich von außen nicht feststellen
 lässt, welcher Weg in einem gegebenen Fensterrahmen wirklich zum Lautsprecher führt,
 verlässt sich `sound.js` auf keinen einzigen. Jeder Anschlag versucht der Reihe nach:
 
 1. **das `<audio>`-Element** — genauer eine von mehreren Kopien, damit ein Ton den
-   vorigen nicht abschneidet. Der verlässlichste Weg, darum der erste;
-2. **den entpackten Klangkörper in der Tonmaschine** — aus der eingebetteten
-   `data:`-Quelle entstehen beim Laden Klangkörper (`atob` und `decodeAudioData`,
-   ohne Netzzugriff). Vorlaufende Stille im Klang wird beim Starten übersprungen;
+   vorigen nicht abschneidet. Der verlässlichste Weg, darum in der Regel der erste;
+2. **den entpackten Klangkörper in der Tonmaschine** — aus den Bytes einer
+   Aufnahme entsteht ein Klangkörper (`decodeAudioData`, ohne Netzzugriff).
+   Vorlaufende Stille im Klang wird beim Starten übersprungen. Liegt ein
+   Klangkörper bereit, rückt dieser Weg an die erste Stelle: Er klingt ohne Anlauf,
+   das Element wird zum Rückfall;
 3. **einen kurzen selbst erzeugten Ton** aus Oszillatoren der Tonmaschine.
 
 Weist ein Weg ab, übernimmt noch derselbe Anschlag den nächsten — auch dann, wenn das
@@ -159,7 +178,9 @@ zu spielen; nach dem Element wird bei jedem Anschlag erneut gesucht.
 Klang, ob sein Element im Dokument steht, ob seine Quelle eingebettet wurde, was das
 Entpacken ergab, welcher Weg zuletzt getragen hat und woran der letzte Versuch
 scheiterte. Die Ton-Diagnose (`sounddiag.js`, Taste `T`) zeigt das und spielt jeden
-Klang auf Knopfdruck — einmal die ganze Kette, einmal nur den eigenen Ton. Der Klick
+Klang auf Knopfdruck — einmal die ganze Kette, einmal nur den eigenen Ton. Darunter
+steht, was `soundfiles.js` im Datenordner gefunden hat, samt Knopf zum Wählen einer
+Datei und zum erneuten Suchen. Der Klick
 ist dabei die stärkste Zustimmung des Anwenders, die der Browser kennt: Was auf
 Knopfdruck stumm bleibt, bleibt nicht wegen fehlender Zustimmung stumm. Sie hängt an
 einer eigenen Preact-Wurzel (`#diag`) und liegt damit über jeder Ansicht, ohne dass
