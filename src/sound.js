@@ -86,6 +86,15 @@ const TetrisSound = (function () {
     return ctx;
   }
 
+  /* Die Tonmaschine und ihr Regler — für alles, was hier sonst noch klingen soll:
+     das Klangbett des musikalischen Endlosspiels (pad.js). Es hängt am selben
+     Regler und ist damit von der Stummschaltung mit erfasst, ohne davon zu wissen. */
+  function bus() {
+    openCtx();
+    if (ctx) addWatchers();
+    return { ctx: ctx, master: master };
+  }
+
   /* Der erste Tastendruck oder Klick weckt die Tonmaschine. Danach hören die
      Wächter von selbst auf zu lauschen. */
   function unlock() {
@@ -521,6 +530,8 @@ const TetrisSound = (function () {
     series: series,
     adopt: adopt,
     adoptUri: adoptUri,
+    bus: bus,
+    wake: function () { if (ctx && ctx.state !== "running") unlock(); },
     has: hasRecording,
     setMuted: setMuted,
     report: report,

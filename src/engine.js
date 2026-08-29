@@ -57,16 +57,33 @@ const TetrisEngine = (function () {
     return false;
   }
 
+  /* Der Akkord des Steins, der gerade fällt — das Klangbett des musikalischen
+     Endlosspiels. Es klingt nur, wenn die Partie musikalisch ist; sonst tut der
+     Aufruf nichts. Aufgerufen wird er beim Erscheinen eines Steins und immer
+     dann, wenn das Bett unterbrochen war (Pause, Wiedereinstieg). */
+  function chordCue(state) {
+    if (typeof TetrisPad === "undefined") return;
+    if (!state || !state.musical || !state.piece || state.over || state.paused) return;
+    TetrisPad.chord(state.piece.type);
+  }
+
+  function padStop() {
+    if (typeof TetrisPad !== "undefined") TetrisPad.stop();
+  }
+
   /* Das Merkwort bestimmt den Startwert des Schieberegisters: dasselbe Wort
      spielt dieselbe Steinfolge. Fehlt es, entsteht eines zufällig.
      Die Spielart ist "classic" (das Level steigt alle zehn Reihen) oder "forever"
-     (das Level bleibt, wo es begann — es zählt allein, wie lange man durchhält). */
-  function create(startLevel, seedWord, mode) {
+     (das Level bleibt, wo es begann — es zählt allein, wie lange man durchhält).
+     Das Endlosspiel kann dazu musikalisch sein: Dann ist jeder Stein eine Stufe
+     der Tonart und klingt beim Erscheinen. An der Regel ändert das nichts. */
+  function create(startLevel, seedWord, mode, musical) {
     const stats = {};
     TetrisPieces.TYPES.forEach((t) => { stats[t] = 0; });
     const word = TetrisSeed.normalize(seedWord) ? TetrisSeed.sanitizeInput(seedWord) : TetrisSeed.randomWord();
     const state = {
       mode: mode === FOREVER ? FOREVER : CLASSIC,
+      musical: mode === FOREVER && !!musical, // das Klangbett gehört dem Endlosspiel
       seedWord: word,
       rng: NesRng.create(TetrisSeed.toRegister(word)),
       board: emptyBoard(),
@@ -102,6 +119,10 @@ const TetrisEngine = (function () {
     if (collides(state.board, type, 0, state.piece.x, state.piece.y)) {
       state.over = true;
       state.piece = null;
+      padStop();
+    } else {
+      // Der neue Stein bringt seinen Akkord mit — er löst den vorigen ab.
+      chordCue(state);
     }
     state.version++;
   }
@@ -191,7 +212,7 @@ const TetrisEngine = (function () {
     }
     state.piece = null;
     state.version++;
-    if (aboveField) { state.over = true; return; }
+    if (aboveField) { state.over = true; padStop(); return; }
 
     const full = [];
     for (let r = 0; r < ROWS; r++) {
@@ -243,6 +264,8 @@ const TetrisEngine = (function () {
   function togglePause(state) {
     if (state.over) return;
     state.paused = !state.paused;
+    // In der Pause schweigt auch das Klangbett; danach steht wieder der Akkord des Steins.
+    if (state.paused) padStop(); else chordCue(state);
     state.version++;
   }
 
@@ -252,6 +275,7 @@ const TetrisEngine = (function () {
     return {
       t: state.elapsed,
       mode: state.mode,
+      musical: state.musical,
       board: boardToText(state.board),
       piece: state.piece
         ? { type: state.piece.type, rot: state.piece.rot, x: state.piece.x, y: state.piece.y }
@@ -277,6 +301,7 @@ const TetrisEngine = (function () {
   function fromSnapshot(snap) {
     return {
       mode: snap.mode === FOREVER ? FOREVER : CLASSIC,
+      musical: snap.mode === FOREVER && !!snap.musical,
       seedWord: snap.seedWord,
       rng: NesRng.restore(snap.rng),
       board: boardFromText(snap.board),
@@ -306,6 +331,7 @@ const TetrisEngine = (function () {
     create: create, update: update,
     move: move, rotate: rotate, softDrop: softDrop, hardDrop: hardDrop,
     dropDistance: dropDistance, togglePause: togglePause,
+    chordCue: chordCue,
     snapshot: snapshot, fromSnapshot: fromSnapshot
   };
 })();

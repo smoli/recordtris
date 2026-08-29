@@ -33,6 +33,7 @@ function App() {
   const savedRef = useRef(false); // ist die laufende Partie schon eingetragen?
   const [startLevel, setStartLevel] = useState(0);
   const [mode, setMode] = useState(TetrisEngine.CLASSIC); // Klassisch oder Endlos
+  const [musical, setMusical] = useState(false); // das Klangbett des Endlosspiels
   const [seedWord, setSeedWord] = useState(() => TetrisSeed.randomWord());
   const [showScores, setShowScores] = useState(false);
   const [muted, setMuted] = useState(false); // der Ton, an einer Stelle geschaltet
@@ -73,18 +74,20 @@ function App() {
     });
   }, []);
 
-  const startGame = useCallback((lvl, word, m) => {
+  const startGame = useCallback((lvl, word, m, mus) => {
     heldRef.current = {};
     tapeRef.current = [];
     replayRef.current = null;
     savedRef.current = false;
     lastRef.current = null;
-    gameRef.current = TetrisEngine.create(lvl, word, m);
+    TetrisPad.stop(); // was von der vorigen Partie noch steht, verstummt
+    gameRef.current = TetrisEngine.create(lvl, word, m, mus);
     setSeedWord(gameRef.current.seedWord); // ein gewürfeltes Wort bleibt sichtbar
     bump((v) => v + 1);
   }, []);
 
   const quit = useCallback(() => {
+    TetrisPad.stop();
     gameRef.current = null;
     heldRef.current = {};
     tapeRef.current = [];
@@ -99,6 +102,23 @@ function App() {
     setMuted((m) => { TetrisSound.setMuted(!m); return !m; });
   }, []);
 
+  /* Das Klangbett lässt sich jederzeit schalten: auf dem Startbildschirm für die
+     nächste Partie, im laufenden Endlosspiel sofort. Einer klassischen Partie
+     gehört es nicht — dort tut die Taste nichts. */
+  const toggleMusical = useCallback(() => {
+    const g = gameRef.current;
+    if (g) {
+      if (g.mode !== TetrisEngine.FOREVER || g.over) return;
+      g.musical = !g.musical;
+      if (g.musical) TetrisEngine.chordCue(g); else TetrisPad.stop();
+      g.version++;
+      setMusical(g.musical);
+    } else {
+      setMusical((m) => !m);
+    }
+    bump((v) => v + 1);
+  }, []);
+
   const openScores = useCallback(() => setShowScores(true), []);
   const closeScores = useCallback(() => setShowScores(false), []);
 
@@ -111,7 +131,7 @@ function App() {
     setSeedWord(clean);
     setMode(TetrisEngine.CLASSIC);
     setShowScores(false);
-    startGame(startLevel, clean, TetrisEngine.CLASSIC);
+    startGame(startLevel, clean, TetrisEngine.CLASSIC, false);
   }, [startLevel, startGame]);
 
   /* Aus der Endlos-Liste heraus dasselbe Level noch einmal: Das Level wird
@@ -120,8 +140,8 @@ function App() {
     setStartLevel(lvl);
     setMode(TetrisEngine.FOREVER);
     setShowScores(false);
-    startGame(lvl, seedWord, TetrisEngine.FOREVER);
-  }, [seedWord, startGame]);
+    startGame(lvl, seedWord, TetrisEngine.FOREVER, musical);
+  }, [seedWord, musical, startGame]);
 
   // Bildtakt: Schwerkraft, Tastenwiederholung, Aufzeichnung — oder die Wiedergabe.
   useEffect(() => {
@@ -193,6 +213,7 @@ function App() {
   const openReplay = useCallback(() => {
     const frames = tapeRef.current;
     if (!frames.length) return;
+    TetrisPad.stop(); // das Klangbett gehört der laufenden Partie, nicht dem Band
     heldRef.current = {};
     replayRef.current = TetrisReplay.cursor(frames, frames.length - 1);
     bump((v) => v + 1);
@@ -254,6 +275,8 @@ function App() {
     savedRef.current = false;
     replayRef.current = null;
     heldRef.current = {};
+    // Die Partie läuft wieder — also steht auch wieder der Akkord ihres Steins.
+    TetrisEngine.chordCue(gameRef.current);
     bump((v) => v + 1);
   }, []);
 
@@ -324,15 +347,17 @@ function App() {
       const g = gameRef.current;
 
       if (!g) {
-        if (k === "Enter" || (k === " " && !inField)) startGame(startLevel, seedWord, mode);
+        if (k === "Enter" || (k === " " && !inField)) startGame(startLevel, seedWord, mode, musical);
         else if (!inField && (k === "h" || k === "H")) openScores();
         else if (!inField && (k === "m" || k === "M")) {
           setMode(mode === TetrisEngine.FOREVER ? TetrisEngine.CLASSIC : TetrisEngine.FOREVER);
+        } else if (!inField && (k === "k" || k === "K")) {
+          if (mode === TetrisEngine.FOREVER) toggleMusical();
         }
         return;
       }
       if (g.over) {
-        if (k === "Enter") startGame(g.startLevel, g.seedWord, g.mode);
+        if (k === "Enter") startGame(g.startLevel, g.seedWord, g.mode, g.musical);
         else if (k === "r" || k === "R") openReplay();
         else if (k === "h" || k === "H") openScores();
         else if (k === "Escape") quit();
@@ -341,6 +366,7 @@ function App() {
       // Die Pause gibt auch alle Tasten frei — zweimal P holt eine verhakte zurück.
       if (k === "p" || k === "P") { heldRef.current = {}; TetrisEngine.togglePause(g); return; }
       if (k === "Escape") { quit(); return; }
+      if (k === "k" || k === "K") { toggleMusical(); return; }
       if (g.paused) {
         if (k === "r" || k === "R") openReplay();
         else if (k === "h" || k === "H") openScores();
@@ -374,9 +400,9 @@ function App() {
       window.removeEventListener("blur", onBlur);
       document.removeEventListener("visibilitychange", onHidden);
     };
-  }, [startLevel, seedWord, mode, startGame, quit, openReplay, closeReplay,
+  }, [startLevel, seedWord, mode, musical, startGame, quit, openReplay, closeReplay,
       seekTo, stepBy, playFrom, pausePlayback, setSpeed, resumeHere,
-      showScores, openScores, closeScores, toggleSound]);
+      showScores, openScores, closeScores, toggleSound, toggleMusical]);
 
   const g = gameRef.current;
   const rp = replayRef.current;
@@ -436,12 +462,13 @@ function App() {
       <div class="stage intro">
         <${StartScreen} level=${startLevel} onLevel=${setStartLevel}
           mode=${mode} onMode=${setMode}
+          musical=${musical} onMusical=${toggleMusical}
           seed=${seedWord} onSeed=${setSeedWord}
           summary=${mode === TetrisEngine.FOREVER
             ? TetrisScores.foreverSummaryFor(store, startLevel)
             : TetrisScores.summaryFor(store, seedWord)}
           onScores=${openScores} muted=${muted} onSound=${toggleSound}
-          onStart=${() => startGame(startLevel, seedWord, mode)} />
+          onStart=${() => startGame(startLevel, seedWord, mode, musical)} />
       </div>
     </div>`;
   }
@@ -486,7 +513,7 @@ function App() {
             ? "Bestzeit " + TetrisScores.formatDuration(sum.best.duration)
             : "Bestwert " + sum.best.score}</p>`}
         <p class="hint seed-hint">Merkwort <b class="seed-word">${g.seedWord}</b></p>
-        <button class="start" onClick=${() => startGame(g.startLevel, g.seedWord, g.mode)}>Noch einmal</button>
+        <button class="start" onClick=${() => startGame(g.startLevel, g.seedWord, g.mode, g.musical)}>Noch einmal</button>
         <button class="start small" disabled=${!tapeRef.current.length}
           onClick=${openReplay}>Aufzeichnung ansehen</button>
         <button class="start small" onClick=${openScores}>Bestenliste</button>
@@ -503,6 +530,7 @@ function App() {
         <h2>Nächster</h2>
         <${Preview} type=${g.nextType} />
       </div>
+      ${g.musical && html`<${ChordBox} game=${g} />`}
       <div class="box">
         <h2>Merkwort</h2>
         <p class="seed-word">${g.seedWord}</p>
@@ -516,6 +544,7 @@ function App() {
         <p><kbd>Leer</kbd> fallen lassen</p>
         <p><kbd>P</kbd> Pause · <kbd>Esc</kbd> Ende</p>
         <p><kbd>S</kbd> Ton ${muted ? "aus" : "an"} · <kbd>T</kbd> Ton prüfen</p>
+        ${forever && html`<p><kbd>K</kbd> Musik ${g.musical ? "an" : "aus"}</p>`}
         <p><kbd>R</kbd> Aufzeichnung (in Pause)</p>
         <p><kbd>H</kbd> Bestenliste (in Pause)</p>
       </div>

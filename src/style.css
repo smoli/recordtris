@@ -273,6 +273,9 @@ kbd {
 
 /* Die Nebenzeile der Karten: im Endlosspiel die Punkte unter der Uhr und der
    Vermerk, dass das Level dort stehen bleibt. */
+/* Die Stufe des Akkords — eine römische Zahl, darum etwas luftiger gesetzt. */
+.degree { letter-spacing: .1em; }
+
 .mode-line {
   margin: 3px 0 0;
   font-size: clamp(10px, calc(var(--cell) * 0.34), 13px);

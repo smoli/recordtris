@@ -39,7 +39,10 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
 - `src/fx.js` — die Bildschau des Feldes: eigener Bildtakt, Ereignisse, Teilchen,
   Erschütterung, Nachglühen. Von hier aus klingt der Reihenschlag.
 - `src/sound.js` — die vier Geräusche: drei Wege zum Klang, Mindestabstand,
-  Stummschalter, Selbstauskunft für die Diagnose.
+  Stummschalter, Selbstauskunft für die Diagnose; dazu die Tonmaschine selbst,
+  die sie über `bus()` weiterreicht.
+- `src/pad.js` — das Klangbett des musikalischen Endlosspiels: die Tonart, die
+  Stufe je Steinsorte und der Pad-Klang, der sie stehen lässt.
 - `src/soundassets.js` — die vier Beigaben aus `assets`: an der Stelle im Dokument
   ablesen, an der das Bündeln sie eingesetzt hat, und an `sound.js` übergeben.
 - `src/soundfiles.js` — das Netz darunter: im Datenordner suchen oder vom Anwender
@@ -96,6 +99,31 @@ nichts ändert; der Bildtakt stößt darum bei jeder neuen Sekunde ein Neuzeichn
 ohne dafür ein Bild aufzuzeichnen. Da das Level nie steigt, bleibt im Endlosspiel
 auch die Farbe des Levels stehen und die Druckwelle des Levelaufstiegs aus — beides
 fällt von selbst weg, ohne Sonderfall in der Bildschau.
+
+**Das Endlosspiel kann musikalisch sein.** Jede Steinsorte ist eine Stufe einer
+Tonart; erscheint ein Stein, klingt sein Akkord als weiches Pad und bleibt stehen,
+bis der nächste Stein ihn ablöst. Die Zuordnung stammt vom Anwender und ist fest:
+I → I, S → IV, O → II, Z → III, T → V, J → VI, L → VII. Die Tonart ist F-Dur, die
+Stufen sind ihre Dreiklänge (F-Dur, g-Moll, a-Moll, B♭-Dur, C-Dur, d-Moll,
+e-vermindert), dazu ein Bass eine Oktave unter dem Grundton; die Lagen steigen mit
+der Stufe, weil ein Pad davon getragener klingt als von einem Sprung zurück in die
+tiefe Oktave.
+
+Das ist keine dritte Spielart, sondern ein Schalter des Endlosspiels: ein Feld
+`musical` im Spielstand, das ausschließlich klingt — keine Regel, keine Wertung,
+keine eigene Bestenliste hängen daran. Warum am Endlosspiel: Dort bleibt das Tempo
+stehen, und die Musik ist das, was die Partie gliedert, statt einer steigenden Zahl.
+Weil das Merkwort die Steinfolge bestimmt, bestimmt es damit auch die Akkordfolge —
+dasselbe Wort spielt dieselbe Musik.
+
+Ausgelöst wird das Bett dort, wo sein Anlass entsteht: in `spawn()`. Unterbrochen
+wird es überall dort, wo die Partie stillsteht — Pause, Spielende, Verlassen, und in
+der Wiedergabe, denn dort läuft kein Stein auf. Aus der Wiedergabe heraus
+weiterzuspielen setzt es wieder an. In der Wiedergabe selbst schweigt es: Sie zeigt
+Bilder, und ein Erscheinen ist ihnen nicht anzusehen — genau wie beim Schieben.
+Geklungen wird über die Tonmaschine von `sound.js` (`bus()`), also über deren
+Regler: Damit erfasst die Stummschaltung (Taste `S`) das Bett mit, ohne davon zu
+wissen.
 
 **Bewusste Abweichungen.** Drehungen dürfen um bis zu zwei Spalten ausweichen, wenn
 sie sonst an einer Wand scheitern würden — das Original kennt das nicht, ohne es

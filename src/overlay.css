@@ -74,6 +74,9 @@
   margin-bottom: 10px;
 }
 
+/* Der Schalter des Klangbetts steht allein — er gehört zur Spielart darüber. */
+.modes.one { grid-template-columns: 1fr; margin-top: -5px; }
+
 .levels {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

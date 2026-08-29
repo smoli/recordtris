@@ -47,6 +47,22 @@ function ScoreBox({ game }) {
   </div>`;
 }
 
+/* Das Klangbett in Worten: welche Stufe der Tonart gerade steht und welche mit
+   dem nächsten Stein kommt. Nur das musikalische Endlosspiel zeigt sie. */
+function ChordBox({ game }) {
+  /* Zwischen zwei Steinen — während die vollen Reihen fallen — gibt es keinen
+     Stein, wohl aber einen Akkord: den, der noch steht. */
+  const next = TetrisPad.chordOf(game.nextType);
+  const cur = TetrisPad.chordOf(game.piece ? game.piece.type : TetrisPad.playing()) || next;
+  if (!cur) return null;
+  return html`<div class="box">
+    <h2>Akkord</h2>
+    <p class="big degree">${cur.deg}</p>
+    <p class="mode-line">${cur.name} · ${TetrisPad.keyName()}</p>
+    ${next && html`<p class="mode-line">dann ${next.deg} · ${next.name}</p>`}
+  </div>`;
+}
+
 function Stats({ stats }) {
   return html`<div class="stats">
     ${TetrisPieces.TYPES.map((t) => html`
@@ -124,8 +140,8 @@ function GameScreen({ game, summary, isRecord, rank, canReplay, onRestart, onRep
 // Der Schriftzug zerfällt in Buchstaben, damit jeder für sich leuchten kann.
 const TITLE_LETTERS = ["T", "E", "T", "R", "I", "S"];
 
-function StartScreen({ level, onLevel, mode, onMode, seed, onSeed, summary, onScores,
-                       muted, onSound, onStart }) {
+function StartScreen({ level, onLevel, mode, onMode, musical, onMusical, seed, onSeed,
+                       summary, onScores, muted, onSound, onStart }) {
   const levels = [];
   for (let i = 0; i <= 9; i++) levels.push(i);
   const forever = mode === TetrisEngine.FOREVER;
@@ -142,6 +158,12 @@ function StartScreen({ level, onLevel, mode, onMode, seed, onSeed, summary, onSc
       <button class=${"lvl" + (forever ? " on" : "")}
         onClick=${() => onMode(TetrisEngine.FOREVER)}>∞ Endlos</button>
     </div>
+    ${forever && html`<div class="modes one">
+      <button class=${"lvl" + (musical ? " on" : "")} onClick=${onMusical}>
+        ${musical ? "♫ Musik an" : "♫ Musik aus"}</button>
+    </div>`}
+    ${forever && musical && html`<p class="hint tight">Jeder Stein ist eine Stufe
+      in ${TetrisPad.keyName()} — sein Akkord klingt, sobald er erscheint.</p>`}
     <p class="label">${forever ? "Festes Level" : "Startlevel"}</p>
     <div class="levels">
       ${levels.map((i) => html`
@@ -171,7 +193,7 @@ function StartScreen({ level, onLevel, mode, onMode, seed, onSeed, summary, onSc
       <button class="start small" onClick=${onScores}>Bestenliste</button>
       <button class="start small" onClick=${onSound}>${muted ? "🔇 Ton aus" : "🔊 Ton an"}</button>
     </div>
-    <p class="hint">Enter startet · M wechselt die Spielart · H zeigt die Bestenliste
-      · S schaltet den Ton · T prüft ihn</p>
+    <p class="hint">Enter startet · M wechselt die Spielart${forever ? " · K die Musik" : ""}
+      · H zeigt die Bestenliste · S schaltet den Ton · T prüft ihn</p>
   </div>`;
 }

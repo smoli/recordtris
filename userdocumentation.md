@@ -19,6 +19,11 @@ Beim Start wählst du zuerst die **Spielart**:
 
 Die Taste **M** wechselt zwischen den beiden.
 
+Wählst du **∞ Endlos**, erscheint darunter noch ein Schalter: **♫ Musik an**. Damit
+wird die Partie musikalisch — jeder Stein bringt beim Erscheinen seinen Akkord mit,
+und du spielst eine Akkordfolge, statt nur zu stapeln. Mehr dazu unter *Musik*. Die
+Taste **K** schaltet ihn, auf dem Startbildschirm wie im laufenden Endlosspiel.
+
 Darunter wählst du das **Level** (0 bis 9) — klassisch ist das das Startlevel, endlos
 das feste Tempo für die ganze Partie. Je höher, desto schneller fallen die Steine —
 und desto mehr Punkte bringt jede Reihe. Dann auf **Spiel starten** klicken oder Enter
@@ -59,6 +64,7 @@ Pfeiltaste kurz antippst oder zweimal **P** drückst (Pause und weiter).
 | T | Ton-Diagnose auf- und zuklappen (überall) |
 | R | in der Pause oder nach dem Spielende: Aufzeichnung ansehen |
 | M | auf dem Startbildschirm: Spielart wechseln (klassisch / endlos) |
+| K | Musik an- und ausschalten (nur im Endlosspiel und auf dem Startbildschirm, wenn Endlos gewählt ist) |
 | H | Bestenliste öffnen (auf dem Startbildschirm, in der Pause, nach dem Spielende) |
 | Esc | Spiel beenden, zurück zum Startbildschirm |
 | Enter | nach dem Spielende noch einmal dieselbe Steinfolge; in der Bestenliste das gewählte Wort spielen |
@@ -171,6 +177,9 @@ die Liste das oben an — sie gilt dann nur für die laufende Sitzung.
   schneller. Im Endlosspiel bleibt das Level stehen — und damit auch die Farbe der
   Oberfläche.
 - **Nächster** — der Stein, der als Nächstes kommt.
+- **Akkord** — nur im musikalischen Endlosspiel: die Stufe, die gerade klingt (die
+  große römische Zahl), ihr Name samt Tonart und darunter die Stufe, die der nächste
+  Stein bringt.
 - **Statistik** links — wie oft jede Steinsorte bisher kam.
 
 ## Was im Feld passiert
@@ -215,6 +224,38 @@ wieder an.
 In der **Wiedergabe** klingen die Reihen mit, das Verschieben, Drehen und Aufsetzen
 dagegen nicht: Aufgezeichnet werden Bilder, keine Handgriffe. Beim Zurückspulen bleibt
 es ganz still.
+
+## Musik
+
+Im **Endlosspiel** kannst du die Partie musikalisch spielen: Schalte auf dem
+Startbildschirm **♫ Musik an** (oder drücke **K**). Dann ist jeder Stein eine Stufe
+in **F-Dur**, und sein Akkord klingt als weiches Klangbett, sobald er oben erscheint.
+Er bleibt stehen, bis der nächste Stein kommt und ihn ablöst — aus der Steinfolge
+wird so eine Akkordfolge.
+
+| Stein | Stufe | Akkord |
+| --- | --- | --- |
+| I | I | F-Dur |
+| O | II | g-Moll |
+| Z | III | a-Moll |
+| S | IV | B♭-Dur |
+| T | V | C-Dur |
+| J | VI | d-Moll |
+| L | VII | e-vermindert |
+
+Rechts in der Spalte steht die Karte **Akkord**: die Stufe, die gerade klingt, ihr
+Name — und darunter, welche der nächste Stein bringt. Du kannst also hören *und*
+sehen, was kommt.
+
+Weil das **Merkwort** die Steinfolge bestimmt, bestimmt es auch die Musik: Dasselbe
+Wort spielt dieselbe Akkordfolge. Am Spiel selbst ändert die Musik nichts — dieselben
+Regeln, dasselbe Tempo, dieselbe Wertung; die Bestenliste unterscheidet musikalische
+Partien nicht von stillen.
+
+In der **Pause**, nach dem **Spielende**, beim Verlassen der Partie und in der
+**Wiedergabe** schweigt das Klangbett; nach der Pause und beim *Hier weiterspielen*
+setzt es wieder ein. **K** schaltet es auch mitten im Spiel um, **S** stellt es
+zusammen mit allem anderen still.
 
 ### Wenn du nichts hörst
 
