@@ -38,8 +38,10 @@ const TetrisEngine = (function () {
   function emit(state, ev) {
     /* Der Ton hängt nicht am Band, sondern hier: Das Band wird erst im nächsten
        Bild gelesen, und ein Klang, der ein Bild zu spät kommt, klingt nach dem
-       Tastendruck statt mit ihm. Gehört wird also im Augenblick des Zuges. */
-    if (typeof TetrisSound !== "undefined") {
+       Tastendruck statt mit ihm. Gehört wird also im Augenblick des Zuges.
+       In der musikalischen Partie schweigen die Geräusche: Dort gehört das Ohr
+       den Akkorden, und Klopfen und Klicken stünden nur quer dazu. */
+    if (typeof TetrisSound !== "undefined" && !state.musical) {
       if (ev.k === "move" || ev.k === "rot") TetrisSound.play("move");
       else if (ev.k === "drop") TetrisSound.play("drop");
     }

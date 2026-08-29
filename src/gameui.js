@@ -163,7 +163,8 @@ function StartScreen({ level, onLevel, mode, onMode, musical, onMusical, seed, o
         ${musical ? "♫ Musik an" : "♫ Musik aus"}</button>
     </div>`}
     ${forever && musical && html`<p class="hint tight">Jeder Stein ist eine Stufe
-      in ${TetrisPad.keyName()} — sein Akkord klingt, sobald er erscheint.</p>`}
+      in ${TetrisPad.keyName()} — sein Akkord klingt, sobald er erscheint.
+      Die Spielgeräusche schweigen dann.</p>`}
     <p class="label">${forever ? "Festes Level" : "Startlevel"}</p>
     <div class="levels">
       ${levels.map((i) => html`

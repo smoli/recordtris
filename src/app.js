@@ -544,7 +544,7 @@ function App() {
         <p><kbd>Leer</kbd> fallen lassen</p>
         <p><kbd>P</kbd> Pause · <kbd>Esc</kbd> Ende</p>
         <p><kbd>S</kbd> Ton ${muted ? "aus" : "an"} · <kbd>T</kbd> Ton prüfen</p>
-        ${forever && html`<p><kbd>K</kbd> Musik ${g.musical ? "an" : "aus"}</p>`}
+        ${forever && html`<p><kbd>K</kbd> Musik ${g.musical ? "an — Geräusche still" : "aus"}</p>`}
         <p><kbd>R</kbd> Aufzeichnung (in Pause)</p>
         <p><kbd>H</kbd> Bestenliste (in Pause)</p>
       </div>

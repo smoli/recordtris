@@ -1436,8 +1436,10 @@ const TetrisEngine = (function () {
   function emit(state, ev) {
     /* Der Ton hängt nicht am Band, sondern hier: Das Band wird erst im nächsten
        Bild gelesen, und ein Klang, der ein Bild zu spät kommt, klingt nach dem
-       Tastendruck statt mit ihm. Gehört wird also im Augenblick des Zuges. */
-    if (typeof TetrisSound !== "undefined") {
+       Tastendruck statt mit ihm. Gehört wird also im Augenblick des Zuges.
+       In der musikalischen Partie schweigen die Geräusche: Dort gehört das Ohr
+       den Akkorden, und Klopfen und Klicken stünden nur quer dazu. */
+    if (typeof TetrisSound !== "undefined" && !state.musical) {
       if (ev.k === "move" || ev.k === "rot") TetrisSound.play("move");
       else if (ev.k === "drop") TetrisSound.play("drop");
     }
@@ -3764,8 +3766,10 @@ const TetrisFx = (function () {
       const n = rows.length;
       /* Vier Reihen haben ihren eigenen Klang, ein einziger Anschlag. Zwei und
          drei bekommen je Reihe einen — kurz gestaffelt, damit man sie zählen
-         hört, statt sie zu einem Ton zu verschmelzen. */
-      if (n >= 4) TetrisSound.play("tetris");
+         hört, statt sie zu einem Ton zu verschmelzen. In der musikalischen
+         Partie bleibt auch das still: Dort klingen allein die Akkorde. */
+      if (g.musical) { /* still */ }
+      else if (n >= 4) TetrisSound.play("tetris");
       else if (n > 1) TetrisSound.series("rows", n, 110);
       else TetrisSound.play("rows");
       for (let i = 0; i < n; i++) {
@@ -4322,7 +4326,8 @@ function StartScreen({ level, onLevel, mode, onMode, musical, onMusical, seed, o
         ${musical ? "♫ Musik an" : "♫ Musik aus"}</button>
     </div>`}
     ${forever && musical && html`<p class="hint tight">Jeder Stein ist eine Stufe
-      in ${TetrisPad.keyName()} — sein Akkord klingt, sobald er erscheint.</p>`}
+      in ${TetrisPad.keyName()} — sein Akkord klingt, sobald er erscheint.
+      Die Spielgeräusche schweigen dann.</p>`}
     <p class="label">${forever ? "Festes Level" : "Startlevel"}</p>
     <div class="levels">
       ${levels.map((i) => html`
@@ -5323,7 +5328,7 @@ function App() {
         <p><kbd>Leer</kbd> fallen lassen</p>
         <p><kbd>P</kbd> Pause · <kbd>Esc</kbd> Ende</p>
         <p><kbd>S</kbd> Ton ${muted ? "aus" : "an"} · <kbd>T</kbd> Ton prüfen</p>
-        ${forever && html`<p><kbd>K</kbd> Musik ${g.musical ? "an" : "aus"}</p>`}
+        ${forever && html`<p><kbd>K</kbd> Musik ${g.musical ? "an — Geräusche still" : "aus"}</p>`}
         <p><kbd>R</kbd> Aufzeichnung (in Pause)</p>
         <p><kbd>H</kbd> Bestenliste (in Pause)</p>
       </div>

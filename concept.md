@@ -125,6 +125,16 @@ Geklungen wird über die Tonmaschine von `sound.js` (`bus()`), also über deren
 Regler: Damit erfasst die Stummschaltung (Taste `S`) das Bett mit, ohne davon zu
 wissen.
 
+**In der musikalischen Partie schweigen die Spielgeräusche.** Klopfen, Klicken und
+das Aufblitzen der vollen Reihe stünden quer zu den Akkorden; wo musiziert wird,
+gehört das Ohr der Musik. Gefiltert wird an denselben beiden Stellen, an denen die
+Geräusche ausgelöst werden — `emit()` in `engine.js` für Schieben, Drehen und
+Aufsetzen, `clearBurst()` in `fx.js` für die vollen Reihen. Beide sehen `musical`
+am Spielstand, den sie ohnehin in der Hand haben; es braucht dafür keinen Schalter
+in `sound.js`. Weil die Momentaufnahme `musical` mitführt, gilt es auch für die
+Wiedergabe einer musikalischen Partie. Die Bilder bleiben unberührt — still wird
+nur der Ton.
+
 **Bewusste Abweichungen.** Drehungen dürfen um bis zu zwei Spalten ausweichen, wenn
 sie sonst an einer Wand scheitern würden — das Original kennt das nicht, ohne es
 ist Spielen an der Wand aber unnötig zäh. Dazu kommen ein Schattenriss der

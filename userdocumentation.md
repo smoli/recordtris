@@ -225,6 +225,9 @@ In der **Wiedergabe** klingen die Reihen mit, das Verschieben, Drehen und Aufset
 dagegen nicht: Aufgezeichnet werden Bilder, keine Handgriffe. Beim Zurückspulen bleibt
 es ganz still.
 
+Spielst du **musikalisch** (siehe unten), schweigen diese vier Geräusche vollständig —
+dann hörst du allein die Akkorde.
+
 ## Musik
 
 Im **Endlosspiel** kannst du die Partie musikalisch spielen: Schalte auf dem
@@ -246,6 +249,11 @@ wird so eine Akkordfolge.
 Rechts in der Spalte steht die Karte **Akkord**: die Stufe, die gerade klingt, ihr
 Name — und darunter, welche der nächste Stein bringt. Du kannst also hören *und*
 sehen, was kommt.
+
+Solange die Musik läuft, bleiben die **Spielgeräusche** aus: kein Klang beim
+Verschieben, Drehen oder Aufsetzen und keiner, wenn Reihen fallen. Das Ohr gehört den
+Akkorden. Schaltest du mit **K** die Musik ab, sind die Geräusche sofort wieder da —
+und umgekehrt. Auch in der Wiedergabe einer musikalischen Partie bleibt es still.
 
 Weil das **Merkwort** die Steinfolge bestimmt, bestimmt es auch die Musik: Dasselbe
 Wort spielt dieselbe Akkordfolge. Am Spiel selbst ändert die Musik nichts — dieselben
