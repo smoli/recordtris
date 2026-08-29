@@ -45,7 +45,10 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
   Stufe je Steinsorte und der Pad-Klang, der ihre Oberstimmen stehen lässt.
 - `src/arp.js` — der Bass darunter: die Figur, die den stehenden Akkord im
   Schritt ausschreitet, ihr Vorratsleger auf der Uhr der Tonmaschine und die
-  Richtung, die jede Drehung umkehrt.
+  Richtung, die jede Drehung umkehrt. Der Vorratsleger ist zugleich die Uhr des
+  Schlagzeugs.
+- `src/drums.js` — das Schlagzeug: das Muster über zwei Takte und die drei
+  Schläge, aus Sinus und gefiltertem Rauschen gerechnet. Ohne eigene Uhr.
 - `src/soundassets.js` — die vier Beigaben aus `assets`: an der Stelle im Dokument
   ablesen, an der das Bündeln sie eingesetzt hat, und an `sound.js` übergeben.
 - `src/soundfiles.js` — das Netz darunter: im Datenordner suchen oder vom Anwender
@@ -127,6 +130,23 @@ jedem Ruckeln stolpern. Ein `setInterval` weckt darum nur alle 50 ms einen
 Vorratsleger, der alles einträgt, was in der nächsten Viertelsekunde fällig ist.
 Ist die Uhr davongelaufen, weil das Fenster stillstand, schließt der Puls auf,
 statt die verpassten Schritte nachzuholen.
+
+**Das Schlagzeug bekommt keine eigene Uhr.** Es hängt am Vorratsleger des Basses:
+Derselbe Schritt, der dort einen Ton legt, legt hier seinen Schlag — beide auf
+dieselbe Zeit auf der Uhr der Tonmaschine. Zwei Zeitgeber nebeneinander würden
+gegeneinander driften, und ein Schlagzeug, das am Bass schleift, ist schlechter
+als keines. Der Schritt zählt dabei stur vorwärts, unabhängig von `dir`: Eine
+Drehung wendet die Bassfigur, nicht den Takt — sonst liefe das Muster rückwärts,
+und der Auftakt stünde plötzlich vor der Eins.
+
+Ein Schritt ist eine Achtel, acht davon ein Takt; das Muster geht über zwei Takte,
+damit die Wiederholung nicht sofort als solche auffällt: Trommel auf die Eins und
+die Drei, Schlag auf die Zwei und die Vier, Hut auf jeder Achtel mit Betonung auf
+den Zählzeiten, am Ende ein Auftakt. Geschlagen wird mit dem, was die Tonmaschine
+selbst hergibt — ein fallender Sinus für die Trommel, hochpassgefiltertes Rauschen
+für Schlag und Hut, dazu ein kurzer Ton als Körper des Schlags. Keine Aufnahme,
+also auch nichts, was fehlen könnte. Einen eigenen Schalter hat es nicht: Es
+beginnt und endet mit dem Bass und hängt wie alles am Regler von `sound.js`.
 
 **Die Drehung des Steins kehrt die Figur um.** Das ist das Einzige an der Musik,
 das der Anwender unmittelbar in der Hand hat — die Akkordfolge selbst gehört dem

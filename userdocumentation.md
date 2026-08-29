@@ -21,7 +21,8 @@ Die Taste **M** wechselt zwischen den beiden.
 
 Wählst du **∞ Endlos**, erscheint darunter noch ein Schalter: **♫ Musik an**. Damit
 wird die Partie musikalisch — jeder Stein bringt beim Erscheinen seinen Akkord mit,
-darunter läuft ein Bass, und du spielst eine Akkordfolge, statt nur zu stapeln.
+darunter laufen ein Bass und ein Schlagzeug, und du spielst eine Akkordfolge, statt
+nur zu stapeln.
 Mehr dazu unter *Musik*. Die
 Taste **K** schaltet ihn, auf dem Startbildschirm wie im laufenden Endlosspiel.
 
@@ -262,6 +263,15 @@ Figur um. Aus aufwärts wird abwärts und beim nächsten Dreh wieder aufwärts. 
 springt dabei nicht an den Anfang, sondern läuft von der Stelle zurück, an der sie
 gerade steht — man hört die Wendung. Das ist das Einzige an der Musik, das du
 unmittelbar in der Hand hast: Wer viel dreht, bewegt den Bass.
+
+### Das Schlagzeug
+
+Auf demselben Puls läuft ein **Schlagzeug**: die große Trommel auf die Eins und die
+Drei, der Schlag auf die Zwei und die Vier, dazu ein leiser Hut auf jeder Achtel.
+Über zwei Takte hinweg wechselt das Muster ein wenig — am Ende steht ein Auftakt
+zurück auf die Eins. Es beginnt mit dem ersten Stein, läuft über die Akkordwechsel
+hinweg durch und verstummt mit dem Rest der Musik. Einen eigenen Schalter hat es
+nicht: **K** und **S** schalten es mit.
 
 Rechts in der Spalte steht die Karte **Akkord**: die Stufe, die gerade klingt, ihr
 Name, darunter, welche der nächste Stein bringt — und zuunterst, wohin der Bass

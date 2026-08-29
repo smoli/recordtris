@@ -16,6 +16,11 @@
    würde bei jeder Verzögerung stolpern. Ein Zeitgeber weckt hier nur alle paar
    Hundertstel den Vorratsleger.
 
+   Weil dieser Vorratsleger die einzige Uhr der Musik ist, hängt auch das
+   Schlagzeug (drums.js) an ihm: Jeder Schritt, der hier einen Ton legt, legt
+   dort seinen Schlag. Der Schritt zählt dabei stur vorwärts, gleich wohin die
+   Figur gerade läuft — eine Drehung wendet den Bass, nicht den Takt.
+
    Was hier steht, klingt nur — es kennt weder Spiel noch Tonart. */
 const TetrisArp = (function () {
   const STEP = 0.26;   // Sekunden je Schritt — ein ruhiger, gehender Puls
@@ -30,6 +35,7 @@ const TetrisArp = (function () {
   let dir = 1;         // 1 = aufwärts, -1 = abwärts
   let pos = 0;         // wo die Figur gerade steht
   let at = 0;          // Zeit des nächsten Schritts auf der Uhr der Tonmaschine
+  let beat = 0;        // der wievielte Schritt seit dem Beginn — der Takt des Schlagzeugs
   let timer = null;    // der Wecker des Vorratslegers
   let live = [];       // was gerade klingt — damit ein Anhalten es noch erwischt
 
@@ -95,9 +101,18 @@ const TetrisArp = (function () {
       if (at < ctx.currentTime) at = ctx.currentTime + 0.01;
       if (pos >= figure.length || pos < 0) pos = 0;
       note(figure[pos], at);
+      drums("step", ctx, dest, beat, at); // derselbe Schritt schlägt auch das Fell
+      beat++;
       pos = (pos + dir + figure.length) % figure.length;
       at += STEP;
     }
+  }
+
+  /* Das Schlagzeug liegt in drums.js — hier steht nur der eine Weg dorthin.
+     Fehlt es, läuft der Bass eben allein. */
+  function drums(fn, a, b, c, d) {
+    if (typeof TetrisDrums === "undefined" || !TetrisDrums[fn]) return null;
+    return TetrisDrums[fn](a, b, c, d);
   }
 
   /* Ein neuer Akkord: dieselbe Figur, andere Töne. Der Puls beginnt mit dem
@@ -112,6 +127,7 @@ const TetrisArp = (function () {
     figure = figureOf(semis);
     if (fresh) {
       pos = dir > 0 ? 0 : figure.length - 1;
+      beat = 0; // das Muster beginnt mit der Partie auf der Eins
       at = ctx.currentTime + 0.03;
       if (timer) clearInterval(timer);
       timer = setInterval(pump, TICK);
@@ -133,9 +149,11 @@ const TetrisArp = (function () {
   // Alles verstummt: der Puls hört auf, und was schon auf der Uhr liegt, wird kurz.
   function stop() {
     if (timer) { clearInterval(timer); timer = null; }
+    drums("stop"); // das Schlagzeug hört mit dem Puls auf, den es teilt
     figure = [];
     dir = 1;
     pos = 0;
+    beat = 0;
     if (!ctx) return;
     const t = ctx.currentTime;
     for (let i = live.length - 1; i >= 0; i--) {
