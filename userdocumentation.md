@@ -234,7 +234,10 @@ Im **Endlosspiel** kannst du die Partie musikalisch spielen: Schalte auf dem
 Startbildschirm **♫ Musik an** (oder drücke **K**). Dann ist jeder Stein eine Stufe
 in **F-Dur**, und sein Akkord klingt als weiches Klangbett, sobald er oben erscheint.
 Er bleibt stehen, bis der nächste Stein kommt und ihn ablöst — aus der Steinfolge
-wird so eine Akkordfolge.
+wird so eine Akkordfolge. Der Wechsel geschieht fließend: Der alte Akkord geht in
+den neuen über, ohne dass dazwischen eine Lücke entsteht, und die Töne rücken dabei
+möglichst nah beieinander weiter — es klingt wie ein Weiterziehen, nicht wie ein
+Neuanfang.
 
 | Stein | Stufe | Akkord |
 | --- | --- | --- |

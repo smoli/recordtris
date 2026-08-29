@@ -105,9 +105,24 @@ Tonart; erscheint ein Stein, klingt sein Akkord als weiches Pad und bleibt stehe
 bis der nächste Stein ihn ablöst. Die Zuordnung stammt vom Anwender und ist fest:
 I → I, S → IV, O → II, Z → III, T → V, J → VI, L → VII. Die Tonart ist F-Dur, die
 Stufen sind ihre Dreiklänge (F-Dur, g-Moll, a-Moll, B♭-Dur, C-Dur, d-Moll,
-e-vermindert), dazu ein Bass eine Oktave unter dem Grundton; die Lagen steigen mit
-der Stufe, weil ein Pad davon getragener klingt als von einem Sprung zurück in die
-tiefe Oktave.
+e-vermindert), dazu ein Bass eine Oktave unter dem Grundton.
+
+**Der Wechsel selbst soll nicht zu hören sein, nur der neue Akkord.** Zwei
+Entscheidungen tragen das. Erstens die Blende: Ein- und Ausblendung dauern gleich
+lang und laufen als sin- und cos-Kurve gegeneinander, weil ihre Summe damit
+konstant bleibt — zwei gegenläufige Rampen in Dezibel (die frühere Lösung) stehen
+in der Mitte beide sehr tief und reißen dort ein hörbares Loch auf, das den
+Wechsel zum Absatz macht. Zweitens die Stimmführung: Welche Töne ein Akkord hat,
+steht fest, in welcher Oktave jeder klingt, nicht — gewählt wird die Umkehrung mit
+der geringsten Bewegung gegenüber dem vorigen Akkord, sodass jede Stimme ein, zwei
+Halbtöne rückt, statt dass der ganze Klang springt. Ein schwacher Zug zu einer
+mittleren Lage hält die Folge davon ab, auf Dauer wegzulaufen. Damit gehaltene
+Töne sich beim Überblenden nicht mit sich selbst auslöschen, bekommt jeder Akkord
+ein wechselndes Feinstimmen von ±2,5 Cent: Aus einer Auslöschung wird ein langsames
+Schweben. Das Filter geht beim Einsetzen nur noch ein Stück weiter auf statt von
+dumpf nach hell durchzufahren, denn ein voller Aufzug klingt wie ein neuer
+Anschlag. All das ist reine Klangrechnung — die Akkordfolge bleibt dieselbe, und
+dasselbe Merkwort klingt weiterhin gleich.
 
 Das ist keine dritte Spielart, sondern ein Schalter des Endlosspiels: ein Feld
 `musical` im Spielstand, das ausschließlich klingt — keine Regel, keine Wertung,
