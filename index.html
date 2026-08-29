@@ -1471,6 +1471,16 @@ const TetrisEngine = (function () {
     if (typeof TetrisPad !== "undefined") TetrisPad.stop();
   }
 
+  /* Die Drehung des Steins kehrt die Richtung der Bassfigur um. Sie steht
+     neben dem Klang der Drehung, nicht an seiner Stelle: In der musikalischen
+     Partie schweigt das Geräusch ohnehin, und die Wendung des Basses ist das,
+     was man dort stattdessen hört. */
+  function padTurn(state) {
+    if (typeof TetrisPad === "undefined" || !TetrisPad.turn) return;
+    if (!state.musical || state.over || state.paused) return;
+    TetrisPad.turn();
+  }
+
   /* Das Merkwort bestimmt den Startwert des Schieberegisters: dasselbe Wort
      spielt dieselbe Steinfolge. Fehlt es, entsteht eines zufällig.
      Die Spielart ist "classic" (das Level steigt alle zehn Reihen) oder "forever"
@@ -1548,6 +1558,7 @@ const TetrisEngine = (function () {
       if (!collides(state.board, p.type, rot, p.x + kicks[i], p.y)) {
         p.rot = rot;
         p.x += kicks[i];
+        padTurn(state);
         emit(state, { k: "rot", type: p.type, rot: p.rot, x: p.x, y: p.y });
         state.version++;
         return true;
@@ -3002,6 +3013,169 @@ const TetrisSound = (function () {
   };
 })();
 </script>
+<script>/* Der Bass des musikalischen Endlosspiels: eine Figur, die den stehenden Akkord
+   ausschreitet, statt ihn auszuhalten.
+
+   Das Pad (pad.js) hält die Oberstimmen; hier unten läuft der Puls. Die Figur
+   sind die Töne desselben Akkords im Bassbereich — Grundton, Terz, Quinte, dazu
+   der Grundton eine Oktave höher —, einer nach dem anderen in gleichbleibendem
+   Schritt. Wechselt der Akkord, wechseln die Töne; der Puls läuft durch, denn
+   er ist das, was die Partie trägt.
+
+   Die RICHTUNG gehört dem Anwender: Jede gelungene Drehung eines Steins kehrt
+   sie um. Die Figur läuft dann von der Stelle, an der sie gerade steht, wieder
+   zurück — hoch, runter, hoch, je nachdem, wie oft gedreht wurde.
+
+   Gelegt werden die Töne im Voraus auf die Uhr der Tonmaschine, nicht auf die
+   des Bildtakts: Ein Zeitgeber des Fensters ist zu ungenau für einen Puls und
+   würde bei jeder Verzögerung stolpern. Ein Zeitgeber weckt hier nur alle paar
+   Hundertstel den Vorratsleger.
+
+   Was hier steht, klingt nur — es kennt weder Spiel noch Tonart. */
+const TetrisArp = (function () {
+  const STEP = 0.26;   // Sekunden je Schritt — ein ruhiger, gehender Puls
+  const AHEAD = 0.25;  // so weit im Voraus liegen die Töne auf der Uhr
+  const TICK = 50;     // so oft (ms) wird nachgelegt
+  const LEVEL = 0.22;  // wie laut der Bass steht
+
+  let ctx = null;      // die Tonmaschine, sobald ein Akkord da war
+  let dest = null;     // der Regler, an dem alles hängt (die Stummschaltung)
+  let root = 0;        // die Frequenz, auf die sich die Halbtöne beziehen
+  let figure = [];     // die Töne der Figur, aufsteigend (Halbtöne über root)
+  let dir = 1;         // 1 = aufwärts, -1 = abwärts
+  let pos = 0;         // wo die Figur gerade steht
+  let at = 0;          // Zeit des nächsten Schritts auf der Uhr der Tonmaschine
+  let timer = null;    // der Wecker des Vorratslegers
+  let live = [];       // was gerade klingt — damit ein Anhalten es noch erwischt
+
+  /* Die Töne der Figur aus dem Dreiklang: der Grundton in die tiefe Oktave
+     gelegt (wie beim gehaltenen Bass zuvor), darüber Terz und Quinte im
+     nächstliegenden Abstand, oben der Grundton wieder. */
+  function figureOf(semis) {
+    const pcs = [];
+    for (let i = 0; i < semis.length; i++) pcs.push(((semis[i] % 12) + 12) % 12);
+    const base = pcs[0] - 12;
+    const fig = [base];
+    for (let i = 1; i < pcs.length; i++) {
+      let n = pcs[i] - 12;
+      while (n <= fig[fig.length - 1]) n += 12;
+      fig.push(n);
+    }
+    fig.push(base + 12);
+    return fig;
+  }
+
+  /* Ein Ton der Figur: ein Dreieck durch ein Filter, das mit ihm zufällt —
+     das gibt den weichen Anschlag eines gezupften Basses statt eines Piepsens.
+     Gelegt wird er auf die Zeit t, nicht auf jetzt. */
+  function note(semi, t) {
+    const freq = root * Math.pow(2, semi / 12);
+    let osc, gain, filt;
+    try {
+      osc = ctx.createOscillator();
+      gain = ctx.createGain();
+      filt = ctx.createBiquadFilter();
+    } catch (e) { return; }
+    filt.type = "lowpass";
+    filt.Q.value = 0.9;
+    filt.frequency.setValueAtTime(Math.max(400, freq * 5), t);
+    filt.frequency.exponentialRampToValueAtTime(Math.max(220, freq * 1.8), t + STEP * 0.8);
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.linearRampToValueAtTime(LEVEL, t + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + STEP * 0.92);
+    osc.connect(filt);
+    filt.connect(gain);
+    gain.connect(dest);
+    try { osc.start(t); osc.stop(t + STEP); } catch (e) { return; }
+    const v = { osc: osc, gain: gain };
+    live.push(v);
+    osc.onended = function () {
+      const k = live.indexOf(v);
+      if (k >= 0) live.splice(k, 1);
+      try { gain.disconnect(); } catch (e) {}
+    };
+  }
+
+  /* Der Vorratsleger: alles, was in den nächsten AHEAD Sekunden fällig wird,
+     kommt jetzt auf die Uhr. Ist die Uhr davongelaufen (das Fenster stand
+     still), schließt der Puls wieder auf, statt die verpassten Schritte
+     nachzuholen. */
+  function pump() {
+    if (!ctx || !figure.length) return;
+    const until = ctx.currentTime + AHEAD;
+    let guard = 0;
+    while (at < until && guard++ < 16) {
+      if (at < ctx.currentTime) at = ctx.currentTime + 0.01;
+      if (pos >= figure.length || pos < 0) pos = 0;
+      note(figure[pos], at);
+      pos = (pos + dir + figure.length) % figure.length;
+      at += STEP;
+    }
+  }
+
+  /* Ein neuer Akkord: dieselbe Figur, andere Töne. Der Puls beginnt mit dem
+     ersten Akkord und läuft danach durch — ein Neuansetzen bei jedem Wechsel
+     wäre der Absatz, den es hier gerade nicht geben soll. */
+  function set(c, d, rootHz, semis) {
+    if (!c || !d) return;
+    const fresh = !timer || ctx !== c;
+    ctx = c;
+    dest = d;
+    root = rootHz;
+    figure = figureOf(semis);
+    if (fresh) {
+      pos = dir > 0 ? 0 : figure.length - 1;
+      at = ctx.currentTime + 0.03;
+      if (timer) clearInterval(timer);
+      timer = setInterval(pump, TICK);
+    }
+    pump(); // der erste Schritt soll mit dem Akkord kommen, nicht erst beim Wecken
+  }
+
+  /* Die Drehung des Steins kehrt die Figur um. Sie springt dabei nicht an den
+     Anfang zurück, sondern läuft von hier aus zurück — man hört die Wendung,
+     nicht einen Neuanfang. */
+  function turn() {
+    if (!figure.length) { dir = -dir; return dir; }
+    dir = -dir;
+    // Zwei Schritte zurück, damit der nächste Ton nicht der eben gehörte ist.
+    pos = (pos + 2 * dir + 2 * figure.length) % figure.length;
+    return dir;
+  }
+
+  // Alles verstummt: der Puls hört auf, und was schon auf der Uhr liegt, wird kurz.
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+    figure = [];
+    dir = 1;
+    pos = 0;
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    for (let i = live.length - 1; i >= 0; i--) {
+      const v = live[i];
+      try {
+        if (v.gain.gain.cancelAndHoldAtTime) v.gain.gain.cancelAndHoldAtTime(t);
+        else v.gain.gain.cancelScheduledValues(t);
+        v.gain.gain.setValueAtTime(Math.max(0.0001, v.gain.gain.value), t);
+        v.gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+        v.osc.stop(t + 0.08);
+      } catch (e) {}
+    }
+  }
+
+  // Für die Anzeige: läuft die Figur gerade aufwärts oder abwärts?
+  function direction() { return dir; }
+
+  return {
+    set: set,
+    turn: turn,
+    stop: stop,
+    direction: direction
+  };
+})();
+</script>
 <script>/* Das Klangbett des Endlosspiels: Jeder Stein ist eine Stufe der Tonart.
 
    Erscheint ein Stein, klingt sein Akkord als weiches Pad — es bleibt stehen,
@@ -3011,8 +3185,9 @@ const TetrisSound = (function () {
 
    Die Zuordnung ist fest und stammt vom Anwender:
      I → I,  S → IV,  O → II,  Z → III,  T → V,  J → VI,  L → VII.
-   Die Tonart ist F-Dur; die Stufen sind ihre Dreiklänge, dazu ein Bass eine
-   Oktave unter dem Grundton.
+   Die Tonart ist F-Dur; die Stufen sind ihre Dreiklänge. Der Bass darunter
+   gehört nicht mehr hierher: Er schreitet den Akkord aus (arp.js) statt ihn
+   auszuhalten — hier stehen nur noch die Oberstimmen.
 
    Der Übergang von einer Farbe zur nächsten ist die eigentliche Arbeit hier.
    Zwei Dinge machen ihn weich: eine gleichleistungs-Blende (die eine Farbe geht
@@ -3121,9 +3296,10 @@ const TetrisPad = (function () {
     return best || pcs.slice();
   }
 
-  /* Ein Akkord als Klangkörper: ein Bass und drei Töne, jeder aus zwei leicht
-     gegeneinander verstimmten Stimmen, alles durch ein weiches Tiefpassfilter,
-     das beim Einsetzen langsam aufgeht. Das ergibt das Schweben eines Pads. */
+  /* Ein Akkord als Klangkörper: drei Töne, jeder aus zwei leicht gegeneinander
+     verstimmten Stimmen, alles durch ein weiches Tiefpassfilter, das beim
+     Einsetzen langsam aufgeht. Das ergibt das Schweben eines Pads. Der Grund
+     darunter kommt vom Bass in arp.js. */
   function build(ctx, dest, notes, det) {
     const t0 = ctx.currentTime + 0.01;
     const out = ctx.createGain();
@@ -3147,21 +3323,20 @@ const TetrisPad = (function () {
     const oscs = [];
     for (let i = 0; i < notes.length; i++) {
       const freq = ROOT * Math.pow(2, notes[i] / 12);
-      const bass = i === 0;
       /* Das wechselnde Feinstimmen sorgt dafür, dass ein Ton, den zwei
          aufeinanderfolgende Akkorde gemeinsam haben, während der Blende
          langsam schwebt statt sich mit sich selbst auszulöschen. */
-      const detunes = bass ? [det] : [-6 + det, 6 + det];
+      const detunes = [-6 + det, 6 + det];
       for (let d = 0; d < detunes.length; d++) {
         let osc, gain;
         try {
           osc = ctx.createOscillator();
           gain = ctx.createGain();
         } catch (e) { break; }
-        osc.type = bass ? "triangle" : "sawtooth";
+        osc.type = "sawtooth";
         osc.frequency.setValueAtTime(freq, t0);
         osc.detune.setValueAtTime(detunes[d], t0);
-        gain.gain.value = (bass ? 0.55 : 0.30) / detunes.length;
+        gain.gain.value = 0.30 / detunes.length;
         osc.connect(gain);
         gain.connect(filt);
         try { osc.start(t0); } catch (e) { continue; }
@@ -3213,18 +3388,34 @@ const TetrisPad = (function () {
     if (!b) return false;
     if (TetrisSound.wake) TetrisSound.wake();
     const led = voicing(spec);
-    // Der Bass bleibt in seiner tiefen Oktave — er trägt, er soll nicht wandern.
-    const bass = (((spec.semis[0] % 12) + 12) % 12) - 12;
     drift = drift > 0 ? -2.5 : 2.5;
     release(voice, false);
-    voice = build(b.ctx, b.master, [bass].concat(led), drift);
+    voice = build(b.ctx, b.master, led, drift);
     voiceType = voice ? type : "";
     lastVoicing = led;
+    // Der Bass schreitet denselben Akkord aus; sein Puls läuft dabei durch.
+    arp("set", b.ctx, b.master, ROOT, spec.semis);
     return !!voice;
   }
 
+  /* Der Bass liegt in arp.js — hier steht nur der eine Weg dorthin, damit
+     außerhalb niemand zwei Dinge kennen muss. Fehlt er, klingt eben das Pad
+     allein. */
+  function arp(fn, a, b2, c, d) {
+    if (typeof TetrisArp === "undefined" || !TetrisArp[fn]) return null;
+    return TetrisArp[fn](a, b2, c, d);
+  }
+
+  /* Die Drehung des Steins kehrt die Richtung der Bassfigur um — das Einzige,
+     was der Anwender an der Musik unmittelbar in der Hand hat. */
+  function turn() { return arp("turn"); }
+
+  // Für die Anzeige: 1, wenn die Figur aufwärts läuft, -1 abwärts.
+  function direction() { return arp("direction") || 1; }
+
   // Alles verstummt — beim Pausieren, beim Spielende, beim Verlassen der Partie.
   function stop() {
+    arp("stop"); // der Bass hört mit dem Bett auf
     release(voice, true);
     voice = null;
     voiceType = "";
@@ -3240,10 +3431,12 @@ const TetrisPad = (function () {
 
   return {
     chord: chord,
+    turn: turn,
     stop: stop,
     chordOf: chordOf,
     keyName: keyName,
-    playing: playing
+    playing: playing,
+    direction: direction
   };
 })();
 </script>
@@ -4295,11 +4488,14 @@ function ChordBox({ game }) {
   const next = TetrisPad.chordOf(game.nextType);
   const cur = TetrisPad.chordOf(game.piece ? game.piece.type : TetrisPad.playing()) || next;
   if (!cur) return null;
+  // Wohin der Bass gerade läuft — jede Drehung des Steins kehrt es um.
+  const up = TetrisPad.direction() > 0;
   return html`<div class="box">
     <h2>Akkord</h2>
     <p class="big degree">${cur.deg}</p>
     <p class="mode-line">${cur.name} · ${TetrisPad.keyName()}</p>
     ${next && html`<p class="mode-line">dann ${next.deg} · ${next.name}</p>`}
+    <p class="mode-line">Bass ${up ? "↑ aufwärts" : "↓ abwärts"}</p>
   </div>`;
 }
 
@@ -4403,7 +4599,8 @@ function StartScreen({ level, onLevel, mode, onMode, musical, onMusical, seed, o
         ${musical ? "♫ Musik an" : "♫ Musik aus"}</button>
     </div>`}
     ${forever && musical && html`<p class="hint tight">Jeder Stein ist eine Stufe
-      in ${TetrisPad.keyName()} — sein Akkord klingt, sobald er erscheint.
+      in ${TetrisPad.keyName()} — sein Akkord klingt, sobald er erscheint, und
+      ein Bass schreitet ihn aus. Jede Drehung kehrt dessen Richtung um.
       Die Spielgeräusche schweigen dann.</p>`}
     <p class="label">${forever ? "Festes Level" : "Startlevel"}</p>
     <div class="levels">

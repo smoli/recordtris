@@ -7,8 +7,9 @@
 
    Die Zuordnung ist fest und stammt vom Anwender:
      I → I,  S → IV,  O → II,  Z → III,  T → V,  J → VI,  L → VII.
-   Die Tonart ist F-Dur; die Stufen sind ihre Dreiklänge, dazu ein Bass eine
-   Oktave unter dem Grundton.
+   Die Tonart ist F-Dur; die Stufen sind ihre Dreiklänge. Der Bass darunter
+   gehört nicht mehr hierher: Er schreitet den Akkord aus (arp.js) statt ihn
+   auszuhalten — hier stehen nur noch die Oberstimmen.
 
    Der Übergang von einer Farbe zur nächsten ist die eigentliche Arbeit hier.
    Zwei Dinge machen ihn weich: eine gleichleistungs-Blende (die eine Farbe geht
@@ -117,9 +118,10 @@ const TetrisPad = (function () {
     return best || pcs.slice();
   }
 
-  /* Ein Akkord als Klangkörper: ein Bass und drei Töne, jeder aus zwei leicht
-     gegeneinander verstimmten Stimmen, alles durch ein weiches Tiefpassfilter,
-     das beim Einsetzen langsam aufgeht. Das ergibt das Schweben eines Pads. */
+  /* Ein Akkord als Klangkörper: drei Töne, jeder aus zwei leicht gegeneinander
+     verstimmten Stimmen, alles durch ein weiches Tiefpassfilter, das beim
+     Einsetzen langsam aufgeht. Das ergibt das Schweben eines Pads. Der Grund
+     darunter kommt vom Bass in arp.js. */
   function build(ctx, dest, notes, det) {
     const t0 = ctx.currentTime + 0.01;
     const out = ctx.createGain();
@@ -143,21 +145,20 @@ const TetrisPad = (function () {
     const oscs = [];
     for (let i = 0; i < notes.length; i++) {
       const freq = ROOT * Math.pow(2, notes[i] / 12);
-      const bass = i === 0;
       /* Das wechselnde Feinstimmen sorgt dafür, dass ein Ton, den zwei
          aufeinanderfolgende Akkorde gemeinsam haben, während der Blende
          langsam schwebt statt sich mit sich selbst auszulöschen. */
-      const detunes = bass ? [det] : [-6 + det, 6 + det];
+      const detunes = [-6 + det, 6 + det];
       for (let d = 0; d < detunes.length; d++) {
         let osc, gain;
         try {
           osc = ctx.createOscillator();
           gain = ctx.createGain();
         } catch (e) { break; }
-        osc.type = bass ? "triangle" : "sawtooth";
+        osc.type = "sawtooth";
         osc.frequency.setValueAtTime(freq, t0);
         osc.detune.setValueAtTime(detunes[d], t0);
-        gain.gain.value = (bass ? 0.55 : 0.30) / detunes.length;
+        gain.gain.value = 0.30 / detunes.length;
         osc.connect(gain);
         gain.connect(filt);
         try { osc.start(t0); } catch (e) { continue; }
@@ -209,18 +210,34 @@ const TetrisPad = (function () {
     if (!b) return false;
     if (TetrisSound.wake) TetrisSound.wake();
     const led = voicing(spec);
-    // Der Bass bleibt in seiner tiefen Oktave — er trägt, er soll nicht wandern.
-    const bass = (((spec.semis[0] % 12) + 12) % 12) - 12;
     drift = drift > 0 ? -2.5 : 2.5;
     release(voice, false);
-    voice = build(b.ctx, b.master, [bass].concat(led), drift);
+    voice = build(b.ctx, b.master, led, drift);
     voiceType = voice ? type : "";
     lastVoicing = led;
+    // Der Bass schreitet denselben Akkord aus; sein Puls läuft dabei durch.
+    arp("set", b.ctx, b.master, ROOT, spec.semis);
     return !!voice;
   }
 
+  /* Der Bass liegt in arp.js — hier steht nur der eine Weg dorthin, damit
+     außerhalb niemand zwei Dinge kennen muss. Fehlt er, klingt eben das Pad
+     allein. */
+  function arp(fn, a, b2, c, d) {
+    if (typeof TetrisArp === "undefined" || !TetrisArp[fn]) return null;
+    return TetrisArp[fn](a, b2, c, d);
+  }
+
+  /* Die Drehung des Steins kehrt die Richtung der Bassfigur um — das Einzige,
+     was der Anwender an der Musik unmittelbar in der Hand hat. */
+  function turn() { return arp("turn"); }
+
+  // Für die Anzeige: 1, wenn die Figur aufwärts läuft, -1 abwärts.
+  function direction() { return arp("direction") || 1; }
+
   // Alles verstummt — beim Pausieren, beim Spielende, beim Verlassen der Partie.
   function stop() {
+    arp("stop"); // der Bass hört mit dem Bett auf
     release(voice, true);
     voice = null;
     voiceType = "";
@@ -236,9 +253,11 @@ const TetrisPad = (function () {
 
   return {
     chord: chord,
+    turn: turn,
     stop: stop,
     chordOf: chordOf,
     keyName: keyName,
-    playing: playing
+    playing: playing,
+    direction: direction
   };
 })();

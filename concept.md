@@ -42,7 +42,10 @@ Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
   Stummschalter, Selbstauskunft für die Diagnose; dazu die Tonmaschine selbst,
   die sie über `bus()` weiterreicht.
 - `src/pad.js` — das Klangbett des musikalischen Endlosspiels: die Tonart, die
-  Stufe je Steinsorte und der Pad-Klang, der sie stehen lässt.
+  Stufe je Steinsorte und der Pad-Klang, der ihre Oberstimmen stehen lässt.
+- `src/arp.js` — der Bass darunter: die Figur, die den stehenden Akkord im
+  Schritt ausschreitet, ihr Vorratsleger auf der Uhr der Tonmaschine und die
+  Richtung, die jede Drehung umkehrt.
 - `src/soundassets.js` — die vier Beigaben aus `assets`: an der Stelle im Dokument
   ablesen, an der das Bündeln sie eingesetzt hat, und an `sound.js` übergeben.
 - `src/soundfiles.js` — das Netz darunter: im Datenordner suchen oder vom Anwender
@@ -105,7 +108,36 @@ Tonart; erscheint ein Stein, klingt sein Akkord als weiches Pad und bleibt stehe
 bis der nächste Stein ihn ablöst. Die Zuordnung stammt vom Anwender und ist fest:
 I → I, S → IV, O → II, Z → III, T → V, J → VI, L → VII. Die Tonart ist F-Dur, die
 Stufen sind ihre Dreiklänge (F-Dur, g-Moll, a-Moll, B♭-Dur, C-Dur, d-Moll,
-e-vermindert), dazu ein Bass eine Oktave unter dem Grundton.
+e-vermindert).
+
+**Der Bass schreitet aus, er hält nicht aus.** Zuvor lag unter dem Akkord ein
+gehaltener Grundton; jetzt läuft dort eine Figur — Grundton, Terz, Quinte,
+Grundton eine Oktave höher, ein Ton je Schritt. Das Pad behält nur die
+Oberstimmen, damit die tiefe Lage frei bleibt und der Puls nicht in einem
+liegenden Ton untergeht. Der Puls ist das, was die Partie gliedert: Er läuft
+über den Akkordwechsel hinweg durch, denn ein Neuansetzen bei jedem Stein wäre
+genau der Absatz, den die Blende ringsherum vermeidet — beim Wechsel tauschen
+nur die Töne der Figur. Der Grundton liegt dabei wie zuvor im Bereich einer
+Oktave unter dem Grundton der Tonart, sodass die Stufen eine diatonische
+Basslinie ergeben statt in Oktavsprüngen umherzuspringen.
+
+Gelegt werden die Töne im Voraus auf die Uhr der Tonmaschine, nicht auf den
+Bildtakt: Ein Zeitgeber des Fensters ist für einen Puls zu ungenau und würde bei
+jedem Ruckeln stolpern. Ein `setInterval` weckt darum nur alle 50 ms einen
+Vorratsleger, der alles einträgt, was in der nächsten Viertelsekunde fällig ist.
+Ist die Uhr davongelaufen, weil das Fenster stillstand, schließt der Puls auf,
+statt die verpassten Schritte nachzuholen.
+
+**Die Drehung des Steins kehrt die Figur um.** Das ist das Einzige an der Musik,
+das der Anwender unmittelbar in der Hand hat — die Akkordfolge selbst gehört dem
+Merkwort. Umgekehrt wird von der Stelle aus, an der die Figur gerade steht (die
+Position läuft mit `dir` weiter, statt gespiegelt zu werden): Man hört eine
+Wendung, keinen Neuanfang. Ausgelöst wird sie in `rotate()`, direkt neben dem
+Klang der Drehung — der in der musikalischen Partie ohnehin schweigt, sodass die
+Wendung an seine Stelle tritt. Nur eine gelungene Drehung zählt; eine, die an
+der Wand scheitert, ändert nichts. Weil die Aufzeichnung Bilder speichert und
+keine Handgriffe, bleibt das der Wiedergabe fern — dort läuft, wie das ganze
+Bett, nichts.
 
 **Der Wechsel selbst soll nicht zu hören sein, nur der neue Akkord.** Zwei
 Entscheidungen tragen das. Erstens die Blende: Ein- und Ausblendung dauern gleich

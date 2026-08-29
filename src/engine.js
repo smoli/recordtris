@@ -73,6 +73,16 @@ const TetrisEngine = (function () {
     if (typeof TetrisPad !== "undefined") TetrisPad.stop();
   }
 
+  /* Die Drehung des Steins kehrt die Richtung der Bassfigur um. Sie steht
+     neben dem Klang der Drehung, nicht an seiner Stelle: In der musikalischen
+     Partie schweigt das Geräusch ohnehin, und die Wendung des Basses ist das,
+     was man dort stattdessen hört. */
+  function padTurn(state) {
+    if (typeof TetrisPad === "undefined" || !TetrisPad.turn) return;
+    if (!state.musical || state.over || state.paused) return;
+    TetrisPad.turn();
+  }
+
   /* Das Merkwort bestimmt den Startwert des Schieberegisters: dasselbe Wort
      spielt dieselbe Steinfolge. Fehlt es, entsteht eines zufällig.
      Die Spielart ist "classic" (das Level steigt alle zehn Reihen) oder "forever"
@@ -150,6 +160,7 @@ const TetrisEngine = (function () {
       if (!collides(state.board, p.type, rot, p.x + kicks[i], p.y)) {
         p.rot = rot;
         p.x += kicks[i];
+        padTurn(state);
         emit(state, { k: "rot", type: p.type, rot: p.rot, x: p.x, y: p.y });
         state.version++;
         return true;

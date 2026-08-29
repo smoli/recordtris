@@ -55,11 +55,14 @@ function ChordBox({ game }) {
   const next = TetrisPad.chordOf(game.nextType);
   const cur = TetrisPad.chordOf(game.piece ? game.piece.type : TetrisPad.playing()) || next;
   if (!cur) return null;
+  // Wohin der Bass gerade läuft — jede Drehung des Steins kehrt es um.
+  const up = TetrisPad.direction() > 0;
   return html`<div class="box">
     <h2>Akkord</h2>
     <p class="big degree">${cur.deg}</p>
     <p class="mode-line">${cur.name} · ${TetrisPad.keyName()}</p>
     ${next && html`<p class="mode-line">dann ${next.deg} · ${next.name}</p>`}
+    <p class="mode-line">Bass ${up ? "↑ aufwärts" : "↓ abwärts"}</p>
   </div>`;
 }
 
@@ -163,7 +166,8 @@ function StartScreen({ level, onLevel, mode, onMode, musical, onMusical, seed, o
         ${musical ? "♫ Musik an" : "♫ Musik aus"}</button>
     </div>`}
     ${forever && musical && html`<p class="hint tight">Jeder Stein ist eine Stufe
-      in ${TetrisPad.keyName()} — sein Akkord klingt, sobald er erscheint.
+      in ${TetrisPad.keyName()} — sein Akkord klingt, sobald er erscheint, und
+      ein Bass schreitet ihn aus. Jede Drehung kehrt dessen Richtung um.
       Die Spielgeräusche schweigen dann.</p>`}
     <p class="label">${forever ? "Festes Level" : "Startlevel"}</p>
     <div class="levels">

@@ -21,7 +21,8 @@ Die Taste **M** wechselt zwischen den beiden.
 
 Wählst du **∞ Endlos**, erscheint darunter noch ein Schalter: **♫ Musik an**. Damit
 wird die Partie musikalisch — jeder Stein bringt beim Erscheinen seinen Akkord mit,
-und du spielst eine Akkordfolge, statt nur zu stapeln. Mehr dazu unter *Musik*. Die
+darunter läuft ein Bass, und du spielst eine Akkordfolge, statt nur zu stapeln.
+Mehr dazu unter *Musik*. Die
 Taste **K** schaltet ihn, auf dem Startbildschirm wie im laufenden Endlosspiel.
 
 Darunter wählst du das **Level** (0 bis 9) — klassisch ist das das Startlevel, endlos
@@ -178,8 +179,8 @@ die Liste das oben an — sie gilt dann nur für die laufende Sitzung.
   Oberfläche.
 - **Nächster** — der Stein, der als Nächstes kommt.
 - **Akkord** — nur im musikalischen Endlosspiel: die Stufe, die gerade klingt (die
-  große römische Zahl), ihr Name samt Tonart und darunter die Stufe, die der nächste
-  Stein bringt.
+  große römische Zahl), ihr Name samt Tonart, darunter die Stufe, die der nächste
+  Stein bringt, und zuletzt die Richtung des Basses (↑ oder ↓).
 - **Statistik** links — wie oft jede Steinsorte bisher kam.
 
 ## Was im Feld passiert
@@ -249,8 +250,22 @@ Neuanfang.
 | J | VI | d-Moll |
 | L | VII | e-vermindert |
 
+### Der Bass — und wie du ihn steuerst
+
+Unter dem Klangbett läuft ein **Bass**, der den stehenden Akkord ausschreitet: Ton
+für Ton in gleichbleibendem Schritt, aufwärts durch Grundton, Terz, Quinte und
+wieder den Grundton. Wechselt der Akkord, wechseln seine Töne — der Puls selbst
+läuft durch und trägt die ganze Partie.
+
+Seine **Richtung gehört dir**: Jedes Mal, wenn du einen Stein **drehst**, kehrt die
+Figur um. Aus aufwärts wird abwärts und beim nächsten Dreh wieder aufwärts. Sie
+springt dabei nicht an den Anfang, sondern läuft von der Stelle zurück, an der sie
+gerade steht — man hört die Wendung. Das ist das Einzige an der Musik, das du
+unmittelbar in der Hand hast: Wer viel dreht, bewegt den Bass.
+
 Rechts in der Spalte steht die Karte **Akkord**: die Stufe, die gerade klingt, ihr
-Name — und darunter, welche der nächste Stein bringt. Du kannst also hören *und*
+Name, darunter, welche der nächste Stein bringt — und zuunterst, wohin der Bass
+gerade läuft (**↑ aufwärts** oder **↓ abwärts**). Du kannst also hören *und*
 sehen, was kommt.
 
 Solange die Musik läuft, bleiben die **Spielgeräusche** aus: kein Klang beim
