@@ -90,13 +90,14 @@ const TetrisEngine = (function () {
     TetrisPad.shift(dx);
   }
 
-  /* Volle Reihen bekommen einen Wirbel des Schlagzeugs — je mehr auf einmal,
-     desto länger. Er tritt an die Stelle des Geräuschs, das in der
-     musikalischen Partie schweigt, und liegt darum hier, wo die Reihen fallen. */
-  function padFill(state, rows) {
-    if (typeof TetrisPad === "undefined" || !TetrisPad.fill) return;
+  /* Volle Reihen bekommen eine Glockenfigur aus den Tönen des laufenden
+     Akkords — je mehr auf einmal, desto länger. Sie tritt an die Stelle des
+     Geräuschs, das in der musikalischen Partie schweigt, sitzt auf dem Puls und
+     liegt darum hier, wo die Reihen fallen. */
+  function padChime(state, rows) {
+    if (typeof TetrisPad === "undefined" || !TetrisPad.chime) return;
     if (!state.musical || state.over) return;
-    TetrisPad.fill(rows);
+    TetrisPad.chime(rows);
   }
 
   /* Das Merkwort bestimmt den Startwert des Schieberegisters: dasselbe Wort
@@ -249,7 +250,7 @@ const TetrisEngine = (function () {
       if (state.board[r].every((c) => c !== null)) full.push(r);
     }
     if (full.length) {
-      padFill(state, full.length);
+      padChime(state, full.length);
       state.clearRows = full;
       state.clearTimer = CLEAR_MS;
     } else {

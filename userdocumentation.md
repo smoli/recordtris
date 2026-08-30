@@ -305,13 +305,8 @@ zurück auf die Eins. Es beginnt mit dem ersten Stein, läuft über die Akkordwe
 hinweg durch und verstummt mit dem Rest der Musik. Einen eigenen Schalter hat es
 nicht: **K** und **S** schalten es mit.
 
-**Fallen Reihen, wirbelt es.** Das Schlagzeug verlässt dann für ein paar Schläge
-sein Muster und spielt einen **Wirbel** — anschwellende Sechzehntel auf dem Fell,
-vorn und hinten eine Trommel. Je mehr Reihen auf einmal fielen, desto länger geht
-er: bei einer oder zwei kurz, beim **Tetris** über einen halben Takt. Danach steigt
-das Muster genau dort wieder ein, wo es ohne den Wirbel stünde — der Puls gerät
-nicht aus dem Tritt. Der Wirbel setzt auf dem nächsten Schlag ein, nicht
-dazwischen; er kommt also mit dem Aufblitzen der Reihen, nicht davor.
+Das Muster läuft **unbeirrt durch** — auch wenn Reihen fallen. Was dann klingt,
+legt sich darüber, statt es abzulösen.
 
 Rechts in der Spalte steht die Karte **Akkord**: die Stufe, die gerade klingt, ihr
 Name, darunter, welche der nächste Stein bringt — dann der Ton, auf dem der Bass
@@ -319,9 +314,23 @@ gerade steht (etwa **F2**), mit dem Hinweis, dass links tiefer und rechts höher
 führt und das Drehen springt, und zuunterst, ob das **Raster** an ist. Du kannst
 also hören *und* sehen, was kommt.
 
+### Wenn Reihen fallen
+
+Fallen Reihen, klingt oben über der Musik eine **Glockenfigur**: aufsteigende Töne
+des Akkords, der gerade steht. Je mehr Reihen auf einmal fielen, desto länger geht
+sie — eine Reihe sind zwei Töne, ein **Tetris** sechs, und dazu ein tiefer Ton als
+Grund darunter.
+
+Die Figur sitzt **auf dem Puls**: Ihr erster Ton wartet auf den nächsten Schlag des
+Schlagzeugs, die weiteren folgen im Abstand einer Sechzehntel. Sie kommt damit
+immer im Takt, egal wann die Reihe fällt — höchstens eine Achtel nach dem
+Einrasten, also ungefähr mit dem Aufblitzen der Reihen. Anders als beim Bass ist
+das nicht abschaltbar: Hier drückst du keine Taste, deren Verzögerung zu spüren
+wäre.
+
 Solange die Musik läuft, bleiben die **Spielgeräusche** aus: kein Klang beim
-Verschieben, Drehen oder Aufsetzen und keiner, wenn Reihen fallen — dort wirbelt
-stattdessen das Schlagzeug. Das Ohr gehört der Musik. Schaltest du mit **K** die Musik ab, sind die Geräusche sofort wieder da —
+Verschieben, Drehen oder Aufsetzen und keiner, wenn Reihen fallen — dort klingt
+stattdessen die Glockenfigur. Das Ohr gehört der Musik. Schaltest du mit **K** die Musik ab, sind die Geräusche sofort wieder da —
 und umgekehrt. Auch in der Wiedergabe einer musikalischen Partie bleibt es still.
 
 Weil das **Merkwort** die Steinfolge bestimmt, bestimmt es auch die Musik: Dasselbe

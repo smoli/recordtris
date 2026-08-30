@@ -51,9 +51,12 @@ dass die Folge vorhersagbar würde.
   Rechts rücken eine Sprosse, die Drehung springt zwei —, das Ausklingen jedes
   Anschlags und das Raster, auf das er wahlweise rückt.
 - `src/drums.js` — das Schlagzeug: das Muster über zwei Takte, die drei aus
-  Sinus und gefiltertem Rauschen gerechneten Schläge, der Wirbel für gefallene
-  Reihen und der Vorratsleger, der alles auf die Uhr der Tonmaschine legt — der
-  Puls der Musik, und über `grid()` auch ihr Raster.
+  Sinus und gefiltertem Rauschen gerechneten Schläge und der Vorratsleger, der
+  alles auf die Uhr der Tonmaschine legt — der Puls der Musik, und über `grid()`
+  und `stepDur()` auch ihr Raster.
+- `src/clear.js` — der Klang der gefallenen Reihen: die Glockenfigur aus den
+  Tönen des laufenden Akkords, ihre Länge nach der Zahl der Reihen und ihr Platz
+  auf dem Puls.
 - `src/soundassets.js` — die vier Beigaben aus `assets`: an der Stelle im Dokument
   ablesen, an der das Bündeln sie eingesetzt hat, und an `sound.js` übergeben.
 - `src/soundfiles.js` — das Netz darunter: im Datenordner suchen oder vom Anwender
@@ -213,23 +216,38 @@ also auch nichts, was fehlen könnte. Einen eigenen Schalter hat es nicht: Es
 beginnt mit dem ersten Akkord, endet mit dem Klangbett und hängt wie alles am
 Regler von `sound.js`.
 
-**Gefallene Reihen bekommen einen Wirbel.** In der musikalischen Partie schweigt
-der Klang der vollen Reihe — die Stelle, an der das Spiel am meisten zu melden
-hat, war damit die stillste. Das Schlagzeug füllt sie: Für die nächsten Schritte
-tritt an die Stelle des Musters ein Wirbel aus anschwellenden Sechzehnteln auf
-dem Fell, vorn und hinten eine Trommel. Seine Länge sagt, wie viele Reihen fielen
-(zwei Schritte bis vier beim Tetris). Ausgelöst wird er in `lock()`, wo die vollen
-Reihen erkannt werden, und er beginnt beim nächsten Schritt, der noch nicht auf
-der Uhr liegt — ein Wirbel gehört auf den Puls, nicht zwischen ihn. Das ist
-höchstens eine Achtel später und trifft damit ungefähr das Aufblitzen der Reihen.
-Der Schrittzähler läuft
-unter ihm weiter, sodass das Muster danach dort einsetzt, wo es ohne ihn stünde.
+**Gefallene Reihen bekommen eine Glockenfigur — über der Musik, nicht in ihr.**
+In der musikalischen Partie schweigt der Klang der vollen Reihe; die Stelle, an
+der das Spiel am meisten zu melden hat, wäre damit die stillste. Sie zu füllen
+war zuerst Sache des Schlagzeugs: Für ein paar Schritte trat an die Stelle des
+Musters ein Wirbel aus Sechzehnteln. Das war der falsche Ort. Ein Wirbel, der
+das Muster ablöst, nimmt dem Puls für seine Dauer den Boden — und weil seine
+Sechzehntel zwischen den Schlägen liegen, klingt er wie ein Stolpern statt wie
+ein Ausrufezeichen. Genau die Stelle, die feiern soll, brachte die Musik aus der
+Form.
+
+Also klingt jetzt eine eigene Stimme ÜBER dem laufenden Muster, ohne es
+anzurühren (`clear.js`): eine kurze Glockenfigur aus den Tönen des laufenden
+Akkords, aufsteigend und zwei Oktaven über dem Grundton der Tonart — dort, wo
+weder Bass noch Pad stehen, sodass sich nichts überdeckt. Ihre Länge sagt, wie
+viele Reihen fielen (zwei Töne bis sechs beim Tetris); der Tetris bekommt dazu
+einen tiefen Ton als Grund. Den Akkord bekommt sie vom Pad gereicht, wie der
+Bass auch — sie kennt die Tonart nicht.
+
+Und sie liegt fest auf dem Puls: Ihr erster Ton wartet auf den nächsten Schritt
+des Schlagzeugs (`grid`), die weiteren folgen im Abstand einer Sechzehntel
+(`stepDur`). Das ist höchstens eine Achtel nach dem Einrasten und trifft damit
+ungefähr das Aufblitzen der Reihen. Anders als beim Bass ist das kein Schalter
+des Anwenders: Hier spielt niemand eine Taste, deren Verzögerung zu spüren wäre,
+also gibt es keinen Grund, je daneben zu klingen. Ausgelöst wird die Figur in
+`lock()`, wo die vollen Reihen erkannt werden.
 
 **Das Raster ist der Puls, den man borgen kann.** Auf Wunsch soll der Bass nicht
 im Augenblick des Zuges klingen, sondern auf dem Puls. Weil die einzige Uhr der
 Musik im Schlagzeug liegt, gibt es sie dort als `grid(t, div)` heraus: den
-nächsten Rasterpunkt ab `t`. Der Bass fragt danach und legt seinen Anschlag
-dorthin — auf Sechzehntel, also höchstens eine halbe Achtel später. Mehr wäre als
+nächsten Rasterpunkt ab `t`, dazu als `stepDur()` die Länge eines Schrittes für
+den, der sich seine Figur selbst einteilt. Der Klang der gefallenen Reihen tut
+das immer; der Bass fragt danach und legt seinen Anschlag dorthin — auf Sechzehntel, also höchstens eine halbe Achtel später. Mehr wäre als
 Verzögerung der eigenen Taste zu spüren; weniger würde nichts zurechtrücken.
 Fällt ein weiterer Zug in die Wartezeit, greift dieselbe Regel wie beim
 Tastenhalten: Die Tonhöhe rückt sofort nach, angeschlagen wird einmal. Das Raster

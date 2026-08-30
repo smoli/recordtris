@@ -216,16 +216,19 @@ const TetrisPad = (function () {
     voiceType = voice ? type : "";
     lastVoicing = led;
     /* Der Bass nimmt denselben Akkord: Er bleibt auf seiner Sprosse stehen und
-       spielt dort den Ton des neuen Akkords. Das Schlagzeug läuft dazu — sein
-       Puls beginnt mit dem ersten Stein und läuft danach durch. */
+       spielt dort den Ton des neuen Akkords. Der Klang der Reihen nimmt ihn
+       ebenfalls, denn seine Figur ist aus den Tönen des laufenden Akkords. Das
+       Schlagzeug läuft dazu — sein Puls beginnt mit dem ersten Stein und läuft
+       danach durch. */
     bass("set", b.ctx, b.master, ROOT, spec.semis);
+    clear("set", b.ctx, b.master, ROOT, spec.semis);
     drums("start", b.ctx, b.master);
     return !!voice;
   }
 
-  /* Bass (bass.js) und Schlagzeug (drums.js) liegen nebenan — hier stehen nur
-     die beiden Wege dorthin, damit außerhalb niemand drei Dinge kennen muss.
-     Fehlen sie, klingt eben das Pad allein. */
+  /* Bass (bass.js), Schlagzeug (drums.js) und der Klang der Reihen (clear.js)
+     liegen nebenan — hier stehen nur die Wege dorthin, damit außerhalb niemand
+     vier Dinge kennen muss. Fehlt eines, klingt eben das Pad allein. */
   function bass(fn, a, b2, c, d) {
     if (typeof TetrisBass === "undefined" || !TetrisBass[fn]) return null;
     return TetrisBass[fn](a, b2, c, d);
@@ -234,6 +237,11 @@ const TetrisPad = (function () {
   function drums(fn, a, b2) {
     if (typeof TetrisDrums === "undefined" || !TetrisDrums[fn]) return null;
     return TetrisDrums[fn](a, b2);
+  }
+
+  function clear(fn, a, b2, c, d) {
+    if (typeof TetrisClear === "undefined" || !TetrisClear[fn]) return null;
+    return TetrisClear[fn](a, b2, c, d);
   }
 
   /* Was der Anwender an der Musik unmittelbar in der Hand hat: Beide Züge
@@ -246,9 +254,11 @@ const TetrisPad = (function () {
      Schlagzeugs, statt sofort zu klingen. Es gilt für die Sitzung. */
   function setQuantize(on) { return bass("setQuantize", on); }
 
-  /* Gefallene Reihen bekommen einen Wirbel des Schlagzeugs — je mehr Reihen auf
-     einmal, desto länger. Ausgelöst wird er in engine.js, wo die Reihen fallen. */
-  function fill(rows) { return drums("fill", rows); }
+  /* Gefallene Reihen bekommen eine Glockenfigur aus den Tönen des laufenden
+     Akkords — je mehr Reihen auf einmal, desto länger. Sie sitzt auf dem Puls
+     des Schlagzeugs, ohne dessen Muster anzurühren. Ausgelöst wird sie in
+     engine.js, wo die Reihen fallen. */
+  function chime(rows) { return clear("burst", rows); }
 
   // Für die Anzeige: der Name des Tons, auf dem der Bass gerade steht.
   function bassNote() { return bass("label") || ""; }
@@ -256,7 +266,8 @@ const TetrisPad = (function () {
   // Alles verstummt — beim Pausieren, beim Spielende, beim Verlassen der Partie.
   function stop() {
     bass("stop");  // der Bass hört mit dem Bett auf
-    drums("stop"); // und das Schlagzeug mit ihm
+    drums("stop"); // das Schlagzeug mit ihm
+    clear("stop"); // und der Klang der Reihen ebenso
     release(voice, true);
     voice = null;
     voiceType = "";
@@ -274,7 +285,7 @@ const TetrisPad = (function () {
     chord: chord,
     turn: turn,
     shift: shift,
-    fill: fill,
+    chime: chime,
     setQuantize: setQuantize,
     stop: stop,
     chordOf: chordOf,
