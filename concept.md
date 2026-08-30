@@ -46,12 +46,12 @@ dass die Folge vorhersagbar würde.
   die sie über `bus()` weiterreicht.
 - `src/pad.js` — das Klangbett des musikalischen Endlosspiels: die Tonart, die
   Stufe je Steinsorte und der Pad-Klang, der ihre Oberstimmen stehen lässt.
-- `src/arp.js` — der Bass darunter: die Figur, die den stehenden Akkord im
-  Schritt ausschreitet, ihr Vorratsleger auf der Uhr der Tonmaschine und die
-  Richtung, die jede Drehung umkehrt. Der Vorratsleger ist zugleich die Uhr des
-  Schlagzeugs.
-- `src/drums.js` — das Schlagzeug: das Muster über zwei Takte und die drei
-  Schläge, aus Sinus und gefiltertem Rauschen gerechnet. Ohne eigene Uhr.
+- `src/bass.js` — der Bass darunter: die eine durchlaufende Stimme, die Leiter
+  der Akkordtöne, auf der sie steht, und die Züge, die sie stellen — Drehung
+  schlägt an, Links und Rechts rücken eine Sprosse.
+- `src/drums.js` — das Schlagzeug: das Muster über zwei Takte, die drei aus
+  Sinus und gefiltertem Rauschen gerechneten Schläge und der Vorratsleger, der
+  sie auf die Uhr der Tonmaschine legt — der Puls der Musik.
 - `src/soundassets.js` — die vier Beigaben aus `assets`: an der Stelle im Dokument
   ablesen, an der das Bündeln sie eingesetzt hat, und an `sound.js` übergeben.
 - `src/soundfiles.js` — das Netz darunter: im Datenordner suchen oder vom Anwender
@@ -133,31 +133,44 @@ I → I, S → IV, O → II, Z → III, T → V, J → VI, L → VII. Die Tonart
 Stufen sind ihre Dreiklänge (F-Dur, g-Moll, a-Moll, B♭-Dur, C-Dur, d-Moll,
 e-vermindert).
 
-**Der Bass schreitet aus, er hält nicht aus.** Zuvor lag unter dem Akkord ein
-gehaltener Grundton; jetzt läuft dort eine Figur — Grundton, Terz, Quinte,
-Grundton eine Oktave höher, ein Ton je Schritt. Das Pad behält nur die
-Oberstimmen, damit die tiefe Lage frei bleibt und der Puls nicht in einem
-liegenden Ton untergeht. Der Puls ist das, was die Partie gliedert: Er läuft
-über den Akkordwechsel hinweg durch, denn ein Neuansetzen bei jedem Stein wäre
-genau der Absatz, den die Blende ringsherum vermeidet — beim Wechsel tauschen
-nur die Töne der Figur. Der Grundton liegt dabei wie zuvor im Bereich einer
-Oktave unter dem Grundton der Tonart, sodass die Stufen eine diatonische
-Basslinie ergeben statt in Oktavsprüngen umherzuspringen.
+**Der Bass ist ein Ton, und der Anwender spielt ihn.** Zuerst lag unter dem
+Akkord ein gehaltener Grundton, dann schritt dort eine Figur den Akkord aus;
+jetzt steht dort genau EIN Ton — der, auf den der Anwender den Bass gestellt hat.
+Die Züge des Steins stellen ihn:
 
-Gelegt werden die Töne im Voraus auf die Uhr der Tonmaschine, nicht auf den
-Bildtakt: Ein Zeitgeber des Fensters ist für einen Puls zu ungenau und würde bei
-jedem Ruckeln stolpern. Ein `setInterval` weckt darum nur alle 50 ms einen
-Vorratsleger, der alles einträgt, was in der nächsten Viertelsekunde fällig ist.
-Ist die Uhr davongelaufen, weil das Fenster stillstand, schließt der Puls auf,
-statt die verpassten Schritte nachzuholen.
+- **Ein neuer Stein** lässt ihn auf seiner Sprosse stehen und gibt ihm den Ton
+  des neuen Akkords. So bleibt die Linie, die der Anwender gespielt hat, über
+  den Akkordwechsel hinweg erhalten.
+- **Eine Drehung** schlägt denselben Ton noch einmal an.
+- **Links und rechts** rücken eine Sprosse tiefer oder höher.
 
-**Das Schlagzeug bekommt keine eigene Uhr.** Es hängt am Vorratsleger des Basses:
-Derselbe Schritt, der dort einen Ton legt, legt hier seinen Schlag — beide auf
-dieselbe Zeit auf der Uhr der Tonmaschine. Zwei Zeitgeber nebeneinander würden
-gegeneinander driften, und ein Schlagzeug, das am Bass schleift, ist schlechter
-als keines. Der Schritt zählt dabei stur vorwärts, unabhängig von `dir`: Eine
-Drehung wendet die Bassfigur, nicht den Takt — sonst liefe das Muster rückwärts,
-und der Auftakt stünde plötzlich vor der Eins.
+Die Leiter sind die Töne des Dreiklangs im Bassbereich: Grundton, Terz, Quinte,
+Grundton eine Oktave höher — vier Sprossen, an deren Enden der Ton stehen bleibt
+und nur wiederholt wird. Der Grundton liegt eine Oktave unter dem Grundton der
+Tonart, sodass die Stufen eine diatonische Basslinie ergeben. Das Pad behält nur
+die Oberstimmen, damit die tiefe Lage dem Bass gehört.
+
+Es klingt **eine einzige Stimme, die durchläuft**, statt für jeden Anschlag eine
+neue: So gibt es beim Wechsel weder Knacken noch Lücke, und die Tonhöhe kann auch
+ohne neuen Anschlag nachrücken. Das braucht es, weil eine gehaltene Taste sich
+zwanzigmal in der Sekunde wiederholt (`DAS_RATE` 50 ms): Liegen zwei Züge dichter
+als 0,11 s beieinander, rückt nur noch die Tonhöhe nach, ohne neuen Anschlag —
+sonst wäre der Bass beim Halten ein Maschinengewehr. Der Anschlag selbst ist eine
+kurze Senke der Lautstärke, in der auch die Tonhöhe springt, und ein Filter, das
+mit ihm auf- und wieder zufällt.
+
+**Das Schlagzeug führt die Uhr der Musik.** Sie lag beim Bass, solange der eine
+Figur ausschritt; seit er nur noch auf Zuruf anschlägt, hat er keinen Puls mehr,
+an den sich etwas hängen ließe. Also liegt der Vorratsleger jetzt im Schlagzeug —
+und weil er der einzige Zeitgeber der Musik ist, gibt es nichts, wogegen er
+driften könnte. Gelegt wird im Voraus auf die Uhr der Tonmaschine, nicht auf den
+Bildtakt: Ein Zeitgeber des Fensters ist für einen Puls zu ungenau. Ein
+`setInterval` weckt alle 50 ms den Vorratsleger, der alles einträgt, was in der
+nächsten Viertelsekunde fällig ist; ist die Uhr davongelaufen, weil das Fenster
+stillstand, schließt der Puls auf, statt die verpassten Schritte nachzuholen.
+Der Puls beginnt mit dem ersten Stein und läuft über die Akkordwechsel hinweg
+durch — ein Neuansetzen bei jedem Stein wäre genau der Absatz, den die Blende
+ringsherum vermeidet.
 
 Ein Schritt ist eine Achtel, acht davon ein Takt; das Muster geht über zwei Takte,
 damit die Wiederholung nicht sofort als solche auffällt: Trommel auf die Eins und
@@ -166,18 +179,17 @@ den Zählzeiten, am Ende ein Auftakt. Geschlagen wird mit dem, was die Tonmaschi
 selbst hergibt — ein fallender Sinus für die Trommel, hochpassgefiltertes Rauschen
 für Schlag und Hut, dazu ein kurzer Ton als Körper des Schlags. Keine Aufnahme,
 also auch nichts, was fehlen könnte. Einen eigenen Schalter hat es nicht: Es
-beginnt und endet mit dem Bass und hängt wie alles am Regler von `sound.js`.
+beginnt mit dem ersten Akkord, endet mit dem Klangbett und hängt wie alles am
+Regler von `sound.js`.
 
-**Die Drehung des Steins kehrt die Figur um.** Das ist das Einzige an der Musik,
-das der Anwender unmittelbar in der Hand hat — die Akkordfolge selbst gehört dem
-Merkwort. Umgekehrt wird von der Stelle aus, an der die Figur gerade steht (die
-Position läuft mit `dir` weiter, statt gespiegelt zu werden): Man hört eine
-Wendung, keinen Neuanfang. Ausgelöst wird sie in `rotate()`, direkt neben dem
-Klang der Drehung — der in der musikalischen Partie ohnehin schweigt, sodass die
-Wendung an seine Stelle tritt. Nur eine gelungene Drehung zählt; eine, die an
-der Wand scheitert, ändert nichts. Weil die Aufzeichnung Bilder speichert und
-keine Handgriffe, bleibt das der Wiedergabe fern — dort läuft, wie das ganze
-Bett, nichts.
+**Die Züge des Steins spielen den Bass.** Das ist das Einzige an der Musik, das
+der Anwender unmittelbar in der Hand hat — die Akkordfolge selbst gehört dem
+Merkwort. Ausgelöst wird es in `move()` und `rotate()`, direkt neben dem Klang
+des Zuges — der in der musikalischen Partie ohnehin schweigt, sodass der Bass an
+seine Stelle tritt. Nur ein gelungener Zug zählt; einer, der an der Wand
+scheitert, ändert nichts. Weil die Aufzeichnung Bilder speichert und keine
+Handgriffe, bleibt das der Wiedergabe fern — dort läuft, wie das ganze Bett,
+nichts.
 
 **Der Wechsel selbst soll nicht zu hören sein, nur der neue Akkord.** Zwei
 Entscheidungen tragen das. Erstens die Blende: Ein- und Ausblendung dauern gleich

@@ -73,14 +73,21 @@ const TetrisEngine = (function () {
     if (typeof TetrisPad !== "undefined") TetrisPad.stop();
   }
 
-  /* Die Drehung des Steins kehrt die Richtung der Bassfigur um. Sie steht
-     neben dem Klang der Drehung, nicht an seiner Stelle: In der musikalischen
-     Partie schweigt das Geräusch ohnehin, und die Wendung des Basses ist das,
+  /* Die Züge des Steins spielen den Bass: Die Drehung schlägt seinen Ton noch
+     einmal an, der Zug zur Seite sucht einen anderen Ton desselben Akkords.
+     Das steht neben dem Klang des Zuges, nicht an seiner Stelle: In der
+     musikalischen Partie schweigt das Geräusch ohnehin, und der Bass ist das,
      was man dort stattdessen hört. */
   function padTurn(state) {
     if (typeof TetrisPad === "undefined" || !TetrisPad.turn) return;
     if (!state.musical || state.over || state.paused) return;
     TetrisPad.turn();
+  }
+
+  function padShift(state, dx) {
+    if (typeof TetrisPad === "undefined" || !TetrisPad.shift) return;
+    if (!state.musical || state.over || state.paused) return;
+    TetrisPad.shift(dx);
   }
 
   /* Das Merkwort bestimmt den Startwert des Schieberegisters: dasselbe Wort
@@ -144,6 +151,7 @@ const TetrisEngine = (function () {
     const p = state.piece;
     if (collides(state.board, p.type, p.rot, p.x + dx, p.y)) return false;
     p.x += dx;
+    padShift(state, dx);
     emit(state, { k: "move", type: p.type, rot: p.rot, x: p.x, y: p.y, dx: dx });
     state.version++;
     return true;

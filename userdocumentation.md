@@ -181,7 +181,7 @@ die Liste das oben an — sie gilt dann nur für die laufende Sitzung.
 - **Nächster** — der Stein, der als Nächstes kommt.
 - **Akkord** — nur im musikalischen Endlosspiel: die Stufe, die gerade klingt (die
   große römische Zahl), ihr Name samt Tonart, darunter die Stufe, die der nächste
-  Stein bringt, und zuletzt die Richtung des Basses (↑ oder ↓).
+  Stein bringt, und zuletzt der Ton, auf dem der Bass gerade steht.
 - **Statistik** links — wie oft jede Steinsorte bisher kam.
 
 ## Was im Feld passiert
@@ -253,20 +253,27 @@ Neuanfang.
 
 ### Der Bass — und wie du ihn steuerst
 
-Unter dem Klangbett läuft ein **Bass**, der den stehenden Akkord ausschreitet: Ton
-für Ton in gleichbleibendem Schritt, aufwärts durch Grundton, Terz, Quinte und
-wieder den Grundton. Wechselt der Akkord, wechseln seine Töne — der Puls selbst
-läuft durch und trägt die ganze Partie.
+Unter dem Klangbett steht ein **Bass** — genau **ein Ton** aus dem Akkord, der
+gerade klingt, und er bleibt stehen, bis du ihn bewegst. **Du spielst ihn mit den
+Zügen des Steins:**
 
-Seine **Richtung gehört dir**: Jedes Mal, wenn du einen Stein **drehst**, kehrt die
-Figur um. Aus aufwärts wird abwärts und beim nächsten Dreh wieder aufwärts. Sie
-springt dabei nicht an den Anfang, sondern läuft von der Stelle zurück, an der sie
-gerade steht — man hört die Wendung. Das ist das Einzige an der Musik, das du
-unmittelbar in der Hand hast: Wer viel dreht, bewegt den Bass.
+- **Drehen** schlägt denselben Ton noch einmal an.
+- **Links** setzt ihn einen Ton **tiefer**, **rechts** einen Ton **höher** — immer
+  auf einen Ton, der zum Akkord passt: Grundton, Terz, Quinte, Grundton eine
+  Oktave höher. Oben und unten ist die Leiter zu Ende; dort wird der Ton nur noch
+  wiederholt.
+- Kommt ein **neuer Stein**, bleibt der Bass auf seiner Stufe stehen und nimmt den
+  passenden Ton des neuen Akkords. Deine Linie bleibt also über den Akkordwechsel
+  hinweg erhalten.
+
+Nur ein Zug, der wirklich gelingt, zählt — was an der Wand scheitert, ändert am
+Bass nichts. Hältst du eine Taste gedrückt, wandert der Ton mit, ohne bei jeder
+Wiederholung neu anzuschlagen. Das ist das Einzige an der Musik, das du
+unmittelbar in der Hand hast: Wer sich viel bewegt, spielt die Basslinie.
 
 ### Das Schlagzeug
 
-Auf demselben Puls läuft ein **Schlagzeug**: die große Trommel auf die Eins und die
+Durch die ganze Partie läuft ein **Schlagzeug**: die große Trommel auf die Eins und die
 Drei, der Schlag auf die Zwei und die Vier, dazu ein leiser Hut auf jeder Achtel.
 Über zwei Takte hinweg wechselt das Muster ein wenig — am Ende steht ein Auftakt
 zurück auf die Eins. Es beginnt mit dem ersten Stein, läuft über die Akkordwechsel
@@ -274,9 +281,9 @@ hinweg durch und verstummt mit dem Rest der Musik. Einen eigenen Schalter hat es
 nicht: **K** und **S** schalten es mit.
 
 Rechts in der Spalte steht die Karte **Akkord**: die Stufe, die gerade klingt, ihr
-Name, darunter, welche der nächste Stein bringt — und zuunterst, wohin der Bass
-gerade läuft (**↑ aufwärts** oder **↓ abwärts**). Du kannst also hören *und*
-sehen, was kommt.
+Name, darunter, welche der nächste Stein bringt — und zuunterst der Ton, auf dem
+der Bass gerade steht (etwa **F2**), mit dem Hinweis, dass links tiefer und rechts
+höher führt. Du kannst also hören *und* sehen, was kommt.
 
 Solange die Musik läuft, bleiben die **Spielgeräusche** aus: kein Klang beim
 Verschieben, Drehen oder Aufsetzen und keiner, wenn Reihen fallen. Das Ohr gehört den

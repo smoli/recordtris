@@ -1,10 +1,15 @@
 /* Das Schlagzeug des musikalischen Endlosspiels.
 
-   Es hat keine eigene Uhr: Den Puls schlägt der Bass (arp.js), und derselbe
-   Schritt, der dort einen Ton legt, legt hier einen Schlag. So können die
-   beiden nicht auseinanderlaufen — zwei Zeitgeber nebeneinander täten das
-   unweigerlich, und ein Schlagzeug, das gegen den Bass schleift, ist schlimmer
-   als gar keines.
+   Der Puls gehört ihm selbst: Der Bass (bass.js) schreitet den Akkord nicht mehr
+   aus, sondern spielt den einen Ton, den der Anwender ihm stellt — er hat keine
+   Uhr mehr, an die sich ein Schlagzeug hängen könnte. Also führt es hier eine
+   eigene. Sie ist die einzige der Musik, und damit gibt es nichts, wogegen sie
+   schleifen könnte.
+
+   Gelegt werden die Schläge im Voraus auf die Uhr der Tonmaschine, nicht auf die
+   des Bildtakts: Ein Zeitgeber des Fensters ist zu ungenau für einen Puls und
+   würde bei jeder Verzögerung stolpern. Ein Zeitgeber weckt hier nur alle paar
+   Hundertstel den Vorratsleger.
 
    Ein Schritt ist eine Achtel. Acht Schritte sind ein Takt, das Muster läuft
    über zwei Takte, damit die Wiederholung nicht gleich als solche auffällt:
@@ -27,9 +32,18 @@ const TetrisDrums = (function () {
   const SNARE_LEVEL = 0.20;
   const HAT_LEVEL   = 0.055; // der Hut steht leise, er soll nur ticken
 
+  const STEP = 0.26;   // Sekunden je Schritt (eine Achtel) — ein ruhiges Gehtempo
+  const AHEAD = 0.25;  // so weit im Voraus liegen die Schläge auf der Uhr
+  const TICK = 50;     // so oft (ms) wird nachgelegt
+
   let live = [];       // was gerade klingt — damit ein Anhalten es noch erwischt
   let noiseBuf = null; // das Rauschen, einmal gerechnet
   let noiseCtx = null; // und die Tonmaschine, für die es gilt
+  let ctxRef = null;   // die Tonmaschine des laufenden Pulses
+  let destRef = null;  // der Regler, an dem die Schläge hängen
+  let beat = 0;        // der wievielte Schritt seit dem Beginn
+  let at = 0;          // Zeit des nächsten Schritts auf der Uhr der Tonmaschine
+  let timer = null;    // der Wecker des Vorratslegers
 
   /* Rauschen als Klangkörper: einmal gefüllt, danach von jedem Schlag geteilt.
      Vier Zehntel reichen — länger klingt hier ohnehin nichts. */
@@ -144,9 +158,8 @@ const TetrisDrums = (function () {
     track(src, g);
   }
 
-  /* Ein Schritt des Pulses: Der Bass ruft das für jeden Ton, den er legt, mit
-     der laufenden Nummer des Schritts und der Zeit auf der Uhr der Tonmaschine.
-     Welche Schläge fällig sind, sagt das Muster. */
+  /* Ein Schritt des Pulses: Welche Schläge auf ihm fällig sind, sagt das Muster.
+     Gelegt werden sie auf die Zeit t, nicht auf jetzt. */
   function step(ctx, dest, n, t) {
     if (!ctx || !dest) return;
     const i = ((n % BAR) + BAR) % BAR;
@@ -155,8 +168,41 @@ const TetrisDrums = (function () {
     if (HAT[i]) hat(ctx, dest, t, HAT[i] > 1);
   }
 
-  // Alles verstummt: Was schon auf der Uhr liegt, wird kurzgemacht.
+  /* Der Vorratsleger: alles, was in den nächsten AHEAD Sekunden fällig wird,
+     kommt jetzt auf die Uhr. Ist die Uhr davongelaufen (das Fenster stand
+     still), schließt der Puls wieder auf, statt die verpassten Schritte
+     nachzuholen. */
+  function pump() {
+    if (!ctxRef || !destRef) return;
+    const until = ctxRef.currentTime + AHEAD;
+    let guard = 0;
+    while (at < until && guard++ < 16) {
+      if (at < ctxRef.currentTime) at = ctxRef.currentTime + 0.01;
+      step(ctxRef, destRef, beat, at);
+      beat++;
+      at += STEP;
+    }
+  }
+
+  /* Den Puls beginnen. Läuft er schon auf derselben Tonmaschine, geschieht
+     nichts: Das Muster soll über die Akkordwechsel hinweg durchlaufen, statt
+     bei jedem Stein neu auf der Eins anzusetzen. */
+  function start(ctx, dest) {
+    if (!ctx || !dest) return;
+    if (timer && ctxRef === ctx && destRef === dest) return;
+    if (timer) clearInterval(timer);
+    ctxRef = ctx;
+    destRef = dest;
+    beat = 0; // das Muster beginnt mit der Partie auf der Eins
+    at = ctx.currentTime + 0.03;
+    timer = setInterval(pump, TICK);
+    pump(); // der erste Schlag soll mit dem ersten Stein kommen
+  }
+
+  // Alles verstummt: Der Puls hört auf, und was schon auf der Uhr liegt, wird kurzgemacht.
   function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+    beat = 0;
     for (let i = live.length - 1; i >= 0; i--) {
       const v = live[i];
       const ctx = noiseCtx;
@@ -172,7 +218,7 @@ const TetrisDrums = (function () {
   }
 
   return {
-    step: step,
+    start: start,
     stop: stop
   };
 })();

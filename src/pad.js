@@ -8,8 +8,8 @@
    Die Zuordnung ist fest und stammt vom Anwender:
      I → I,  S → IV,  O → II,  Z → III,  T → V,  J → VI,  L → VII.
    Die Tonart ist F-Dur; die Stufen sind ihre Dreiklänge. Der Bass darunter
-   gehört nicht mehr hierher: Er schreitet den Akkord aus (arp.js) statt ihn
-   auszuhalten — hier stehen nur noch die Oberstimmen.
+   gehört nicht hierher: Er steht in bass.js und spielt den EINEN Ton des
+   Akkords, den der Anwender ihm stellt — hier stehen nur die Oberstimmen.
 
    Der Übergang von einer Farbe zur nächsten ist die eigentliche Arbeit hier.
    Zwei Dinge machen ihn weich: eine gleichleistungs-Blende (die eine Farbe geht
@@ -121,7 +121,7 @@ const TetrisPad = (function () {
   /* Ein Akkord als Klangkörper: drei Töne, jeder aus zwei leicht gegeneinander
      verstimmten Stimmen, alles durch ein weiches Tiefpassfilter, das beim
      Einsetzen langsam aufgeht. Das ergibt das Schweben eines Pads. Der Grund
-     darunter kommt vom Bass in arp.js. */
+     darunter kommt vom Bass in bass.js. */
   function build(ctx, dest, notes, det) {
     const t0 = ctx.currentTime + 0.01;
     const out = ctx.createGain();
@@ -215,29 +215,40 @@ const TetrisPad = (function () {
     voice = build(b.ctx, b.master, led, drift);
     voiceType = voice ? type : "";
     lastVoicing = led;
-    // Der Bass schreitet denselben Akkord aus; sein Puls läuft dabei durch.
-    arp("set", b.ctx, b.master, ROOT, spec.semis);
+    /* Der Bass nimmt denselben Akkord: Er bleibt auf seiner Sprosse stehen und
+       spielt dort den Ton des neuen Akkords. Das Schlagzeug läuft dazu — sein
+       Puls beginnt mit dem ersten Stein und läuft danach durch. */
+    bass("set", b.ctx, b.master, ROOT, spec.semis);
+    drums("start", b.ctx, b.master);
     return !!voice;
   }
 
-  /* Der Bass liegt in arp.js — hier steht nur der eine Weg dorthin, damit
-     außerhalb niemand zwei Dinge kennen muss. Fehlt er, klingt eben das Pad
-     allein. */
-  function arp(fn, a, b2, c, d) {
-    if (typeof TetrisArp === "undefined" || !TetrisArp[fn]) return null;
-    return TetrisArp[fn](a, b2, c, d);
+  /* Bass (bass.js) und Schlagzeug (drums.js) liegen nebenan — hier stehen nur
+     die beiden Wege dorthin, damit außerhalb niemand drei Dinge kennen muss.
+     Fehlen sie, klingt eben das Pad allein. */
+  function bass(fn, a, b2, c, d) {
+    if (typeof TetrisBass === "undefined" || !TetrisBass[fn]) return null;
+    return TetrisBass[fn](a, b2, c, d);
   }
 
-  /* Die Drehung des Steins kehrt die Richtung der Bassfigur um — das Einzige,
-     was der Anwender an der Musik unmittelbar in der Hand hat. */
-  function turn() { return arp("turn"); }
+  function drums(fn, a, b2) {
+    if (typeof TetrisDrums === "undefined" || !TetrisDrums[fn]) return null;
+    return TetrisDrums[fn](a, b2);
+  }
 
-  // Für die Anzeige: 1, wenn die Figur aufwärts läuft, -1 abwärts.
-  function direction() { return arp("direction") || 1; }
+  /* Was der Anwender an der Musik unmittelbar in der Hand hat: Die Drehung des
+     Steins schlägt den Bass-Ton noch einmal an, der Zug zur Seite sucht einen
+     anderen Ton desselben Akkords — nach links tiefer, nach rechts höher. */
+  function turn() { return bass("turn"); }
+  function shift(dx) { return bass("shift", dx); }
+
+  // Für die Anzeige: der Name des Tons, auf dem der Bass gerade steht.
+  function bassNote() { return bass("label") || ""; }
 
   // Alles verstummt — beim Pausieren, beim Spielende, beim Verlassen der Partie.
   function stop() {
-    arp("stop"); // der Bass hört mit dem Bett auf
+    bass("stop");  // der Bass hört mit dem Bett auf
+    drums("stop"); // und das Schlagzeug mit ihm
     release(voice, true);
     voice = null;
     voiceType = "";
@@ -254,10 +265,11 @@ const TetrisPad = (function () {
   return {
     chord: chord,
     turn: turn,
+    shift: shift,
     stop: stop,
     chordOf: chordOf,
     keyName: keyName,
     playing: playing,
-    direction: direction
+    bassNote: bassNote
   };
 })();
