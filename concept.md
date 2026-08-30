@@ -367,6 +367,17 @@ mehrere Felder setzt die Höhe sofort, damit nichts hinterherschleift. Die Spur
 hinter dem Stein tastet dieselbe gleitende Höhe ab und ist deshalb ein Schmier,
 kein Abdruck im Raster.
 
+Nachgezogen wird dabei nur nach unten. Das Gleiten ist ein Vorgriff auf das
+nächste Feld — und der Vorgriff kann hinfällig werden: Schiebt man den Stein zur
+Seite oder dreht ihn, und er kommt dort auf etwas zu stehen, gehört er wieder
+genau auf seine Zeile. Wird diese Rücknahme weich gezogen, sieht man erst den
+Stein ein paar Bilder tief im Stapel stecken und dann auf ihn hochschnappen —
+zwei Bewegungen für einen Zug. Darum wird die Höhe nach oben ohne Nachziehen
+gesetzt: Sie ändert sich im selben Bild wie das Schieben, das der Anwender
+ohnehin gerade verfolgt. Weil das Ziel selbst nie unter der Landestelle liegt und
+die nachgezogene Höhe es nie überholt, steht der gezeichnete Stein damit
+nie im Stapel.
+
 **Jedes Level hat seine Farbe.** Zehn Farben wechseln sich ab; sie färben den
 Hintergrund des Feldes, den Saum, das Aufblitzen beim Tetris und — über die Klasse
 `lv0` bis `lv9` am Wurzelelement — auch die Lichtstriche der Seitenspalten und die

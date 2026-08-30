@@ -4318,10 +4318,18 @@ const TetrisFx = (function () {
            Feldern gleitet sie ohnehin mit; das Nachziehen glättet zusätzlich die
            Sprünge, die die Regel selbst macht — vor allem beim Halten von "ein Feld
            tiefer", wo der Stein sonst im Raster hüpft. Ein neuer Stein oder ein
-           weiter Sprung setzt sie sofort, damit nichts hinterherschleift. */
+           weiter Sprung setzt sie sofort, damit nichts hinterherschleift.
+
+           Nach OBEN wird nie nachgezogen, sondern sofort gesetzt: Höher rückt das
+           Ziel allein dann, wenn der Anwender schiebt oder dreht und der Stein
+           dabei auf etwas zu stehen kommt — der Vorlauf ins nächste Feld ist damit
+           hinfällig. Weich hochzuziehen hieße, den Stein für ein paar Bilder in den
+           Stapel gezeichnet zu lassen und danach sichtbar hochschnappen zu lassen.
+           Sofort gesetzt fällt die Änderung mit dem Zug zusammen, den der Anwender
+           ohnehin gerade sieht — und der Stein steht nie im Stapel. */
         if (g.piece && !g.over) {
           const target = g.piece.y + pieceFrac(g);
-          if (vy === null || vyPiece !== g.piece || g.paused || Math.abs(target - vy) > 2.5) {
+          if (vy === null || vyPiece !== g.piece || g.paused || target < vy || Math.abs(target - vy) > 2.5) {
             vy = target;
           } else {
             vy += (target - vy) * (1 - Math.pow(0.004, dt / 90));
