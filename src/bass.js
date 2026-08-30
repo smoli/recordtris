@@ -6,13 +6,15 @@
 
    Was der Anwender damit in der Hand hat:
      ein neuer Stein  → derselbe Platz, aber die Töne des neuen Akkords
-     eine Drehung     → derselbe Ton noch einmal angeschlagen
+     eine Drehung     → ein Sprung über zwei Sprossen, also ebenfalls ein
+                        anderer Ton desselben Akkords
      links / rechts   → eine Sprosse tiefer / höher, also ein anderer Ton
                         desselben Akkords
 
    Die Sprossen sind die Töne des Dreiklangs im Bassbereich, aufsteigend:
    Grundton, Terz, Quinte, Grundton eine Oktave höher. An den Enden der Leiter
-   bleibt der Ton stehen und wird nur wiederholt.
+   bleibt der Schritt zur Seite stehen und wiederholt nur den Ton; der Sprung
+   der Drehung läuft dagegen oben um und beginnt wieder unten.
 
    Es klingt EINE Stimme, die durchläuft, statt für jeden Anschlag eine neue:
    So gibt es beim Wechsel weder ein Knacken noch eine Lücke, und die Tonhöhe
@@ -30,6 +32,7 @@ const TetrisBass = (function () {
   const SUSTAIN = 0.6;   // auf diesen Anteil sinkt er danach und bleibt stehen
   const MIN_GAP = 0.11;  // so dicht dürfen zwei Anschläge frühestens stehen
   const DIP = 0.012;     // die kurze Senke vor dem Anschlag — sie macht ihn hörbar
+  const LEAP = 2;        // um so viele Sprossen springt die Drehung (mit Umlauf)
 
   const NAMES = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
 
@@ -140,8 +143,16 @@ const TetrisBass = (function () {
     play();
   }
 
-  // Die Drehung des Steins: derselbe Ton noch einmal.
-  function turn() { play(); return pos; }
+  /* Die Drehung des Steins sucht sich ebenfalls einen anderen Ton, aber im
+     Sprung: zwei Sprossen weiter, und über das obere Ende der Leiter hinaus
+     wieder von unten. So klingt sie hörbar anders als der Schritt zur Seite
+     und trifft doch immer einen Ton des Akkords. */
+  function turn() {
+    if (!rungs.length) return pos;
+    pos = (pos + LEAP) % rungs.length;
+    play();
+    return pos;
+  }
 
   /* Der Zug zur Seite sucht einen anderen Ton desselben Akkords: nach links
      eine Sprosse tiefer, nach rechts eine höher. Am Ende der Leiter bleibt der

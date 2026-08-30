@@ -73,8 +73,8 @@ const TetrisEngine = (function () {
     if (typeof TetrisPad !== "undefined") TetrisPad.stop();
   }
 
-  /* Die Züge des Steins spielen den Bass: Die Drehung schlägt seinen Ton noch
-     einmal an, der Zug zur Seite sucht einen anderen Ton desselben Akkords.
+  /* Die Züge des Steins spielen den Bass: Der Zug zur Seite sucht den Nachbarton
+     des Akkords, die Drehung springt zu einem entfernteren.
      Das steht neben dem Klang des Zuges, nicht an seiner Stelle: In der
      musikalischen Partie schweigt das Geräusch ohnehin, und der Bass ist das,
      was man dort stattdessen hört. */

@@ -257,11 +257,14 @@ Unter dem Klangbett steht ein **Bass** — genau **ein Ton** aus dem Akkord, der
 gerade klingt, und er bleibt stehen, bis du ihn bewegst. **Du spielst ihn mit den
 Zügen des Steins:**
 
-- **Drehen** schlägt denselben Ton noch einmal an.
 - **Links** setzt ihn einen Ton **tiefer**, **rechts** einen Ton **höher** — immer
   auf einen Ton, der zum Akkord passt: Grundton, Terz, Quinte, Grundton eine
   Oktave höher. Oben und unten ist die Leiter zu Ende; dort wird der Ton nur noch
   wiederholt.
+- **Drehen** setzt ihn im **Sprung** um zwei Stufen weiter nach oben — und über
+  das obere Ende hinaus wieder unten hinein. Auch das ist immer ein Ton des
+  Akkords, nur ein weiterer Weg als der Schritt zur Seite: Drehst du mehrmals,
+  pendelt der Bass zwischen zwei Tönen hin und her.
 - Kommt ein **neuer Stein**, bleibt der Bass auf seiner Stufe stehen und nimmt den
   passenden Ton des neuen Akkords. Deine Linie bleibt also über den Akkordwechsel
   hinweg erhalten.
@@ -283,7 +286,7 @@ nicht: **K** und **S** schalten es mit.
 Rechts in der Spalte steht die Karte **Akkord**: die Stufe, die gerade klingt, ihr
 Name, darunter, welche der nächste Stein bringt — und zuunterst der Ton, auf dem
 der Bass gerade steht (etwa **F2**), mit dem Hinweis, dass links tiefer und rechts
-höher führt. Du kannst also hören *und* sehen, was kommt.
+höher führt und das Drehen springt. Du kannst also hören *und* sehen, was kommt.
 
 Solange die Musik läuft, bleiben die **Spielgeräusche** aus: kein Klang beim
 Verschieben, Drehen oder Aufsetzen und keiner, wenn Reihen fallen. Das Ohr gehört den

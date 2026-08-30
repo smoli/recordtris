@@ -47,8 +47,8 @@ dass die Folge vorhersagbar würde.
 - `src/pad.js` — das Klangbett des musikalischen Endlosspiels: die Tonart, die
   Stufe je Steinsorte und der Pad-Klang, der ihre Oberstimmen stehen lässt.
 - `src/bass.js` — der Bass darunter: die eine durchlaufende Stimme, die Leiter
-  der Akkordtöne, auf der sie steht, und die Züge, die sie stellen — Drehung
-  schlägt an, Links und Rechts rücken eine Sprosse.
+  der Akkordtöne, auf der sie steht, und die Züge, die sie stellen — Links und
+  Rechts rücken eine Sprosse, die Drehung springt zwei.
 - `src/drums.js` — das Schlagzeug: das Muster über zwei Takte, die drei aus
   Sinus und gefiltertem Rauschen gerechneten Schläge und der Vorratsleger, der
   sie auf die Uhr der Tonmaschine legt — der Puls der Musik.
@@ -141,12 +141,16 @@ Die Züge des Steins stellen ihn:
 - **Ein neuer Stein** lässt ihn auf seiner Sprosse stehen und gibt ihm den Ton
   des neuen Akkords. So bleibt die Linie, die der Anwender gespielt hat, über
   den Akkordwechsel hinweg erhalten.
-- **Eine Drehung** schlägt denselben Ton noch einmal an.
 - **Links und rechts** rücken eine Sprosse tiefer oder höher.
+- **Eine Drehung** springt zwei Sprossen weiter und läuft über das obere Ende
+  der Leiter hinaus wieder unten ein. So trifft auch sie einen anderen Ton des
+  Akkords, aber im Sprung statt im Schritt — hörbar anders als der Zug zur
+  Seite, und bei vier Sprossen ein Pendeln zwischen den beiden Hälften der
+  Leiter (Grundton ↔ Quinte, Terz ↔ oberer Grundton).
 
 Die Leiter sind die Töne des Dreiklangs im Bassbereich: Grundton, Terz, Quinte,
-Grundton eine Oktave höher — vier Sprossen, an deren Enden der Ton stehen bleibt
-und nur wiederholt wird. Der Grundton liegt eine Oktave unter dem Grundton der
+Grundton eine Oktave höher — vier Sprossen, an deren Enden der Schritt zur Seite
+stehen bleibt und nur wiederholt wird. Der Grundton liegt eine Oktave unter dem Grundton der
 Tonart, sodass die Stufen eine diatonische Basslinie ergeben. Das Pad behält nur
 die Oberstimmen, damit die tiefe Lage dem Bass gehört.
 

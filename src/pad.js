@@ -236,9 +236,9 @@ const TetrisPad = (function () {
     return TetrisDrums[fn](a, b2);
   }
 
-  /* Was der Anwender an der Musik unmittelbar in der Hand hat: Die Drehung des
-     Steins schlägt den Bass-Ton noch einmal an, der Zug zur Seite sucht einen
-     anderen Ton desselben Akkords — nach links tiefer, nach rechts höher. */
+  /* Was der Anwender an der Musik unmittelbar in der Hand hat: Beide Züge
+     suchen einen anderen Ton desselben Akkords — der Zug zur Seite schrittweise
+     (links tiefer, rechts höher), die Drehung im Sprung über zwei Sprossen. */
   function turn() { return bass("turn"); }
   function shift(dx) { return bass("shift", dx); }
 

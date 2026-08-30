@@ -62,7 +62,7 @@ function ChordBox({ game }) {
     <p class="big degree">${cur.deg}</p>
     <p class="mode-line">${cur.name} · ${TetrisPad.keyName()}</p>
     ${next && html`<p class="mode-line">dann ${next.deg} · ${next.name}</p>`}
-    ${bass && html`<p class="mode-line">Bass ${bass} · ← tiefer · → höher</p>`}
+    ${bass && html`<p class="mode-line">Bass ${bass} · ← tiefer · → höher · Drehen springt</p>`}
   </div>`;
 }
 
