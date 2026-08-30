@@ -21,6 +21,12 @@
    braucht es dafür nicht. Alles hängt am Regler von sound.js und ist damit von
    der Stummschaltung (Taste S) mit erfasst.
 
+   Zweierlei kommt von außen an diesen Puls. Fallen Reihen, verlässt das
+   Schlagzeug für ein paar Schritte sein Muster und wirbelt (fill) — je mehr
+   Reihen, desto länger. Und wer sich auf den Puls legen will, fragt nach dem
+   nächsten Rasterpunkt (grid); der Bass tut das, wenn der Anwender ihn ins
+   Raster gestellt hat.
+
    Was hier steht, klingt nur — es kennt weder Spiel noch Tonart. */
 const TetrisDrums = (function () {
   const BAR = 16;        // Schritte des Musters (zwei Takte zu je acht Achteln)
@@ -36,6 +42,10 @@ const TetrisDrums = (function () {
   const AHEAD = 0.25;  // so weit im Voraus liegen die Schläge auf der Uhr
   const TICK = 50;     // so oft (ms) wird nachgelegt
 
+  /* Der Wirbel für gefallene Reihen: je mehr auf einmal, desto länger verlässt
+     das Schlagzeug sein Muster. Der Index ist die Zahl der Reihen. */
+  const FILL = [0, 2, 2, 3, 4];
+
   let live = [];       // was gerade klingt — damit ein Anhalten es noch erwischt
   let noiseBuf = null; // das Rauschen, einmal gerechnet
   let noiseCtx = null; // und die Tonmaschine, für die es gilt
@@ -44,6 +54,8 @@ const TetrisDrums = (function () {
   let beat = 0;        // der wievielte Schritt seit dem Beginn
   let at = 0;          // Zeit des nächsten Schritts auf der Uhr der Tonmaschine
   let timer = null;    // der Wecker des Vorratslegers
+  let fillLeft = 0;    // wie viele Schritte noch dem Wirbel gehören
+  let fillLen = 0;     // wie lang dieser Wirbel im Ganzen ist
 
   /* Rauschen als Klangkörper: einmal gefüllt, danach von jedem Schlag geteilt.
      Vier Zehntel reichen — länger klingt hier ohnehin nichts. */
@@ -93,8 +105,10 @@ const TetrisDrums = (function () {
   }
 
   /* Der Schlag: helles Rauschen für das Fell, dazu ein kurzer Ton als Körper —
-     ohne ihn klingt er wie ein Zischen, nicht wie eine Trommel. */
-  function snare(ctx, dest, t) {
+     ohne ihn klingt er wie ein Zischen, nicht wie eine Trommel. amp ist seine
+     Stärke: Im Muster steht er voll, im Wirbel schwillt er an. */
+  function snare(ctx, dest, t, amp) {
+    const level = SNARE_LEVEL * (amp > 0 ? amp : 1);
     const buf = noise(ctx);
     if (buf) {
       let src, hp, g;
@@ -107,7 +121,7 @@ const TetrisDrums = (function () {
       hp.type = "highpass";
       hp.frequency.value = 1500;
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(SNARE_LEVEL, t + 0.004);
+      g.gain.linearRampToValueAtTime(level, t + 0.004);
       g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
       src.connect(hp);
       hp.connect(g);
@@ -124,7 +138,7 @@ const TetrisDrums = (function () {
     osc.frequency.setValueAtTime(196, t);
     osc.frequency.exponentialRampToValueAtTime(150, t + 0.08);
     og.gain.setValueAtTime(0.0001, t);
-    og.gain.linearRampToValueAtTime(SNARE_LEVEL * 0.55, t + 0.004);
+    og.gain.linearRampToValueAtTime(level * 0.55, t + 0.004);
     og.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
     osc.connect(og);
     og.connect(dest);
@@ -158,14 +172,58 @@ const TetrisDrums = (function () {
     track(src, g);
   }
 
-  /* Ein Schritt des Pulses: Welche Schläge auf ihm fällig sind, sagt das Muster.
-     Gelegt werden sie auf die Zeit t, nicht auf jetzt. */
+  /* Ein Schritt des Wirbels statt des Musters: Sechzehntel auf dem Fell, die
+     von Schlag zu Schlag anschwellen. Am Anfang steht die Trommel, am Ende noch
+     einmal — sie ist der Absprung zurück in den laufenden Puls. k ist der
+     wievielte Schritt des Wirbels, n seine ganze Länge. */
+  function fillStep(ctx, dest, t, k, n) {
+    const half = STEP / 2;
+    const rise = function (x) { return 0.55 + 0.75 * (x / (n * 2)); };
+    snare(ctx, dest, t, rise(k * 2));
+    snare(ctx, dest, t + half, rise(k * 2 + 1));
+    hat(ctx, dest, t, k === 0);
+    if (k === 0) kick(ctx, dest, t);
+    if (k === n - 1) kick(ctx, dest, t + half);
+  }
+
+  /* Ein Schritt des Pulses: Welche Schläge auf ihm fällig sind, sagt das Muster —
+     es sei denn, der Schritt gehört noch dem Wirbel. Gelegt werden sie auf die
+     Zeit t, nicht auf jetzt. Der Zähler beat läuft dabei weiter, damit das
+     Muster nach dem Wirbel wieder an seiner Stelle steht. */
   function step(ctx, dest, n, t) {
     if (!ctx || !dest) return;
+    if (fillLeft > 0) {
+      fillStep(ctx, dest, t, fillLen - fillLeft, fillLen);
+      fillLeft--;
+      return;
+    }
     const i = ((n % BAR) + BAR) % BAR;
     if (KICK[i]) kick(ctx, dest, t);
-    if (SNARE[i]) snare(ctx, dest, t);
+    if (SNARE[i]) snare(ctx, dest, t, 1);
     if (HAT[i]) hat(ctx, dest, t, HAT[i] > 1);
+  }
+
+  /* Gefallene Reihen bekommen einen Wirbel: Die nächsten Schritte gehören ihm
+     statt dem Muster. Er beginnt beim nächsten Schritt, der noch nicht auf der
+     Uhr liegt — ein Wirbel gehört auf den Puls, nicht zwischen ihn. Ohne
+     laufenden Puls (also außerhalb der musikalischen Partie) geschieht nichts. */
+  function fill(rows) {
+    if (!timer) return;
+    const n = FILL[Math.max(0, Math.min(FILL.length - 1, rows | 0))];
+    if (n <= fillLeft) return; // ein längerer Wirbel läuft schon
+    fillLeft = n;
+    fillLen = n;
+  }
+
+  /* Der nächste Rasterpunkt ab t — für alles, was sich auf den Puls legen
+     lassen will (der Bass tut das). Die Schritte liegen auf at + k * STEP; ein
+     Raster von div Teilen je Schritt teilt dieselbe Herkunft. Läuft kein Puls,
+     gibt es kein Raster: dann 0. */
+  function grid(t, div) {
+    if (!timer || !ctxRef) return 0;
+    const span = STEP / (div > 1 ? div : 1);
+    const k = Math.ceil((t - at) / span - 1e-6);
+    return at + k * span;
   }
 
   /* Der Vorratsleger: alles, was in den nächsten AHEAD Sekunden fällig wird,
@@ -194,6 +252,7 @@ const TetrisDrums = (function () {
     ctxRef = ctx;
     destRef = dest;
     beat = 0; // das Muster beginnt mit der Partie auf der Eins
+    fillLeft = 0;
     at = ctx.currentTime + 0.03;
     timer = setInterval(pump, TICK);
     pump(); // der erste Schlag soll mit dem ersten Stein kommen
@@ -203,6 +262,7 @@ const TetrisDrums = (function () {
   function stop() {
     if (timer) { clearInterval(timer); timer = null; }
     beat = 0;
+    fillLeft = 0;
     for (let i = live.length - 1; i >= 0; i--) {
       const v = live[i];
       const ctx = noiseCtx;
@@ -219,6 +279,8 @@ const TetrisDrums = (function () {
 
   return {
     start: start,
-    stop: stop
+    stop: stop,
+    fill: fill,
+    grid: grid
   };
 })();

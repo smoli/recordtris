@@ -90,6 +90,15 @@ const TetrisEngine = (function () {
     TetrisPad.shift(dx);
   }
 
+  /* Volle Reihen bekommen einen Wirbel des Schlagzeugs — je mehr auf einmal,
+     desto länger. Er tritt an die Stelle des Geräuschs, das in der
+     musikalischen Partie schweigt, und liegt darum hier, wo die Reihen fallen. */
+  function padFill(state, rows) {
+    if (typeof TetrisPad === "undefined" || !TetrisPad.fill) return;
+    if (!state.musical || state.over) return;
+    TetrisPad.fill(rows);
+  }
+
   /* Das Merkwort bestimmt den Startwert des Schieberegisters: dasselbe Wort
      spielt dieselbe Steinfolge. Fehlt es, entsteht eines zufällig.
      Die Spielart ist "classic" (das Level steigt alle zehn Reihen) oder "forever"
@@ -240,6 +249,7 @@ const TetrisEngine = (function () {
       if (state.board[r].every((c) => c !== null)) full.push(r);
     }
     if (full.length) {
+      padFill(state, full.length);
       state.clearRows = full;
       state.clearTimer = CLEAR_MS;
     } else {

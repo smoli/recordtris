@@ -242,6 +242,14 @@ const TetrisPad = (function () {
   function turn() { return bass("turn"); }
   function shift(dx) { return bass("shift", dx); }
 
+  /* Das Raster: Steht es an, rücken die Anschläge des Basses auf den Puls des
+     Schlagzeugs, statt sofort zu klingen. Es gilt für die Sitzung. */
+  function setQuantize(on) { return bass("setQuantize", on); }
+
+  /* Gefallene Reihen bekommen einen Wirbel des Schlagzeugs — je mehr Reihen auf
+     einmal, desto länger. Ausgelöst wird er in engine.js, wo die Reihen fallen. */
+  function fill(rows) { return drums("fill", rows); }
+
   // Für die Anzeige: der Name des Tons, auf dem der Bass gerade steht.
   function bassNote() { return bass("label") || ""; }
 
@@ -266,6 +274,8 @@ const TetrisPad = (function () {
     chord: chord,
     turn: turn,
     shift: shift,
+    fill: fill,
+    setQuantize: setQuantize,
     stop: stop,
     chordOf: chordOf,
     keyName: keyName,

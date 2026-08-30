@@ -25,6 +25,8 @@ darunter laufen ein Bass und ein Schlagzeug, und du spielst eine Akkordfolge, st
 nur zu stapeln.
 Mehr dazu unter *Musik*. Die
 Taste **K** schaltet ihn, auf dem Startbildschirm wie im laufenden Endlosspiel.
+Ist die Musik an, tritt daneben ein zweiter Schalter: **♩ Raster** (Taste **Q**) —
+er rückt die Bassanschläge auf den Puls des Schlagzeugs.
 
 Darunter wählst du das **Level** (0 bis 9) — klassisch ist das das Startlevel, endlos
 das feste Tempo für die ganze Partie. Je höher, desto schneller fallen die Steine —
@@ -67,6 +69,7 @@ Pfeiltaste kurz antippst oder zweimal **P** drückst (Pause und weiter).
 | R | in der Pause oder nach dem Spielende: Aufzeichnung ansehen |
 | M | auf dem Startbildschirm: Spielart wechseln (klassisch / endlos) |
 | K | Musik an- und ausschalten (nur im Endlosspiel und auf dem Startbildschirm, wenn Endlos gewählt ist) |
+| Q | Raster für den Bass an- und ausschalten (nur wenn die Musik läuft) |
 | H | Bestenliste öffnen (auf dem Startbildschirm, in der Pause, nach dem Spielende) |
 | Esc | Spiel beenden, zurück zum Startbildschirm |
 | Enter | nach dem Spielende noch einmal dieselbe Steinfolge; in der Bestenliste das gewählte Wort spielen |
@@ -181,7 +184,8 @@ die Liste das oben an — sie gilt dann nur für die laufende Sitzung.
 - **Nächster** — der Stein, der als Nächstes kommt.
 - **Akkord** — nur im musikalischen Endlosspiel: die Stufe, die gerade klingt (die
   große römische Zahl), ihr Name samt Tonart, darunter die Stufe, die der nächste
-  Stein bringt, und zuletzt der Ton, auf dem der Bass gerade steht.
+  Stein bringt, dann der Ton, auf dem der Bass gerade steht, und zuletzt, ob das
+  Raster an ist.
 - **Statistik** links — wie oft jede Steinsorte bisher kam.
 
 ## Was im Feld passiert
@@ -228,7 +232,8 @@ dagegen nicht: Aufgezeichnet werden Bilder, keine Handgriffe. Beim Zurückspulen
 es ganz still.
 
 Spielst du **musikalisch** (siehe unten), schweigen diese vier Geräusche vollständig —
-dann hörst du allein die Akkorde.
+dann hörst du allein die Musik. Statt des Klangs für gefallene Reihen wirbelt dort
+das Schlagzeug.
 
 ## Musik
 
@@ -254,13 +259,15 @@ Neuanfang.
 ### Der Bass — und wie du ihn steuerst
 
 Unter dem Klangbett steht ein **Bass** — genau **ein Ton** aus dem Akkord, der
-gerade klingt, und er bleibt stehen, bis du ihn bewegst. **Du spielst ihn mit den
-Zügen des Steins:**
+gerade klingt. Deine Züge schlagen ihn an, und danach **klingt er aus**: Bewegst
+du dich ein paar Sekunden nicht, verstummt er von selbst, statt endlos
+stehenzubleiben. **Du spielst ihn mit den Zügen des Steins:**
 
 - **Links** setzt ihn einen Ton **tiefer**, **rechts** einen Ton **höher** — immer
-  auf einen Ton, der zum Akkord passt: Grundton, Terz, Quinte, Grundton eine
-  Oktave höher. Oben und unten ist die Leiter zu Ende; dort wird der Ton nur noch
-  wiederholt.
+  auf einen Ton, der zum Akkord passt: die Quinte unter dem Grundton, dann
+  Grundton, Terz und Quinte. Oben und unten ist die Leiter zu Ende; dort wird der
+  Ton nur noch wiederholt. Sie liegt ganz im Bassbereich — der höchste Ton, den du
+  erreichen kannst, bleibt unter dem mittleren C.
 - **Drehen** setzt ihn im **Sprung** um zwei Stufen weiter nach oben — und über
   das obere Ende hinaus wieder unten hinein. Auch das ist immer ein Ton des
   Akkords, nur ein weiterer Weg als der Schritt zur Seite: Drehst du mehrmals,
@@ -274,6 +281,21 @@ Bass nichts. Hältst du eine Taste gedrückt, wandert der Ton mit, ohne bei jede
 Wiederholung neu anzuschlagen. Das ist das Einzige an der Musik, das du
 unmittelbar in der Hand hast: Wer sich viel bewegt, spielt die Basslinie.
 
+### Das Raster
+
+Normalerweise klingt der Bass in dem Augenblick, in dem du drückst — was du
+spielst, sitzt dann so genau auf dem Puls, wie du triffst. Der Schalter **♩ Raster
+an** (Taste **Q**) nimmt dir das ab: Jeder Anschlag wartet dann auf den nächsten
+Sechzehntel des Schlagzeugs und sitzt damit auf dem Puls. Es ist eine **leichte**
+Zurechtrückung — höchstens eine halbe Achtel, kaum als Verzögerung zu spüren, aber
+genug, damit deine Linie mit der Trommel geht.
+
+Der Schalter steht auf dem Startbildschirm neben **♫ Musik an** und lässt sich mit
+**Q** auch mitten im Spiel umlegen; in der Karte **Akkord** steht, wie er gerade
+steht. Er gilt für die laufende Sitzung, nicht für eine einzelne Partie, und
+betrifft nur den Bass — Akkorde und Schlagzeug bleiben, wie sie sind. Am Spiel
+ändert er nichts: Der Stein rückt weiterhin sofort, nur sein Ton wartet.
+
 ### Das Schlagzeug
 
 Durch die ganze Partie läuft ein **Schlagzeug**: die große Trommel auf die Eins und die
@@ -283,14 +305,23 @@ zurück auf die Eins. Es beginnt mit dem ersten Stein, läuft über die Akkordwe
 hinweg durch und verstummt mit dem Rest der Musik. Einen eigenen Schalter hat es
 nicht: **K** und **S** schalten es mit.
 
+**Fallen Reihen, wirbelt es.** Das Schlagzeug verlässt dann für ein paar Schläge
+sein Muster und spielt einen **Wirbel** — anschwellende Sechzehntel auf dem Fell,
+vorn und hinten eine Trommel. Je mehr Reihen auf einmal fielen, desto länger geht
+er: bei einer oder zwei kurz, beim **Tetris** über einen halben Takt. Danach steigt
+das Muster genau dort wieder ein, wo es ohne den Wirbel stünde — der Puls gerät
+nicht aus dem Tritt. Der Wirbel setzt auf dem nächsten Schlag ein, nicht
+dazwischen; er kommt also mit dem Aufblitzen der Reihen, nicht davor.
+
 Rechts in der Spalte steht die Karte **Akkord**: die Stufe, die gerade klingt, ihr
-Name, darunter, welche der nächste Stein bringt — und zuunterst der Ton, auf dem
-der Bass gerade steht (etwa **F2**), mit dem Hinweis, dass links tiefer und rechts
-höher führt und das Drehen springt. Du kannst also hören *und* sehen, was kommt.
+Name, darunter, welche der nächste Stein bringt — dann der Ton, auf dem der Bass
+gerade steht (etwa **F2**), mit dem Hinweis, dass links tiefer und rechts höher
+führt und das Drehen springt, und zuunterst, ob das **Raster** an ist. Du kannst
+also hören *und* sehen, was kommt.
 
 Solange die Musik läuft, bleiben die **Spielgeräusche** aus: kein Klang beim
-Verschieben, Drehen oder Aufsetzen und keiner, wenn Reihen fallen. Das Ohr gehört den
-Akkorden. Schaltest du mit **K** die Musik ab, sind die Geräusche sofort wieder da —
+Verschieben, Drehen oder Aufsetzen und keiner, wenn Reihen fallen — dort wirbelt
+stattdessen das Schlagzeug. Das Ohr gehört der Musik. Schaltest du mit **K** die Musik ab, sind die Geräusche sofort wieder da —
 und umgekehrt. Auch in der Wiedergabe einer musikalischen Partie bleibt es still.
 
 Weil das **Merkwort** die Steinfolge bestimmt, bestimmt es auch die Musik: Dasselbe

@@ -11,10 +11,12 @@
      links / rechts   → eine Sprosse tiefer / höher, also ein anderer Ton
                         desselben Akkords
 
-   Die Sprossen sind die Töne des Dreiklangs im Bassbereich, aufsteigend:
-   Grundton, Terz, Quinte, Grundton eine Oktave höher. An den Enden der Leiter
-   bleibt der Schritt zur Seite stehen und wiederholt nur den Ton; der Sprung
-   der Drehung läuft dagegen oben um und beginnt wieder unten.
+   Die Sprossen sind die Töne des Dreiklangs im Bassbereich, aufsteigend: die
+   Quinte eine Oktave unter dem Grundton, darüber Grundton, Terz und Quinte.
+   Damit bleibt die oberste Sprosse in jeder Stufe unter dem eingestrichenen C —
+   der Bass steigt nie in die vierte Oktave, wo er kein Bass mehr wäre. An den
+   Enden der Leiter bleibt der Schritt zur Seite stehen und wiederholt nur den
+   Ton; der Sprung der Drehung läuft dagegen oben um und beginnt wieder unten.
 
    Es klingt EINE Stimme, die durchläuft, statt für jeden Anschlag eine neue:
    So gibt es beim Wechsel weder ein Knacken noch eine Lücke, und die Tonhöhe
@@ -23,16 +25,29 @@
    Maschinengewehr. Liegen zwei Züge dichter beieinander als MIN_GAP, rückt daher
    nur noch die Tonhöhe nach, ohne neuen Anschlag.
 
+   Ein Anschlag verklingt: Er sinkt zuerst auf seinen Halt und von dort in DECAY
+   Sekunden ganz weg. Ein Ton, der ohne Ende stehen bliebe, wäre ein Brummen
+   unter der Musik statt eines gespielten Basses.
+
+   Auf Wunsch rückt jeder Anschlag ins Raster (setQuantize): Statt sofort zu
+   klingen, wartet er auf den nächsten Sechzehntel des Schlagzeugpulses. Das ist
+   höchstens eine halbe Achtel — kaum als Verzögerung zu spüren, aber genug,
+   damit die gespielte Linie auf dem Puls sitzt. Kommt in der Wartezeit noch ein
+   Zug, rückt dessen Tonhöhe trotzdem sofort nach; angeschlagen wird einmal.
+
    Der Puls des Schlagzeugs liegt nicht mehr hier: Seit der Bass keine Figur mehr
    ausschreitet, hat er keine eigene Uhr, und drums.js führt seine selbst.
 
    Was hier steht, klingt nur — es kennt weder Spiel noch Tonart. */
 const TetrisBass = (function () {
   const LEVEL = 0.26;    // wie laut der Bass im Anschlag steht
-  const SUSTAIN = 0.6;   // auf diesen Anteil sinkt er danach und bleibt stehen
+  const SUSTAIN = 0.6;   // auf diesen Anteil sinkt er kurz nach dem Anschlag
+  const DECAY = 2.4;     // und von dort in so vielen Sekunden ganz weg
   const MIN_GAP = 0.11;  // so dicht dürfen zwei Anschläge frühestens stehen
   const DIP = 0.012;     // die kurze Senke vor dem Anschlag — sie macht ihn hörbar
   const LEAP = 2;        // um so viele Sprossen springt die Drehung (mit Umlauf)
+  const HOME = 1;        // auf dieser Sprosse (dem Grundton) beginnt der Bass
+  const DIV = 2;         // so viele Rasterpunkte je Schritt des Pulses (Sechzehntel)
 
   const NAMES = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
 
@@ -40,28 +55,40 @@ const TetrisBass = (function () {
   let dest = null;   // der Regler, an dem alles hängt (die Stummschaltung)
   let root = 0;      // die Frequenz, auf die sich die Halbtöne beziehen
   let rungs = [];    // die Sprossen: Halbtöne über root, aufsteigend
-  let pos = 0;       // auf welcher Sprosse der Ton gerade steht
+  let pos = HOME;    // auf welcher Sprosse der Ton gerade steht
   let voice = null;  // die eine Stimme
   let last = -1;     // wann zuletzt angeschlagen wurde (Uhr der Tonmaschine)
+  let quant = false; // rücken die Anschläge auf den Puls?
 
   /* Die Sprossen aus dem Dreiklang: der Grundton in die tiefe Oktave gelegt,
-     darüber Terz und Quinte im nächstliegenden Abstand, oben der Grundton
-     wieder. */
+     darüber Terz und Quinte im nächstliegenden Abstand — und ganz unten die
+     Quinte noch einmal, eine Oktave tiefer. Die Leiter endet damit auf der
+     Quinte statt auf dem oberen Grundton und bleibt so überall unter dem
+     eingestrichenen C. */
   function rungsOf(semis) {
     const pcs = [];
     for (let i = 0; i < semis.length; i++) pcs.push(((semis[i] % 12) + 12) % 12);
-    const base = pcs[0] - 12;
-    const out = [base];
+    const out = [pcs[0] - 12];
     for (let i = 1; i < pcs.length; i++) {
       let n = pcs[i] - 12;
       while (n <= out[out.length - 1]) n += 12;
       out.push(n);
     }
-    out.push(base + 12);
+    out.unshift(out[out.length - 1] - 12);
     return out;
   }
 
   function freqOf(semi) { return root * Math.pow(2, semi / 12); }
+
+  /* Das Raster kommt vom Schlagzeug — dort liegt die einzige Uhr der Musik.
+     Läuft kein Puls oder ist das Raster abgeschaltet, gilt der Augenblick
+     selbst. */
+  function beatAt(t) {
+    if (!quant) return t;
+    if (typeof TetrisDrums === "undefined" || !TetrisDrums.grid) return t;
+    const g = TetrisDrums.grid(t, DIV);
+    return g > t ? g : t;
+  }
 
   /* Die Stimme: ein Dreieck durch ein Filter. Sie entsteht einmal und läuft,
      bis alles verstummt — Anschlag und Tonhöhe sind Bewegungen an ihr. */
@@ -88,42 +115,54 @@ const TetrisBass = (function () {
     return voice;
   }
 
+  /* Eine laufende Kurve bei t anhalten und alles Spätere verwerfen. Kann der
+     Regler das nicht von selbst, wird ersatzweise der Wert von jetzt an dieser
+     Stelle festgeschrieben. */
+  function hold(param, t, min) {
+    if (param.cancelAndHoldAtTime) { param.cancelAndHoldAtTime(t); return; }
+    param.cancelScheduledValues(t);
+    param.setValueAtTime(Math.max(min, param.value), t);
+  }
+
   /* Den Ton der aktuellen Sprosse hören lassen. Steht der letzte Anschlag noch
      keine MIN_GAP zurück, rückt allein die Tonhöhe nach: Der Bass wandert dann
-     mit dem gehaltenen Zug, statt zu hämmern. */
+     mit dem gehaltenen Zug, statt zu hämmern. Dasselbe gilt für einen Zug, der
+     in die Wartezeit auf den nächsten Rasterpunkt fällt — sein Ton rückt nach,
+     der Anschlag bleibt der eine, der schon liegt. */
   function play() {
     if (!ctx || !dest || !rungs.length) return;
     const v = ensure();
     if (!v) return;
-    const t = ctx.currentTime + 0.005;
+    const now = ctx.currentTime + 0.005;
+    const t = beatAt(now); // im Raster der nächste Sechzehntel, sonst jetzt
     const freq = freqOf(rungs[pos]);
     if (last >= 0 && t - last < MIN_GAP) {
       try {
         const p = v.osc.frequency;
-        p.cancelScheduledValues(t);
-        p.setValueAtTime(p.value, t);
-        p.linearRampToValueAtTime(freq, t + 0.04);
+        p.cancelScheduledValues(now);
+        p.setValueAtTime(p.value, now);
+        p.linearRampToValueAtTime(freq, now + 0.04);
       } catch (e) {}
       return;
     }
     try {
+      /* Angehalten wird auf dem Wert, den die Kurve zur Zeit t hätte — nicht
+         auf dem von jetzt: Liegt t im Raster erst noch vor uns, läuft das
+         Ausklingen bis dahin weiter, statt einen Sprung zu machen. */
       const g = v.gain.gain;
-      if (g.cancelAndHoldAtTime) g.cancelAndHoldAtTime(t);
-      else g.cancelScheduledValues(t);
-      g.setValueAtTime(Math.max(0.0001, g.value), t);
+      hold(g, t, 0.0001);
       g.exponentialRampToValueAtTime(0.0001, t + DIP);
       g.exponentialRampToValueAtTime(LEVEL, t + DIP + 0.02);
       g.exponentialRampToValueAtTime(Math.max(0.0001, LEVEL * SUSTAIN), t + 0.5);
+      // Und von dort ganz weg: Der Bass steht nicht endlos, er verklingt.
+      g.exponentialRampToValueAtTime(0.0001, t + DECAY);
       // Die Tonhöhe wechselt in der Senke — dort hört man den Sprung nicht.
       const p = v.osc.frequency;
-      p.cancelScheduledValues(t);
-      p.setValueAtTime(p.value, t);
+      hold(p, t, 0);
       p.setValueAtTime(freq, t + DIP);
       // Das Filter geht mit dem Anschlag auf und fällt wieder zu: der Zupf.
       const f = v.filt.frequency;
-      if (f.cancelAndHoldAtTime) f.cancelAndHoldAtTime(t);
-      else f.cancelScheduledValues(t);
-      f.setValueAtTime(Math.max(80, f.value), t);
+      hold(f, t, 80);
       f.setValueAtTime(Math.max(400, freq * 7), t + DIP);
       f.exponentialRampToValueAtTime(Math.max(220, freq * 2.2), t + 0.45);
     } catch (e) {}
@@ -186,10 +225,15 @@ const TetrisBass = (function () {
   // Alles verstummt: beim Pausieren, beim Spielende, beim Verlassen der Partie.
   function stop() {
     rungs = [];
-    pos = 0;
+    pos = HOME; // die nächste Partie beginnt wieder auf dem Grundton
     last = -1;
     release(false);
   }
+
+  /* Das Raster an- oder abschalten. Es gilt für die ganze Sitzung, nicht für
+     eine Partie — der Anwender stellt damit ein, wie streng seine Linie auf
+     dem Puls sitzen soll. */
+  function setQuantize(on) { quant = !!on; }
 
   /* Für die Anzeige: der Name des stehenden Tons samt Oktave. Gerechnet wird er
      aus der Frequenz, damit dieses Modul die Tonart weiterhin nicht kennen
@@ -209,6 +253,7 @@ const TetrisBass = (function () {
     turn: turn,
     shift: shift,
     stop: stop,
+    setQuantize: setQuantize,
     label: label,
     rung: rung
   };

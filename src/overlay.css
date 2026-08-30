@@ -74,8 +74,10 @@
   margin-bottom: 10px;
 }
 
-/* Der Schalter des Klangbetts steht allein — er gehört zur Spielart darüber. */
+/* Die Schalter des Klangbetts rücken an die Spielart darüber heran: allein die
+   Musik, oder Musik und Raster nebeneinander, sobald sie an ist. */
 .modes.one { grid-template-columns: 1fr; margin-top: -5px; }
+.modes.sub { margin-top: -5px; }
 
 .levels {
   display: grid;

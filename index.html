@@ -381,8 +381,10 @@ kbd {
   margin-bottom: 10px;
 }
 
-/* Der Schalter des Klangbetts steht allein — er gehört zur Spielart darüber. */
+/* Die Schalter des Klangbetts rücken an die Spielart darüber heran: allein die
+   Musik, oder Musik und Raster nebeneinander, sobald sie an ist. */
 .modes.one { grid-template-columns: 1fr; margin-top: -5px; }
+.modes.sub { margin-top: -5px; }
 
 .levels {
   display: grid;
@@ -1575,6 +1577,15 @@ const TetrisEngine = (function () {
     TetrisPad.shift(dx);
   }
 
+  /* Volle Reihen bekommen einen Wirbel des Schlagzeugs — je mehr auf einmal,
+     desto länger. Er tritt an die Stelle des Geräuschs, das in der
+     musikalischen Partie schweigt, und liegt darum hier, wo die Reihen fallen. */
+  function padFill(state, rows) {
+    if (typeof TetrisPad === "undefined" || !TetrisPad.fill) return;
+    if (!state.musical || state.over) return;
+    TetrisPad.fill(rows);
+  }
+
   /* Das Merkwort bestimmt den Startwert des Schieberegisters: dasselbe Wort
      spielt dieselbe Steinfolge. Fehlt es, entsteht eines zufällig.
      Die Spielart ist "classic" (das Level steigt alle zehn Reihen) oder "forever"
@@ -1725,6 +1736,7 @@ const TetrisEngine = (function () {
       if (state.board[r].every((c) => c !== null)) full.push(r);
     }
     if (full.length) {
+      padFill(state, full.length);
       state.clearRows = full;
       state.clearTimer = CLEAR_MS;
     } else {
@@ -3138,10 +3150,12 @@ const TetrisSound = (function () {
      links / rechts   → eine Sprosse tiefer / höher, also ein anderer Ton
                         desselben Akkords
 
-   Die Sprossen sind die Töne des Dreiklangs im Bassbereich, aufsteigend:
-   Grundton, Terz, Quinte, Grundton eine Oktave höher. An den Enden der Leiter
-   bleibt der Schritt zur Seite stehen und wiederholt nur den Ton; der Sprung
-   der Drehung läuft dagegen oben um und beginnt wieder unten.
+   Die Sprossen sind die Töne des Dreiklangs im Bassbereich, aufsteigend: die
+   Quinte eine Oktave unter dem Grundton, darüber Grundton, Terz und Quinte.
+   Damit bleibt die oberste Sprosse in jeder Stufe unter dem eingestrichenen C —
+   der Bass steigt nie in die vierte Oktave, wo er kein Bass mehr wäre. An den
+   Enden der Leiter bleibt der Schritt zur Seite stehen und wiederholt nur den
+   Ton; der Sprung der Drehung läuft dagegen oben um und beginnt wieder unten.
 
    Es klingt EINE Stimme, die durchläuft, statt für jeden Anschlag eine neue:
    So gibt es beim Wechsel weder ein Knacken noch eine Lücke, und die Tonhöhe
@@ -3150,16 +3164,29 @@ const TetrisSound = (function () {
    Maschinengewehr. Liegen zwei Züge dichter beieinander als MIN_GAP, rückt daher
    nur noch die Tonhöhe nach, ohne neuen Anschlag.
 
+   Ein Anschlag verklingt: Er sinkt zuerst auf seinen Halt und von dort in DECAY
+   Sekunden ganz weg. Ein Ton, der ohne Ende stehen bliebe, wäre ein Brummen
+   unter der Musik statt eines gespielten Basses.
+
+   Auf Wunsch rückt jeder Anschlag ins Raster (setQuantize): Statt sofort zu
+   klingen, wartet er auf den nächsten Sechzehntel des Schlagzeugpulses. Das ist
+   höchstens eine halbe Achtel — kaum als Verzögerung zu spüren, aber genug,
+   damit die gespielte Linie auf dem Puls sitzt. Kommt in der Wartezeit noch ein
+   Zug, rückt dessen Tonhöhe trotzdem sofort nach; angeschlagen wird einmal.
+
    Der Puls des Schlagzeugs liegt nicht mehr hier: Seit der Bass keine Figur mehr
    ausschreitet, hat er keine eigene Uhr, und drums.js führt seine selbst.
 
    Was hier steht, klingt nur — es kennt weder Spiel noch Tonart. */
 const TetrisBass = (function () {
   const LEVEL = 0.26;    // wie laut der Bass im Anschlag steht
-  const SUSTAIN = 0.6;   // auf diesen Anteil sinkt er danach und bleibt stehen
+  const SUSTAIN = 0.6;   // auf diesen Anteil sinkt er kurz nach dem Anschlag
+  const DECAY = 2.4;     // und von dort in so vielen Sekunden ganz weg
   const MIN_GAP = 0.11;  // so dicht dürfen zwei Anschläge frühestens stehen
   const DIP = 0.012;     // die kurze Senke vor dem Anschlag — sie macht ihn hörbar
   const LEAP = 2;        // um so viele Sprossen springt die Drehung (mit Umlauf)
+  const HOME = 1;        // auf dieser Sprosse (dem Grundton) beginnt der Bass
+  const DIV = 2;         // so viele Rasterpunkte je Schritt des Pulses (Sechzehntel)
 
   const NAMES = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
 
@@ -3167,28 +3194,40 @@ const TetrisBass = (function () {
   let dest = null;   // der Regler, an dem alles hängt (die Stummschaltung)
   let root = 0;      // die Frequenz, auf die sich die Halbtöne beziehen
   let rungs = [];    // die Sprossen: Halbtöne über root, aufsteigend
-  let pos = 0;       // auf welcher Sprosse der Ton gerade steht
+  let pos = HOME;    // auf welcher Sprosse der Ton gerade steht
   let voice = null;  // die eine Stimme
   let last = -1;     // wann zuletzt angeschlagen wurde (Uhr der Tonmaschine)
+  let quant = false; // rücken die Anschläge auf den Puls?
 
   /* Die Sprossen aus dem Dreiklang: der Grundton in die tiefe Oktave gelegt,
-     darüber Terz und Quinte im nächstliegenden Abstand, oben der Grundton
-     wieder. */
+     darüber Terz und Quinte im nächstliegenden Abstand — und ganz unten die
+     Quinte noch einmal, eine Oktave tiefer. Die Leiter endet damit auf der
+     Quinte statt auf dem oberen Grundton und bleibt so überall unter dem
+     eingestrichenen C. */
   function rungsOf(semis) {
     const pcs = [];
     for (let i = 0; i < semis.length; i++) pcs.push(((semis[i] % 12) + 12) % 12);
-    const base = pcs[0] - 12;
-    const out = [base];
+    const out = [pcs[0] - 12];
     for (let i = 1; i < pcs.length; i++) {
       let n = pcs[i] - 12;
       while (n <= out[out.length - 1]) n += 12;
       out.push(n);
     }
-    out.push(base + 12);
+    out.unshift(out[out.length - 1] - 12);
     return out;
   }
 
   function freqOf(semi) { return root * Math.pow(2, semi / 12); }
+
+  /* Das Raster kommt vom Schlagzeug — dort liegt die einzige Uhr der Musik.
+     Läuft kein Puls oder ist das Raster abgeschaltet, gilt der Augenblick
+     selbst. */
+  function beatAt(t) {
+    if (!quant) return t;
+    if (typeof TetrisDrums === "undefined" || !TetrisDrums.grid) return t;
+    const g = TetrisDrums.grid(t, DIV);
+    return g > t ? g : t;
+  }
 
   /* Die Stimme: ein Dreieck durch ein Filter. Sie entsteht einmal und läuft,
      bis alles verstummt — Anschlag und Tonhöhe sind Bewegungen an ihr. */
@@ -3215,42 +3254,54 @@ const TetrisBass = (function () {
     return voice;
   }
 
+  /* Eine laufende Kurve bei t anhalten und alles Spätere verwerfen. Kann der
+     Regler das nicht von selbst, wird ersatzweise der Wert von jetzt an dieser
+     Stelle festgeschrieben. */
+  function hold(param, t, min) {
+    if (param.cancelAndHoldAtTime) { param.cancelAndHoldAtTime(t); return; }
+    param.cancelScheduledValues(t);
+    param.setValueAtTime(Math.max(min, param.value), t);
+  }
+
   /* Den Ton der aktuellen Sprosse hören lassen. Steht der letzte Anschlag noch
      keine MIN_GAP zurück, rückt allein die Tonhöhe nach: Der Bass wandert dann
-     mit dem gehaltenen Zug, statt zu hämmern. */
+     mit dem gehaltenen Zug, statt zu hämmern. Dasselbe gilt für einen Zug, der
+     in die Wartezeit auf den nächsten Rasterpunkt fällt — sein Ton rückt nach,
+     der Anschlag bleibt der eine, der schon liegt. */
   function play() {
     if (!ctx || !dest || !rungs.length) return;
     const v = ensure();
     if (!v) return;
-    const t = ctx.currentTime + 0.005;
+    const now = ctx.currentTime + 0.005;
+    const t = beatAt(now); // im Raster der nächste Sechzehntel, sonst jetzt
     const freq = freqOf(rungs[pos]);
     if (last >= 0 && t - last < MIN_GAP) {
       try {
         const p = v.osc.frequency;
-        p.cancelScheduledValues(t);
-        p.setValueAtTime(p.value, t);
-        p.linearRampToValueAtTime(freq, t + 0.04);
+        p.cancelScheduledValues(now);
+        p.setValueAtTime(p.value, now);
+        p.linearRampToValueAtTime(freq, now + 0.04);
       } catch (e) {}
       return;
     }
     try {
+      /* Angehalten wird auf dem Wert, den die Kurve zur Zeit t hätte — nicht
+         auf dem von jetzt: Liegt t im Raster erst noch vor uns, läuft das
+         Ausklingen bis dahin weiter, statt einen Sprung zu machen. */
       const g = v.gain.gain;
-      if (g.cancelAndHoldAtTime) g.cancelAndHoldAtTime(t);
-      else g.cancelScheduledValues(t);
-      g.setValueAtTime(Math.max(0.0001, g.value), t);
+      hold(g, t, 0.0001);
       g.exponentialRampToValueAtTime(0.0001, t + DIP);
       g.exponentialRampToValueAtTime(LEVEL, t + DIP + 0.02);
       g.exponentialRampToValueAtTime(Math.max(0.0001, LEVEL * SUSTAIN), t + 0.5);
+      // Und von dort ganz weg: Der Bass steht nicht endlos, er verklingt.
+      g.exponentialRampToValueAtTime(0.0001, t + DECAY);
       // Die Tonhöhe wechselt in der Senke — dort hört man den Sprung nicht.
       const p = v.osc.frequency;
-      p.cancelScheduledValues(t);
-      p.setValueAtTime(p.value, t);
+      hold(p, t, 0);
       p.setValueAtTime(freq, t + DIP);
       // Das Filter geht mit dem Anschlag auf und fällt wieder zu: der Zupf.
       const f = v.filt.frequency;
-      if (f.cancelAndHoldAtTime) f.cancelAndHoldAtTime(t);
-      else f.cancelScheduledValues(t);
-      f.setValueAtTime(Math.max(80, f.value), t);
+      hold(f, t, 80);
       f.setValueAtTime(Math.max(400, freq * 7), t + DIP);
       f.exponentialRampToValueAtTime(Math.max(220, freq * 2.2), t + 0.45);
     } catch (e) {}
@@ -3313,10 +3364,15 @@ const TetrisBass = (function () {
   // Alles verstummt: beim Pausieren, beim Spielende, beim Verlassen der Partie.
   function stop() {
     rungs = [];
-    pos = 0;
+    pos = HOME; // die nächste Partie beginnt wieder auf dem Grundton
     last = -1;
     release(false);
   }
+
+  /* Das Raster an- oder abschalten. Es gilt für die ganze Sitzung, nicht für
+     eine Partie — der Anwender stellt damit ein, wie streng seine Linie auf
+     dem Puls sitzen soll. */
+  function setQuantize(on) { quant = !!on; }
 
   /* Für die Anzeige: der Name des stehenden Tons samt Oktave. Gerechnet wird er
      aus der Frequenz, damit dieses Modul die Tonart weiterhin nicht kennen
@@ -3336,6 +3392,7 @@ const TetrisBass = (function () {
     turn: turn,
     shift: shift,
     stop: stop,
+    setQuantize: setQuantize,
     label: label,
     rung: rung
   };
@@ -3364,6 +3421,12 @@ const TetrisBass = (function () {
    braucht es dafür nicht. Alles hängt am Regler von sound.js und ist damit von
    der Stummschaltung (Taste S) mit erfasst.
 
+   Zweierlei kommt von außen an diesen Puls. Fallen Reihen, verlässt das
+   Schlagzeug für ein paar Schritte sein Muster und wirbelt (fill) — je mehr
+   Reihen, desto länger. Und wer sich auf den Puls legen will, fragt nach dem
+   nächsten Rasterpunkt (grid); der Bass tut das, wenn der Anwender ihn ins
+   Raster gestellt hat.
+
    Was hier steht, klingt nur — es kennt weder Spiel noch Tonart. */
 const TetrisDrums = (function () {
   const BAR = 16;        // Schritte des Musters (zwei Takte zu je acht Achteln)
@@ -3379,6 +3442,10 @@ const TetrisDrums = (function () {
   const AHEAD = 0.25;  // so weit im Voraus liegen die Schläge auf der Uhr
   const TICK = 50;     // so oft (ms) wird nachgelegt
 
+  /* Der Wirbel für gefallene Reihen: je mehr auf einmal, desto länger verlässt
+     das Schlagzeug sein Muster. Der Index ist die Zahl der Reihen. */
+  const FILL = [0, 2, 2, 3, 4];
+
   let live = [];       // was gerade klingt — damit ein Anhalten es noch erwischt
   let noiseBuf = null; // das Rauschen, einmal gerechnet
   let noiseCtx = null; // und die Tonmaschine, für die es gilt
@@ -3387,6 +3454,8 @@ const TetrisDrums = (function () {
   let beat = 0;        // der wievielte Schritt seit dem Beginn
   let at = 0;          // Zeit des nächsten Schritts auf der Uhr der Tonmaschine
   let timer = null;    // der Wecker des Vorratslegers
+  let fillLeft = 0;    // wie viele Schritte noch dem Wirbel gehören
+  let fillLen = 0;     // wie lang dieser Wirbel im Ganzen ist
 
   /* Rauschen als Klangkörper: einmal gefüllt, danach von jedem Schlag geteilt.
      Vier Zehntel reichen — länger klingt hier ohnehin nichts. */
@@ -3436,8 +3505,10 @@ const TetrisDrums = (function () {
   }
 
   /* Der Schlag: helles Rauschen für das Fell, dazu ein kurzer Ton als Körper —
-     ohne ihn klingt er wie ein Zischen, nicht wie eine Trommel. */
-  function snare(ctx, dest, t) {
+     ohne ihn klingt er wie ein Zischen, nicht wie eine Trommel. amp ist seine
+     Stärke: Im Muster steht er voll, im Wirbel schwillt er an. */
+  function snare(ctx, dest, t, amp) {
+    const level = SNARE_LEVEL * (amp > 0 ? amp : 1);
     const buf = noise(ctx);
     if (buf) {
       let src, hp, g;
@@ -3450,7 +3521,7 @@ const TetrisDrums = (function () {
       hp.type = "highpass";
       hp.frequency.value = 1500;
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(SNARE_LEVEL, t + 0.004);
+      g.gain.linearRampToValueAtTime(level, t + 0.004);
       g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
       src.connect(hp);
       hp.connect(g);
@@ -3467,7 +3538,7 @@ const TetrisDrums = (function () {
     osc.frequency.setValueAtTime(196, t);
     osc.frequency.exponentialRampToValueAtTime(150, t + 0.08);
     og.gain.setValueAtTime(0.0001, t);
-    og.gain.linearRampToValueAtTime(SNARE_LEVEL * 0.55, t + 0.004);
+    og.gain.linearRampToValueAtTime(level * 0.55, t + 0.004);
     og.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
     osc.connect(og);
     og.connect(dest);
@@ -3501,14 +3572,58 @@ const TetrisDrums = (function () {
     track(src, g);
   }
 
-  /* Ein Schritt des Pulses: Welche Schläge auf ihm fällig sind, sagt das Muster.
-     Gelegt werden sie auf die Zeit t, nicht auf jetzt. */
+  /* Ein Schritt des Wirbels statt des Musters: Sechzehntel auf dem Fell, die
+     von Schlag zu Schlag anschwellen. Am Anfang steht die Trommel, am Ende noch
+     einmal — sie ist der Absprung zurück in den laufenden Puls. k ist der
+     wievielte Schritt des Wirbels, n seine ganze Länge. */
+  function fillStep(ctx, dest, t, k, n) {
+    const half = STEP / 2;
+    const rise = function (x) { return 0.55 + 0.75 * (x / (n * 2)); };
+    snare(ctx, dest, t, rise(k * 2));
+    snare(ctx, dest, t + half, rise(k * 2 + 1));
+    hat(ctx, dest, t, k === 0);
+    if (k === 0) kick(ctx, dest, t);
+    if (k === n - 1) kick(ctx, dest, t + half);
+  }
+
+  /* Ein Schritt des Pulses: Welche Schläge auf ihm fällig sind, sagt das Muster —
+     es sei denn, der Schritt gehört noch dem Wirbel. Gelegt werden sie auf die
+     Zeit t, nicht auf jetzt. Der Zähler beat läuft dabei weiter, damit das
+     Muster nach dem Wirbel wieder an seiner Stelle steht. */
   function step(ctx, dest, n, t) {
     if (!ctx || !dest) return;
+    if (fillLeft > 0) {
+      fillStep(ctx, dest, t, fillLen - fillLeft, fillLen);
+      fillLeft--;
+      return;
+    }
     const i = ((n % BAR) + BAR) % BAR;
     if (KICK[i]) kick(ctx, dest, t);
-    if (SNARE[i]) snare(ctx, dest, t);
+    if (SNARE[i]) snare(ctx, dest, t, 1);
     if (HAT[i]) hat(ctx, dest, t, HAT[i] > 1);
+  }
+
+  /* Gefallene Reihen bekommen einen Wirbel: Die nächsten Schritte gehören ihm
+     statt dem Muster. Er beginnt beim nächsten Schritt, der noch nicht auf der
+     Uhr liegt — ein Wirbel gehört auf den Puls, nicht zwischen ihn. Ohne
+     laufenden Puls (also außerhalb der musikalischen Partie) geschieht nichts. */
+  function fill(rows) {
+    if (!timer) return;
+    const n = FILL[Math.max(0, Math.min(FILL.length - 1, rows | 0))];
+    if (n <= fillLeft) return; // ein längerer Wirbel läuft schon
+    fillLeft = n;
+    fillLen = n;
+  }
+
+  /* Der nächste Rasterpunkt ab t — für alles, was sich auf den Puls legen
+     lassen will (der Bass tut das). Die Schritte liegen auf at + k * STEP; ein
+     Raster von div Teilen je Schritt teilt dieselbe Herkunft. Läuft kein Puls,
+     gibt es kein Raster: dann 0. */
+  function grid(t, div) {
+    if (!timer || !ctxRef) return 0;
+    const span = STEP / (div > 1 ? div : 1);
+    const k = Math.ceil((t - at) / span - 1e-6);
+    return at + k * span;
   }
 
   /* Der Vorratsleger: alles, was in den nächsten AHEAD Sekunden fällig wird,
@@ -3537,6 +3652,7 @@ const TetrisDrums = (function () {
     ctxRef = ctx;
     destRef = dest;
     beat = 0; // das Muster beginnt mit der Partie auf der Eins
+    fillLeft = 0;
     at = ctx.currentTime + 0.03;
     timer = setInterval(pump, TICK);
     pump(); // der erste Schlag soll mit dem ersten Stein kommen
@@ -3546,6 +3662,7 @@ const TetrisDrums = (function () {
   function stop() {
     if (timer) { clearInterval(timer); timer = null; }
     beat = 0;
+    fillLeft = 0;
     for (let i = live.length - 1; i >= 0; i--) {
       const v = live[i];
       const ctx = noiseCtx;
@@ -3562,7 +3679,9 @@ const TetrisDrums = (function () {
 
   return {
     start: start,
-    stop: stop
+    stop: stop,
+    fill: fill,
+    grid: grid
   };
 })();
 </script>
@@ -3810,6 +3929,14 @@ const TetrisPad = (function () {
   function turn() { return bass("turn"); }
   function shift(dx) { return bass("shift", dx); }
 
+  /* Das Raster: Steht es an, rücken die Anschläge des Basses auf den Puls des
+     Schlagzeugs, statt sofort zu klingen. Es gilt für die Sitzung. */
+  function setQuantize(on) { return bass("setQuantize", on); }
+
+  /* Gefallene Reihen bekommen einen Wirbel des Schlagzeugs — je mehr Reihen auf
+     einmal, desto länger. Ausgelöst wird er in engine.js, wo die Reihen fallen. */
+  function fill(rows) { return drums("fill", rows); }
+
   // Für die Anzeige: der Name des Tons, auf dem der Bass gerade steht.
   function bassNote() { return bass("label") || ""; }
 
@@ -3834,6 +3961,8 @@ const TetrisPad = (function () {
     chord: chord,
     turn: turn,
     shift: shift,
+    fill: fill,
+    setQuantize: setQuantize,
     stop: stop,
     chordOf: chordOf,
     keyName: keyName,
@@ -4892,7 +5021,7 @@ function ScoreBox({ game }) {
 
 /* Das Klangbett in Worten: welche Stufe der Tonart gerade steht und welche mit
    dem nächsten Stein kommt. Nur das musikalische Endlosspiel zeigt sie. */
-function ChordBox({ game }) {
+function ChordBox({ game, quant }) {
   /* Zwischen zwei Steinen — während die vollen Reihen fallen — gibt es keinen
      Stein, wohl aber einen Akkord: den, der noch steht. */
   const next = TetrisPad.chordOf(game.nextType);
@@ -4906,6 +5035,7 @@ function ChordBox({ game }) {
     <p class="mode-line">${cur.name} · ${TetrisPad.keyName()}</p>
     ${next && html`<p class="mode-line">dann ${next.deg} · ${next.name}</p>`}
     ${bass && html`<p class="mode-line">Bass ${bass} · ← tiefer · → höher · Drehen springt</p>`}
+    ${bass && html`<p class="mode-line">Raster ${quant ? "an — auf dem Puls" : "aus"} · Taste Q</p>`}
   </div>`;
 }
 
@@ -4986,8 +5116,8 @@ function GameScreen({ game, summary, isRecord, rank, canReplay, onRestart, onRep
 // Der Schriftzug zerfällt in Buchstaben, damit jeder für sich leuchten kann.
 const TITLE_LETTERS = ["T", "E", "T", "R", "I", "S"];
 
-function StartScreen({ level, onLevel, mode, onMode, musical, onMusical, seed, onSeed,
-                       summary, onScores, muted, onSound, onStart }) {
+function StartScreen({ level, onLevel, mode, onMode, musical, onMusical, quant, onQuant,
+                       seed, onSeed, summary, onScores, muted, onSound, onStart }) {
   const levels = [];
   for (let i = 0; i <= 9; i++) levels.push(i);
   const forever = mode === TetrisEngine.FOREVER;
@@ -5004,14 +5134,17 @@ function StartScreen({ level, onLevel, mode, onMode, musical, onMusical, seed, o
       <button class=${"lvl" + (forever ? " on" : "")}
         onClick=${() => onMode(TetrisEngine.FOREVER)}>∞ Endlos</button>
     </div>
-    ${forever && html`<div class="modes one">
+    ${forever && html`<div class=${"modes " + (musical ? "sub" : "one")}>
       <button class=${"lvl" + (musical ? " on" : "")} onClick=${onMusical}>
         ${musical ? "♫ Musik an" : "♫ Musik aus"}</button>
+      ${musical && html`<button class=${"lvl" + (quant ? " on" : "")} onClick=${onQuant}>
+        ${quant ? "♩ Raster an" : "♩ Raster aus"}</button>`}
     </div>`}
     ${forever && musical && html`<p class="hint tight">Jeder Stein ist eine Stufe
       in ${TetrisPad.keyName()} — sein Akkord klingt, sobald er erscheint.
       Darunter steht ein Bass auf einem Ton des Akkords: Drehen schlägt ihn
-      erneut an, Links und Rechts suchen einen anderen.
+      erneut an, Links und Rechts suchen einen anderen. Im Raster rücken seine
+      Anschläge auf den Puls des Schlagzeugs.
       Die Spielgeräusche schweigen dann.</p>`}
     <p class="label">${forever ? "Festes Level" : "Startlevel"}</p>
     <div class="levels">
@@ -5042,7 +5175,7 @@ function StartScreen({ level, onLevel, mode, onMode, musical, onMusical, seed, o
       <button class="start small" onClick=${onScores}>Bestenliste</button>
       <button class="start small" onClick=${onSound}>${muted ? "🔇 Ton aus" : "🔊 Ton an"}</button>
     </div>
-    <p class="hint">Enter startet · M wechselt die Spielart${forever ? " · K die Musik" : ""}
+    <p class="hint">Enter startet · M wechselt die Spielart${forever ? " · K die Musik" : ""}${forever && musical ? " · Q das Raster" : ""}
       · H zeigt die Bestenliste · S schaltet den Ton · T prüft ihn</p>
   </div>`;
 }
@@ -5503,6 +5636,7 @@ function App() {
   const [startLevel, setStartLevel] = useState(0);
   const [mode, setMode] = useState(TetrisEngine.CLASSIC); // Klassisch oder Endlos
   const [musical, setMusical] = useState(false); // das Klangbett des Endlosspiels
+  const [quant, setQuant] = useState(false); // rücken die Bassanschläge auf den Puls?
   const [seedWord, setSeedWord] = useState(() => TetrisSeed.randomWord());
   const [showScores, setShowScores] = useState(false);
   const [muted, setMuted] = useState(false); // der Ton, an einer Stelle geschaltet
@@ -5586,6 +5720,14 @@ function App() {
       setMusical((m) => !m);
     }
     bump((v) => v + 1);
+  }, []);
+
+  /* Das Raster: Es rückt jeden Bassanschlag auf den nächsten Sechzehntel des
+     Schlagzeugpulses. Anders als das Klangbett gehört es keiner Partie, sondern
+     der Sitzung — es klingt nur und ändert am Spiel nichts. Geschaltet wird es
+     an einer Stelle, damit Anzeige und Klang nicht auseinanderlaufen. */
+  const toggleQuantize = useCallback(() => {
+    setQuant((q) => { TetrisPad.setQuantize(!q); return !q; });
   }, []);
 
   const openScores = useCallback(() => setShowScores(true), []);
@@ -5822,6 +5964,8 @@ function App() {
           setMode(mode === TetrisEngine.FOREVER ? TetrisEngine.CLASSIC : TetrisEngine.FOREVER);
         } else if (!inField && (k === "k" || k === "K")) {
           if (mode === TetrisEngine.FOREVER) toggleMusical();
+        } else if (!inField && (k === "q" || k === "Q")) {
+          if (mode === TetrisEngine.FOREVER && musical) toggleQuantize();
         }
         return;
       }
@@ -5836,6 +5980,7 @@ function App() {
       if (k === "p" || k === "P") { heldRef.current = {}; TetrisEngine.togglePause(g); return; }
       if (k === "Escape") { quit(); return; }
       if (k === "k" || k === "K") { toggleMusical(); return; }
+      if (k === "q" || k === "Q") { if (g.musical) toggleQuantize(); return; }
       if (g.paused) {
         if (k === "r" || k === "R") openReplay();
         else if (k === "h" || k === "H") openScores();
@@ -5871,7 +6016,7 @@ function App() {
     };
   }, [startLevel, seedWord, mode, musical, startGame, quit, openReplay, closeReplay,
       seekTo, stepBy, playFrom, pausePlayback, setSpeed, resumeHere,
-      showScores, openScores, closeScores, toggleSound, toggleMusical]);
+      showScores, openScores, closeScores, toggleSound, toggleMusical, toggleQuantize]);
 
   const g = gameRef.current;
   const rp = replayRef.current;
@@ -5932,6 +6077,7 @@ function App() {
         <${StartScreen} level=${startLevel} onLevel=${setStartLevel}
           mode=${mode} onMode=${setMode}
           musical=${musical} onMusical=${toggleMusical}
+          quant=${quant} onQuant=${toggleQuantize}
           seed=${seedWord} onSeed=${setSeedWord}
           summary=${mode === TetrisEngine.FOREVER
             ? TetrisScores.foreverSummaryFor(store, startLevel)
@@ -5999,7 +6145,7 @@ function App() {
         <h2>Nächster</h2>
         <${Preview} type=${g.nextType} />
       </div>
-      ${g.musical && html`<${ChordBox} game=${g} />`}
+      ${g.musical && html`<${ChordBox} game=${g} quant=${quant} />`}
       <div class="box">
         <h2>Merkwort</h2>
         <p class="seed-word">${g.seedWord}</p>
@@ -6014,6 +6160,7 @@ function App() {
         <p><kbd>P</kbd> Pause · <kbd>Esc</kbd> Ende</p>
         <p><kbd>S</kbd> Ton ${muted ? "aus" : "an"} · <kbd>T</kbd> Ton prüfen</p>
         ${forever && html`<p><kbd>K</kbd> Musik ${g.musical ? "an — Geräusche still" : "aus"}</p>`}
+        ${forever && g.musical && html`<p><kbd>Q</kbd> Raster ${quant ? "an" : "aus"}</p>`}
         <p><kbd>R</kbd> Aufzeichnung (in Pause)</p>
         <p><kbd>H</kbd> Bestenliste (in Pause)</p>
       </div>

@@ -47,11 +47,13 @@ dass die Folge vorhersagbar würde.
 - `src/pad.js` — das Klangbett des musikalischen Endlosspiels: die Tonart, die
   Stufe je Steinsorte und der Pad-Klang, der ihre Oberstimmen stehen lässt.
 - `src/bass.js` — der Bass darunter: die eine durchlaufende Stimme, die Leiter
-  der Akkordtöne, auf der sie steht, und die Züge, die sie stellen — Links und
-  Rechts rücken eine Sprosse, die Drehung springt zwei.
+  der Akkordtöne, auf der sie steht, die Züge, die sie stellen — Links und
+  Rechts rücken eine Sprosse, die Drehung springt zwei —, das Ausklingen jedes
+  Anschlags und das Raster, auf das er wahlweise rückt.
 - `src/drums.js` — das Schlagzeug: das Muster über zwei Takte, die drei aus
-  Sinus und gefiltertem Rauschen gerechneten Schläge und der Vorratsleger, der
-  sie auf die Uhr der Tonmaschine legt — der Puls der Musik.
+  Sinus und gefiltertem Rauschen gerechneten Schläge, der Wirbel für gefallene
+  Reihen und der Vorratsleger, der alles auf die Uhr der Tonmaschine legt — der
+  Puls der Musik, und über `grid()` auch ihr Raster.
 - `src/soundassets.js` — die vier Beigaben aus `assets`: an der Stelle im Dokument
   ablesen, an der das Bündeln sie eingesetzt hat, und an `sound.js` übergeben.
 - `src/soundfiles.js` — das Netz darunter: im Datenordner suchen oder vom Anwender
@@ -148,11 +150,22 @@ Die Züge des Steins stellen ihn:
   Seite, und bei vier Sprossen ein Pendeln zwischen den beiden Hälften der
   Leiter (Grundton ↔ Quinte, Terz ↔ oberer Grundton).
 
-Die Leiter sind die Töne des Dreiklangs im Bassbereich: Grundton, Terz, Quinte,
-Grundton eine Oktave höher — vier Sprossen, an deren Enden der Schritt zur Seite
-stehen bleibt und nur wiederholt wird. Der Grundton liegt eine Oktave unter dem Grundton der
+Die Leiter sind die Töne des Dreiklangs im Bassbereich, aufsteigend: die Quinte
+eine Oktave unter dem Grundton, darüber Grundton, Terz und Quinte — vier
+Sprossen, an deren Enden der Schritt zur Seite stehen bleibt und nur wiederholt
+wird. Der Grundton liegt eine Oktave unter dem Grundton der
 Tonart, sodass die Stufen eine diatonische Basslinie ergeben. Das Pad behält nur
 die Oberstimmen, damit die tiefe Lage dem Bass gehört.
+
+**Die Leiter endet oben auf der Quinte, nicht auf dem Grundton.** Zuerst war die
+oberste Sprosse der Grundton eine Oktave höher. Bei den oberen Stufen (V, VI,
+VII) lag sie damit über dem mittleren C — dort ist kein Bass mehr, sondern eine
+Mittelstimme, die dem Pad ins Gehege kommt. Also ist die Leiter um eine Sprosse
+nach unten gerückt: dieselben vier Töne des Dreiklangs, dieselbe Weite von einer
+Oktave, aber die oberste liegt in jeder Stufe unter dem mittleren C und die
+unterste ist die Quinte darunter. Der Grundton behält dabei seine Tonhöhe — die
+Basslinie über die Akkordwechsel hinweg ist dieselbe wie zuvor; nur ist er jetzt
+die zweite Sprosse statt der ersten, und dort (`HOME`) beginnt der Bass auch.
 
 Es klingt **eine einzige Stimme, die durchläuft**, statt für jeden Anschlag eine
 neue: So gibt es beim Wechsel weder Knacken noch Lücke, und die Tonhöhe kann auch
@@ -162,6 +175,20 @@ als 0,11 s beieinander, rückt nur noch die Tonhöhe nach, ohne neuen Anschlag �
 sonst wäre der Bass beim Halten ein Maschinengewehr. Der Anschlag selbst ist eine
 kurze Senke der Lautstärke, in der auch die Tonhöhe springt, und ein Filter, das
 mit ihm auf- und wieder zufällt.
+
+**Und er verklingt.** Zuerst blieb der Anschlag auf einem Halt stehen, bis der
+nächste kam. Bei einer Stimme, die ohnehin durchläuft, ist das ein Dauerton unter
+der Musik — ein Brummen statt eines gespielten Basses, und es nimmt jedem
+einzelnen Anschlag seine Gestalt. Jetzt sinkt er von diesem Halt in `DECAY` = 2,4
+Sekunden ganz weg. Wer spielt, hört ihn durchgehend, denn jeder Zug setzt ihn neu
+an; wer eine Weile nichts tut, hört ihn ausgehen. Die Stille zwischen zwei Zügen
+gehört damit zu dem, was der Anwender spielt.
+
+Weil ein Anschlag nun eine Kurve über Sekunden ist und sein Beginn im Raster auch
+in der Zukunft liegen kann, wird eine laufende Kurve nicht mehr auf ihren Wert von
+*jetzt* festgeschrieben, sondern mit `cancelAndHoldAtTime` auf ihren Wert *zur
+Zeit des Anschlags* — sonst spränge das Ausklingen in der Wartezeit auf das Raster
+zurück nach oben.
 
 **Das Schlagzeug führt die Uhr der Musik.** Sie lag beim Bass, solange der eine
 Figur ausschritt; seit er nur noch auf Zuruf anschlägt, hat er keinen Puls mehr,
@@ -185,6 +212,29 @@ für Schlag und Hut, dazu ein kurzer Ton als Körper des Schlags. Keine Aufnahme
 also auch nichts, was fehlen könnte. Einen eigenen Schalter hat es nicht: Es
 beginnt mit dem ersten Akkord, endet mit dem Klangbett und hängt wie alles am
 Regler von `sound.js`.
+
+**Gefallene Reihen bekommen einen Wirbel.** In der musikalischen Partie schweigt
+der Klang der vollen Reihe — die Stelle, an der das Spiel am meisten zu melden
+hat, war damit die stillste. Das Schlagzeug füllt sie: Für die nächsten Schritte
+tritt an die Stelle des Musters ein Wirbel aus anschwellenden Sechzehnteln auf
+dem Fell, vorn und hinten eine Trommel. Seine Länge sagt, wie viele Reihen fielen
+(zwei Schritte bis vier beim Tetris). Ausgelöst wird er in `lock()`, wo die vollen
+Reihen erkannt werden, und er beginnt beim nächsten Schritt, der noch nicht auf
+der Uhr liegt — ein Wirbel gehört auf den Puls, nicht zwischen ihn. Das ist
+höchstens eine Achtel später und trifft damit ungefähr das Aufblitzen der Reihen.
+Der Schrittzähler läuft
+unter ihm weiter, sodass das Muster danach dort einsetzt, wo es ohne ihn stünde.
+
+**Das Raster ist der Puls, den man borgen kann.** Auf Wunsch soll der Bass nicht
+im Augenblick des Zuges klingen, sondern auf dem Puls. Weil die einzige Uhr der
+Musik im Schlagzeug liegt, gibt es sie dort als `grid(t, div)` heraus: den
+nächsten Rasterpunkt ab `t`. Der Bass fragt danach und legt seinen Anschlag
+dorthin — auf Sechzehntel, also höchstens eine halbe Achtel später. Mehr wäre als
+Verzögerung der eigenen Taste zu spüren; weniger würde nichts zurechtrücken.
+Fällt ein weiterer Zug in die Wartezeit, greift dieselbe Regel wie beim
+Tastenhalten: Die Tonhöhe rückt sofort nach, angeschlagen wird einmal. Das Raster
+ist ein Schalter der Sitzung, kein Feld des Spielstands: Es klingt nur, ändert
+weder Regel noch Aufzeichnung, und die Momentaufnahme weiß nichts davon.
 
 **Die Züge des Steins spielen den Bass.** Das ist das Einzige an der Musik, das
 der Anwender unmittelbar in der Hand hat — die Akkordfolge selbst gehört dem

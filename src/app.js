@@ -34,6 +34,7 @@ function App() {
   const [startLevel, setStartLevel] = useState(0);
   const [mode, setMode] = useState(TetrisEngine.CLASSIC); // Klassisch oder Endlos
   const [musical, setMusical] = useState(false); // das Klangbett des Endlosspiels
+  const [quant, setQuant] = useState(false); // rücken die Bassanschläge auf den Puls?
   const [seedWord, setSeedWord] = useState(() => TetrisSeed.randomWord());
   const [showScores, setShowScores] = useState(false);
   const [muted, setMuted] = useState(false); // der Ton, an einer Stelle geschaltet
@@ -117,6 +118,14 @@ function App() {
       setMusical((m) => !m);
     }
     bump((v) => v + 1);
+  }, []);
+
+  /* Das Raster: Es rückt jeden Bassanschlag auf den nächsten Sechzehntel des
+     Schlagzeugpulses. Anders als das Klangbett gehört es keiner Partie, sondern
+     der Sitzung — es klingt nur und ändert am Spiel nichts. Geschaltet wird es
+     an einer Stelle, damit Anzeige und Klang nicht auseinanderlaufen. */
+  const toggleQuantize = useCallback(() => {
+    setQuant((q) => { TetrisPad.setQuantize(!q); return !q; });
   }, []);
 
   const openScores = useCallback(() => setShowScores(true), []);
@@ -353,6 +362,8 @@ function App() {
           setMode(mode === TetrisEngine.FOREVER ? TetrisEngine.CLASSIC : TetrisEngine.FOREVER);
         } else if (!inField && (k === "k" || k === "K")) {
           if (mode === TetrisEngine.FOREVER) toggleMusical();
+        } else if (!inField && (k === "q" || k === "Q")) {
+          if (mode === TetrisEngine.FOREVER && musical) toggleQuantize();
         }
         return;
       }
@@ -367,6 +378,7 @@ function App() {
       if (k === "p" || k === "P") { heldRef.current = {}; TetrisEngine.togglePause(g); return; }
       if (k === "Escape") { quit(); return; }
       if (k === "k" || k === "K") { toggleMusical(); return; }
+      if (k === "q" || k === "Q") { if (g.musical) toggleQuantize(); return; }
       if (g.paused) {
         if (k === "r" || k === "R") openReplay();
         else if (k === "h" || k === "H") openScores();
@@ -402,7 +414,7 @@ function App() {
     };
   }, [startLevel, seedWord, mode, musical, startGame, quit, openReplay, closeReplay,
       seekTo, stepBy, playFrom, pausePlayback, setSpeed, resumeHere,
-      showScores, openScores, closeScores, toggleSound, toggleMusical]);
+      showScores, openScores, closeScores, toggleSound, toggleMusical, toggleQuantize]);
 
   const g = gameRef.current;
   const rp = replayRef.current;
@@ -463,6 +475,7 @@ function App() {
         <${StartScreen} level=${startLevel} onLevel=${setStartLevel}
           mode=${mode} onMode=${setMode}
           musical=${musical} onMusical=${toggleMusical}
+          quant=${quant} onQuant=${toggleQuantize}
           seed=${seedWord} onSeed=${setSeedWord}
           summary=${mode === TetrisEngine.FOREVER
             ? TetrisScores.foreverSummaryFor(store, startLevel)
@@ -530,7 +543,7 @@ function App() {
         <h2>Nächster</h2>
         <${Preview} type=${g.nextType} />
       </div>
-      ${g.musical && html`<${ChordBox} game=${g} />`}
+      ${g.musical && html`<${ChordBox} game=${g} quant=${quant} />`}
       <div class="box">
         <h2>Merkwort</h2>
         <p class="seed-word">${g.seedWord}</p>
@@ -545,6 +558,7 @@ function App() {
         <p><kbd>P</kbd> Pause · <kbd>Esc</kbd> Ende</p>
         <p><kbd>S</kbd> Ton ${muted ? "aus" : "an"} · <kbd>T</kbd> Ton prüfen</p>
         ${forever && html`<p><kbd>K</kbd> Musik ${g.musical ? "an — Geräusche still" : "aus"}</p>`}
+        ${forever && g.musical && html`<p><kbd>Q</kbd> Raster ${quant ? "an" : "aus"}</p>`}
         <p><kbd>R</kbd> Aufzeichnung (in Pause)</p>
         <p><kbd>H</kbd> Bestenliste (in Pause)</p>
       </div>
