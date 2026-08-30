@@ -5,24 +5,28 @@
    Ein Ordner, eine Datei je Partie; der Eintrag der Bestenliste merkt sich nur den
    Dateinamen. Verdichtet wird zweifach: Feldbilder wiederholen sich und stehen
    deshalb nur einmal in einem Verzeichnis, jedes Bild nennt nur noch ihre Nummer;
-   der Rest eines Bildes wird zu einer nackten Zahlenreihe ohne Feldnamen. */
+   der Rest eines Bildes wird zu einer nackten Wertereihe ohne Feldnamen. */
 const TetrisArchive = (function () {
   const DIR = "tetris-games";
-  const VERSION = 1;
+  const VERSION = 2; // 2: der Zufallszustand des 35er-Vorrats an den Stellen 13…15
   const TYPES = TetrisPieces.TYPES;
-  const COLUMNS = 29; // so viele Zahlen hat ein Bild
+  const COLUMNS = 29; // so viele Werte hat ein Bild
 
   function typeIndex(t) { return TYPES.indexOf(t); }        // -1: kein Stein
   function typeAt(i) { return i >= 0 && i < TYPES.length ? TYPES[i] : null; }
 
-  /* Ein Bild als Zahlenreihe, in fester Ordnung:
+  /* Ein Bild als Wertereihe, in fester Ordnung — Zahlen bis auf die beiden
+     Ziffernketten des Zufalls:
      0 Zeit, 1 Nummer des Feldbilds, 2 Steinsorte, 3 Drehlage, 4 x, 5 y,
      6 nächste Sorte, 7 Punkte, 8 Reihen, 9 Level,
      10 Merker (1 = Ende, 2 = Wiedereinstieg),
      11 Uhr der Reihenauflösung, 12 Uhr der Schwerkraft,
-     13 Register, 14 Steinzähler, 15 zuletzt gezogener Stein,
+     13 Register, 14 Vorrat als Ziffernkette, 15 Gedächtnis und Durstliste,
      16 volle Reihen als Bitmuster (-1 = keine),
-     17…23 Steinstatistik, 24…28 Reihenschläge. */
+     17…23 Steinstatistik, 24…28 Reihenschläge.
+     In Dateien der Fassung 1 standen an 13…15 drei Zahlen: das Register, der
+     Steinzähler und der zuletzt gezogene Stein des alten NES-Zufalls. Solche
+     Bänder laufen weiter — nur der Zufall beginnt beim Wiedereinstieg neu. */
   function packFrame(snap, boardIdx) {
     const p = snap.piece;
     let mask = -1;
@@ -36,7 +40,7 @@ const TetrisArchive = (function () {
       typeIndex(snap.nextType), snap.score, snap.lines, snap.level,
       (snap.over ? 1 : 0) | (snap.resumed ? 2 : 0),
       Math.round(snap.clearTimer), Math.round(snap.dropTimer),
-      snap.rng.reg, snap.rng.spawnCount, typeIndex(snap.rng.prev),
+      snap.rng.reg, snap.rng.pool, snap.rng.memory + snap.rng.drought,
       mask
     ];
     TYPES.forEach((t) => row.push(snap.stats[t] || 0));
@@ -78,8 +82,21 @@ const TetrisArchive = (function () {
       clearRows: clearRows,
       clearTimer: row[11],
       dropTimer: row[12],
-      rng: { reg: row[13], spawnCount: row[14], prev: typeAt(row[15]) }
+      rng: rngFrom(row)
     };
+  }
+
+  /* Der Zufallszustand eines Bildes. Steht an 14 eine Ziffernkette, stammt das Band
+     aus dieser Fassung; sonst ist es ein altes und nur das Register taugt noch —
+     Vorrat, Gedächtnis und Durstliste beginnt der Zufall dann von vorn. */
+  function rngFrom(row) {
+    const s = { reg: row[13] | 0 };
+    if (typeof row[14] === "string" && typeof row[15] === "string") {
+      s.pool = row[14];
+      s.memory = row[15].slice(0, TetrisRng.MEMORY);
+      s.drought = row[15].slice(TetrisRng.MEMORY);
+    }
+    return s;
   }
 
   function pack(frames, entry) {

@@ -353,11 +353,19 @@ mit seinen eigenen Tönen weiter.
 
 ## Das Besondere
 
-Welcher Stein kommt, wird nach dem Verfahren des Original-Tetris gewürfelt. Es
-verhindert kurze Wiederholungen desselben Steins, garantiert aber nichts: Es kann
-lange dauern, bis die ersehnte lange Stange kommt. Wer moderne Tetris-Fassungen
-gewohnt ist, in denen alle sieben Steine reihum garantiert sind, merkt den
-Unterschied schnell — und sollte flacher stapeln.
+Welcher Stein kommt, wird aus einem **Vorrat von 35 Steinen** gezogen — fünf von
+jeder Sorte. Aus ihm greift das Spiel blind einen heraus; ist es einer der letzten
+vier, die schon kamen, greift es noch einmal, bis zu sechsmal. Der frei gewordene
+Platz wird jedes Mal mit der Sorte aufgefüllt, die am längsten nicht kam.
+
+Das hat Folgen für dein Spiel: Je länger die lange Stange ausbleibt, desto mehr
+Stangen liegen im Vorrat — und desto wahrscheinlicher kommt sie. Vier gleiche Steine
+hintereinander wirst du kaum noch sehen. Garantiert ist trotzdem nichts: Anders als
+in modernen Fassungen, in denen alle sieben Sorten reihum sicher kommen, bleibt eine
+Durststrecke möglich, sie läuft nur nicht mehr aus dem Ruder.
+
+Der erste Stein einer Partie ist fast immer eine Stange, ein J, ein L oder ein T —
+mit einem S, Z oder O fängt es sich schlecht an.
 
 ## Grenzen
 

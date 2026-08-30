@@ -97,7 +97,7 @@ const TetrisEngine = (function () {
       mode: mode === FOREVER ? FOREVER : CLASSIC,
       musical: mode === FOREVER && !!musical, // das Klangbett gehört dem Endlosspiel
       seedWord: word,
-      rng: NesRng.create(TetrisSeed.toRegister(word)),
+      rng: TetrisRng.create(TetrisSeed.toRegister(word)),
       board: emptyBoard(),
       piece: null,
       nextType: null,
@@ -316,7 +316,7 @@ const TetrisEngine = (function () {
       mode: snap.mode === FOREVER ? FOREVER : CLASSIC,
       musical: snap.mode === FOREVER && !!snap.musical,
       seedWord: snap.seedWord,
-      rng: NesRng.restore(snap.rng),
+      rng: TetrisRng.restore(snap.rng),
       board: boardFromText(snap.board),
       piece: snap.piece ? Object.assign({}, snap.piece) : null,
       nextType: snap.nextType,

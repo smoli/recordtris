@@ -2,21 +2,24 @@
 
 ## Zweck
 
-Ein spielbares Tetris für den Desktop — bewusst nah am Original der NES-Fassung,
-insbesondere bei dem, was das Spiel ausmacht: welcher Stein als Nächstes kommt.
+Ein spielbares Tetris für den Desktop — im Aussehen und in den Regeln nah am
+Original der NES-Fassung, beim Würfeln der Steine dagegen nach dem 35er-Vorrat
+von Tetris The Grand Master 3.
 
 ## Nutzen
 
-Wer das klassische Tetris kennt, findet hier dessen Steinverteilung wieder: die
-typischen Durststrecken ohne I-Stein, die gelegentlichen Dopplungen. Das
-Spielgefühl unterscheidet sich spürbar von modernen Tetris-Varianten mit
-Sieben-Bag-Verfahren, in denen jeder Stein garantiert alle sieben Züge kommt.
+Der 35er-Vorrat liegt zwischen den beiden bekannten Welten: Er garantiert nicht
+wie das Sieben-Bag-Verfahren, dass jede Sorte in jedem Siebenerblock vorkommt —
+Durststrecken und gelegentliche Dopplungen bleiben also möglich. Er lässt sie aber
+nicht ausufern, weil jeder gezogene Stein im Vorrat durch den ersetzt wird, der am
+längsten aussetzt. Über die Zeit gleicht sich die Verteilung von selbst aus, ohne
+dass die Folge vorhersagbar würde.
 
 ## Aufbau
 
 - `src/index.html` — Einstieg, lädt Preact (`morphos:lib`) und die vier Bausteine.
-- `src/rng.js` — der Zufall des Originals: das 16-Bit-Schieberegister und das
-  Auswahlverfahren.
+- `src/rng.js` — der Zufall: das 16-Bit-Schieberegister als Quelle, der Vorrat von
+  35 Steinen, das Gedächtnis der letzten vier und die Durstliste.
 - `src/seed.js` — das Merkwort: Wort zu Startwert des Registers, und das Würfeln
   eines aussprechbaren Wortes.
 - `src/pieces.js` — die sieben Steine mit ihren vier Drehlagen, die Falltempo-Tabelle
@@ -67,12 +70,29 @@ nur an, wenn sich der Zähler `version` geändert hat.
 
 ## Getroffene Entscheidungen
 
-**Zufall wie im Original.** Eine Zufallszahl entsteht aus einem 16-Bit-Schiebe-
-register: Bit 1 und Bit 9 werden verknüpft, das Ergebnis wandert oben hinein;
-verwendet wird das obere Byte. Die Steinwahl addiert dazu einen Zähler aller bisher
-gezogenen Steine und schneidet auf 0–7. Trifft es die leere achte Stelle oder
-denselben Stein wie zuletzt, gibt es genau einen zweiten Wurf, verschoben gegen den
-letzten Stein. Wiederholungen werden dadurch seltener — aber nicht unmöglich.
+**Der 35er-Vorrat statt des NES-Zufalls.** Das Spiel begann mit dem Auswahlverfahren
+des NES (ein Wurf, bei Wiederholung genau ein zweiter). Es erzeugte Ketten von drei
+und vier gleichen Steinen — erwartbar für dieses Verfahren, aber unbefriedigend.
+An seine Stelle ist der Vorrat aus Tetris The Grand Master 3 getreten:
+
+- Ein **Vorrat von 35 Steinen**, fünf je Sorte. Gezogen wird ein Platz darin.
+- Ein **Gedächtnis der letzten vier** gezogenen Steine. Liegt der getroffene Stein
+  darin, wird neu gewürfelt — bis zu sechs Würfe je Zug; der sechste gilt in jedem Fall.
+- Eine **Durstliste** der sieben Sorten, vorn die am längsten nicht gezogene. Jeder
+  geleerte Platz — der eines Fehlwurfs wie der des gezogenen Steins — bekommt den
+  vordersten Stein dieser Liste; der gezogene wandert an ihr Ende. So wächst der
+  Anteil einer ausbleibenden Sorte im Vorrat, bis sie kommt.
+
+Als Zufallsquelle bleibt das 16-Bit-Schieberegister erhalten, damit das Merkwort
+weiter die Partie bestimmt: Bit 1 und Bit 9 werden verknüpft, das Ergebnis wandert
+oben hinein. Für ein Byte läuft es acht Schritte (sonst teilten zwei Bytes
+nacheinander sieben ihrer acht Bits), und beide Hälften werden verschränkt. Für einen
+Platz 0–34 werden Bytes ab 245 verworfen statt umgebogen — 245 ist sieben mal
+fünfunddreißig, sonst kämen die vorderen Plätze häufiger.
+
+Das Gedächtnis beginnt mit S, Z, S, O. Damit sind beim ersten Zug genau die drei
+Sorten gesperrt, mit denen sich schlecht anfangen lässt: Das Spiel startet fast
+immer mit I, J, L oder T.
 
 **Ein Wort als Startwert.** Den Startwert des Registers bestimmt ein Merkwort: Die
 Zeichen des Wortes laufen durch eine FNV-1a-Streuung, das Ergebnis wird auf 16 Bit
@@ -393,7 +413,10 @@ nach oben bei 60 — ein größeres Fenster wird also genutzt, ein kleines bleib
 
 **Die Partie wird mitgeschrieben.** Jedes Bild, das sich vom vorherigen unterscheidet,
 kommt als vollständige Momentaufnahme aufs Band: Feld, Stein, Zahlen, Statistik — und
-der innere Zustand des Zufallsregisters. Nicht die Tastendrücke werden aufgezeichnet,
+der innere Zustand des Zufalls, also Register, Vorrat, Gedächtnis und Durstliste.
+Weil der sich nur beim Ziehen eines Steins ändert, gibt ihn `rng.js` als eine
+aufgehobene Zeichenkette heraus: Alle Bilder zwischen zwei Steinen teilen sich
+dasselbe Stück im Speicher. Nicht die Tastendrücke werden aufgezeichnet,
 sondern die Zustände selbst. Das kostet mehr Platz, ist dafür aber unabhängig davon,
 ob ein Nachspielen exakt dieselben Zeitschritte träfe, und erlaubt das Rückwärtsgehen
 ohne Neuberechnung. Unveränderte Felder teilen sich dieselbe Zeichenkette, und
@@ -407,6 +430,13 @@ vieler Züge. Die Zeitachse ist die gespielte Zeit, nicht die Zahl der Bilder; d
 Abspielen läuft dadurch im Tempo der Partie, wahlweise vorwärts oder rückwärts und
 mit einem Faktor von ¼ bis 4. Ein Bild, in dem das Spiel schon verloren ist, lässt
 sich nicht fortsetzen.
+
+**Ältere Bänder bleiben lesbar.** Der Wechsel des Zufalls hat die drei Stellen
+verändert, an denen ein Bild im Archiv seinen Zustand ablegt. Erkannt wird das an der
+Art des Werts: Wo eine Zeichenkette steht, stammt das Band aus dieser Fassung. Ein
+Band der Fassung 1 lässt sich weiterhin vollständig ansehen und auswerten — nur ein
+Wiedereinstieg an einer seiner Stellen beginnt den Zufall von vorn, weil der alte
+Zustand für den Vorrat nichts hergibt.
 
 **Die Bestenliste gehört dem Merkwort.** Jede Partie, die mit "Game Over" endet, wird
 als ein Eintrag in `tetris-highscores.json` im Datenordner festgehalten: Zeitpunkt,

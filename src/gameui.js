@@ -153,7 +153,7 @@ function StartScreen({ level, onLevel, mode, onMode, musical, onMusical, seed, o
       <span class="tl" key=${i} style=${"--i:" + i}>${ch}</span>`)}</h1>
     <p class="lead">${forever
       ? "Endlos: Das Level bleibt, wo es beginnt. Es zählt, wie lange du durchhältst."
-      : "Steine ziehen wie im Original — mit dem Zufallsverfahren des NES."}</p>
+      : "Steine aus einem Vorrat von 35 — was lange ausbleibt, wird nachgelegt."}</p>
     <p class="label">Spielart</p>
     <div class="modes">
       <button class=${"lvl" + (forever ? "" : " on")}
